@@ -135,7 +135,7 @@ defmodule Vial.LLM do
       {"content-type", "application/json"}
     ]
 
-    case Req.post(url, json: body, headers: headers) do
+    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000) do
       {:ok, response} -> {:ok, response}
       {:error, reason} -> {:error, {:network_error, reason}}
     end
