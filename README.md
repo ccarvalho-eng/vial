@@ -1,113 +1,126 @@
 ```
-⠀⠀⠀⣠⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠈⠻⠿⠃⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⣀⣀⣀⣀⣀⣀⣉⣁⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠘⡿⠿⠿⠿⠿⠿⠿⢿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⡇⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀ █████   █████  ███            ████
-⠀⡇⠀⠀⠀⠀⣀⠀⢸⠀⠀⠀⠀⠀⠀⠀░░███   ░░███  ░░░            ░░███
-⠀⣇⣀⣀⣀⣀⣛⣃⣸⠀⠀⠀⠀⠀⠀⠀ ░███    ░███  ████   ██████   ░███
-⠀⣿⡿⠿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀ ░███    ░███ ░░███  ░░░░░███  ░███
-⠀⣿⣷⣤⣾⠋⠉⢻⣿⠀⠀⠀⠀⠀⠀⠀ ░░███   ███   ░███   ███████  ░███
-⠀⣿⣿⣿⣿⣦⣴⣾⣿⠀⠀⠀⠀⠀⠀⠀  ░░░█████░    ░███  ███░░███  ░███
-⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀    ░░███      █████░░████████ █████
-⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀     ░░░      ░░░░░  ░░░░░░░░ ░░░░░
-⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠻⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠈⠙⠛⠛⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⣠⣤⡀
+⠀⠀⠈⠻⠿⠃⣀⡀
+⣀⣀⣀⣀⣀⣀⣉⣁⣀⣀
+⠘⡿⠿⠿⠿⠿⠿⠿⢿⠃
+⠀⡇⠀⠀⠀⠀⠀⠀⢸⠀    █████   █████  ███            ████
+⠀⡇⠀⠀⠀⠀⣀⠀⢸⠀   ░░███   ░░███  ░░░            ░░███
+⠀⣇⣀⣀⣀⣀⣛⣃⣸⠀    ░███    ░███  ████   ██████   ░███
+⠀⣿⡿⠿⣿⣿⣿⣿⣿⠀    ░███    ░███ ░░███  ░░░░░███  ░███
+⠀⣿⣷⣤⣾⠋⠉⢻⣿⠀    ░░███   ███   ░███   ███████  ░███
+⠀⣿⣿⣿⣿⣦⣴⣾⣿⠀     ░░░█████░    ░███  ███░░███  ░███
+⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀       ░░███      █████░░████████ █████
+⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀        ░░░      ░░░░░  ░░░░░░░░ ░░░░░
+⠀⣿⣿⣿⣿⣿⣿⣿⣿
+⠀⠻⣿⣿⣿⣿⣿⣿⠟
+⠀⠀⠈⠙⠛⠛⠋⠁
 ```
-LLM prompt evaluation workbench
 
-<img width="1663" height="966" alt="Screenshot 2026-03-20 at 15 08 04" src="https://github.com/user-attachments/assets/c4fb97e4-18c6-44dd-9c70-aec74509ff18" />
+# Vial
+
+**LLM prompt evaluation workbench**
+
+[![Elixir](https://img.shields.io/badge/Elixir-1.16-4B275F?logo=elixir&logoColor=white)](https://elixir-lang.org)
+[![Phoenix](https://img.shields.io/badge/Phoenix-1.7-orange?logo=phoenix-framework&logoColor=white)](https://phoenixframework.org)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+Test, compare, and monitor prompt behavior across LLM providers.
+
+---
 
 ## Features
 
-- **Prompt Management**: Create, edit, and version your prompts with variable support
-- **Provider Management**: Configure multiple LLM providers (OpenAI, Anthropic, Ollama) with custom settings
-- **Evaluation Suites**: Build test suites with assertions to validate prompt behavior
-- **Run Comparison**: Execute prompts across multiple providers and compare results
-- **Real-time Dashboard**: Monitor evaluation metrics, test pass rates, and costs
+| Feature | Description |
+|---|---|
+| **Prompt Management** | Create, edit, and version prompts with variable support (`{{topic}}`) |
+| **Provider Management** | Configure OpenAI, Anthropic, and Ollama with custom model settings |
+| **Evaluation Suites** | Build test suites with typed assertions to validate prompt behavior |
+| **Run Comparison** | Execute prompts across providers and compare results side-by-side |
+| **Real-time Dashboard** | Monitor pass rates, costs, and latency metrics live |
+
+---
 
 ## Setup
 
-1. **Clone and install dependencies**:
+**1. Clone and install dependencies**
+
 ```bash
 git clone https://github.com/yourusername/vial.git
 cd vial
 mix deps.get
 ```
 
-2. **Set up the database**:
+**2. Set up the database**
+
 ```bash
 mix ecto.setup
 ```
 
-3. **Start the Phoenix server**:
+**3. Start the server**
+
 ```bash
 mix phx.server
 ```
 
-Visit [`localhost:4000`](http://localhost:4000)
+Visit [localhost:4000](http://localhost:4000)
 
-## Using Ollama Locally (No API Keys Required)
+---
 
-Vial supports **multiple LLM providers** (OpenAI, Anthropic, Ollama). To get started quickly with **Ollama locally** without needing API keys:
+## Providers
 
-1. **Install Ollama**: Download from [ollama.com](https://ollama.com) and follow the installation instructions for your OS
+Vial supports multiple LLM providers. Get started locally with **Ollama** — no API key required.
 
-2. **Start Ollama** (if not running):
+<table>
+<tr>
+<th align="center">Ollama ⭐</th>
+<th align="center">OpenAI</th>
+<th align="center">Anthropic</th>
+</tr>
+<tr>
+<td align="center">Local, no API key needed</td>
+<td align="center"><a href="https://platform.openai.com">platform.openai.com</a></td>
+<td align="center"><a href="https://console.anthropic.com">console.anthropic.com</a></td>
+</tr>
+</table>
+
+### Using Ollama locally
+
 ```bash
+# Install from https://ollama.com, then:
 ollama serve
-```
-
-3. **Pull a model**:
-```bash
-ollama pull llama2
-```
-Other recommended models:
-- `ollama pull mistral` - Fast and capable
-- `ollama pull llama3` - Latest Llama model
-- `ollama pull codellama` - Code-focused model
-
-4. **Verify Ollama is running**:
-```bash
-curl http://localhost:11434/api/tags
-```
-
-5. **Run seeds** (creates default Ollama provider):
-```bash
+ollama pull llama3      # or: mistral, codellama
 mix run priv/repo/seeds.exs
 ```
 
-The seeds will create:
-- Default Ollama provider (llama2)
-- 3 sample prompts (Instruction Following, Context Retention, Safety Refusal)
-- 3 evaluation suites with test cases
+The seeds create a default Ollama provider, 3 sample prompts, and 3 evaluation suites with test cases.
 
-**That's it!** You can now run prompts and evaluations locally without any API costs.
-
-## Adding Other Providers
-
-To compare results with OpenAI or Anthropic:
-
-1. Navigate to **Providers** in the UI
-2. Click **New Provider**
-3. Configure your provider:
-   - **OpenAI**: Requires API key from [platform.openai.com](https://platform.openai.com)
-   - **Anthropic**: Requires API key from [console.anthropic.com](https://console.anthropic.com)
-4. Set model parameters (temperature, max_tokens, etc.)
+---
 
 ## Quick Start
 
-1. **Create Prompts**: Write prompts with variables (e.g., `{{topic}}`, `{{context}}`)
-2. **Build Suites**: Create test suites with variable values and assertions
-3. **Run Evaluations**: Execute prompts across multiple providers and compare results side-by-side
-4. **Monitor Dashboard**: Track test pass rates, costs, and metrics over time
+**1.** Go to **Prompts → New Prompt** and write a prompt with variables, e.g.:
 
-### Example Workflow
+```
+Explain {{topic}} in exactly 3 sentences.
+```
 
-1. Go to **Prompts** → **New Prompt**
-2. Create a prompt: `"Explain {{topic}} in exactly 3 sentences."`
-3. Go to **Suites** → **New Suite**
-4. Add test cases with different topics and assertions
-5. Run the suite and see which providers perform best
+**2.** Go to **Suites → New Suite**, add test cases with variable values and assertions.
 
+**3.** Run the suite and compare results across providers side-by-side.
+
+**4.** Monitor the **Dashboard** to track pass rates, costs, and metrics over time.
+
+---
+
+## Adding Other Providers
+
+1. Navigate to **Providers** in the UI
+2. Click **New Provider**
+3. Select your provider type and enter your API key
+4. Configure model parameters (temperature, max\_tokens, etc.)
+
+---
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
