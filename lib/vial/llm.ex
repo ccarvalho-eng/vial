@@ -137,7 +137,7 @@ defmodule Vial.LLM do
 
     case Req.post(url, json: body, headers: headers) do
       {:ok, response} -> {:ok, response}
-      {:error, reason} -> {:error, reason}
+      {:error, reason} -> {:error, {:network_error, reason}}
     end
   end
 
