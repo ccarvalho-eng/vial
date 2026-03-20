@@ -55,6 +55,11 @@ if config_env() == :prod do
 
   config :vial, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  # LLM Provider API Keys
+  config :vial, :llm,
+    openai_api_key: System.get_env("OPENAI_API_KEY"),
+    anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
+
   config :vial, VialWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [

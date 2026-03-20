@@ -37,6 +37,46 @@ defmodule Vial.LLMTest do
   end
 
   describe "call/3 with Anthropic provider" do
+    test "returns error when API key is missing" do
+      # Temporarily clear the config
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, anthropic_api_key: nil)
+
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "claude-3-5-sonnet-20241022",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      # Restore original config
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    test "returns error when API key is empty string" do
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, anthropic_api_key: "")
+
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "claude-3-5-sonnet-20241022",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      # Restore original config
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    @tag :anthropic_integration
     test "returns structured response" do
       provider =
         provider_fixture(%{
@@ -53,6 +93,7 @@ defmodule Vial.LLMTest do
       assert is_float(result.cost_usd)
     end
 
+    @tag :anthropic_integration
     test "calculates cost for Anthropic" do
       provider =
         provider_fixture(%{

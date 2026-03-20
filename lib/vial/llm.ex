@@ -96,27 +96,18 @@ defmodule Vial.LLM do
      }}
   end
 
-  defp generate_anthropic(_provider, prompt, _opts) do
-    # Mock implementation for V1 - will integrate real LangChain later
-    # Real implementation would use:
-    # model = LangChain.ChatModels.ChatAnthropic.new!(%{
-    #   model: provider.model,
-    #   temperature: get_in(provider.config, ["temperature"]) || 0.5
-    # })
-    # LangChain.Chains.LLMChain.run(model, prompt)
+  defp generate_anthropic(_provider, _prompt, _opts) do
+    case Application.get_env(:vial, :llm)[:anthropic_api_key] do
+      nil ->
+        {:error, :missing_api_key}
 
-    # Simulate processing time
-    Process.sleep(1)
+      "" ->
+        {:error, :missing_api_key}
 
-    input_tokens = estimate_tokens(prompt)
-    output_tokens = 25
-
-    {:ok,
-     %{
-       content: "Mock Anthropic response for: #{prompt}",
-       input_tokens: input_tokens,
-       output_tokens: output_tokens
-     }}
+      _api_key ->
+        # Placeholder - will implement in next task
+        {:error, :not_implemented}
+    end
   end
 
   defp generate_ollama(provider, prompt, _opts) do
