@@ -2,12 +2,9 @@
 
 **LLM prompt evaluation workbench**
 
-[![Elixir](https://img.shields.io/badge/Elixir-1.19-4B275F?logo=elixir&logoColor=white)](https://elixir-lang.org)
-[![Phoenix](https://img.shields.io/badge/Phoenix-1.8-orange?logo=phoenix-framework&logoColor=white)](https://phoenixframework.org)
 [![CI](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml)
 [![Security](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml)
 [![codecov](https://codecov.io/gh/ccarvalho-eng/vial/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/vial)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 **Compare LLM providers side-by-side.** Test prompts across OpenAI, Anthropic, and Ollama with real-time streaming results, cost tracking, and automated evaluation suites.
 
