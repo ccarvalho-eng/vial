@@ -6,8 +6,8 @@ defmodule VialWeb.DashboardLive do
 
   use VialWeb, :live_view
 
-  alias Vial.Runs
   alias Vial.Evals
+  alias Vial.Runs
   alias Vial.Stats
 
   @impl Phoenix.LiveView

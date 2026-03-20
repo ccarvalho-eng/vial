@@ -105,78 +105,91 @@ defmodule Vial.LLM do
   end
 
   defp generate_anthropic(provider, prompt, _opts) do
+    with {:ok, api_key} <- get_anthropic_api_key(),
+         {:ok, response} <- make_anthropic_request(provider, prompt, api_key) do
+      parse_anthropic_response(response)
+    end
+  end
+
+  defp get_anthropic_api_key do
     case Application.get_env(:vial, :llm)[:anthropic_api_key] do
-      nil ->
-        {:error, :missing_api_key}
+      nil -> {:error, :missing_api_key}
+      "" -> {:error, :missing_api_key}
+      api_key -> {:ok, api_key}
+    end
+  end
 
-      "" ->
-        {:error, :missing_api_key}
+  defp make_anthropic_request(provider, prompt, api_key) do
+    url = "https://api.anthropic.com/v1/messages"
 
-      api_key ->
-        url = "https://api.anthropic.com/v1/messages"
+    body = %{
+      model: provider.model,
+      messages: [%{role: "user", content: prompt}],
+      temperature: get_in(provider.config, ["temperature"]) || 0.5,
+      max_tokens: get_in(provider.config, ["max_tokens"]) || 1024
+    }
 
-        body = %{
-          model: provider.model,
-          messages: [%{role: "user", content: prompt}],
-          temperature: get_in(provider.config, ["temperature"]) || 0.5,
-          max_tokens: get_in(provider.config, ["max_tokens"]) || 1024
-        }
+    headers = [
+      {"x-api-key", api_key},
+      {"anthropic-version", "2023-06-01"},
+      {"content-type", "application/json"}
+    ]
 
-        headers = [
-          {"x-api-key", api_key},
-          {"anthropic-version", "2023-06-01"},
-          {"content-type", "application/json"}
-        ]
+    case Req.post(url, json: body, headers: headers) do
+      {:ok, response} -> {:ok, response}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-        case Req.post(url, json: body, headers: headers) do
-          {:ok, %{status: 200, body: response}} ->
-            content = get_in(response, ["content", Access.at(0), "text"])
+  defp parse_anthropic_response(%{status: 200, body: response}) do
+    content = get_in(response, ["content", Access.at(0), "text"])
 
-            if content do
-              usage = response["usage"]
+    if content do
+      usage = response["usage"]
 
-              {:ok,
-               %{
-                 content: content,
-                 input_tokens: usage["input_tokens"] || 0,
-                 output_tokens: usage["output_tokens"] || 0
-               }}
-            else
-              {:error, {:api_error, 200, "Unexpected response structure: missing content"}}
-            end
+      {:ok,
+       %{
+         content: content,
+         input_tokens: usage["input_tokens"] || 0,
+         output_tokens: usage["output_tokens"] || 0
+       }}
+    else
+      {:error, {:api_error, 200, "Unexpected response structure: missing content"}}
+    end
+  end
 
-          {:ok, %{status: 401, body: body}} ->
-            message = get_in(body, ["error", "message"]) || "Invalid API key"
-            {:error, {:auth_error, message}}
+  defp parse_anthropic_response(%{status: 401, body: body}) do
+    message = get_in(body, ["error", "message"]) || "Invalid API key"
+    {:error, {:auth_error, message}}
+  end
 
-          {:ok, %{status: 429, headers: headers}} ->
-            retry_after =
-              headers
-              |> Enum.find(fn {k, _v} -> String.downcase(k) == "retry-after" end)
-              |> case do
-                {_, value} ->
-                  case Integer.parse(value) do
-                    {int, _} -> int
-                    :error -> nil
-                  end
+  defp parse_anthropic_response(%{status: 429, headers: headers}) do
+    retry_after = parse_retry_after_header(headers)
+    {:error, {:rate_limit, retry_after}}
+  end
 
-                nil ->
-                  nil
-              end
+  defp parse_anthropic_response(%{status: status, body: body}) when status in [400, 404] do
+    message = get_in(body, ["error", "message"]) || "Invalid request"
+    {:error, {:invalid_request, message}}
+  end
 
-            {:error, {:rate_limit, retry_after}}
+  defp parse_anthropic_response(%{status: status, body: body}) do
+    message = get_in(body, ["error", "message"]) || inspect(body)
+    {:error, {:api_error, status, message}}
+  end
 
-          {:ok, %{status: status, body: body}} when status in [400, 404] ->
-            message = get_in(body, ["error", "message"]) || "Invalid request"
-            {:error, {:invalid_request, message}}
-
-          {:ok, %{status: status, body: body}} ->
-            message = get_in(body, ["error", "message"]) || inspect(body)
-            {:error, {:api_error, status, message}}
-
-          {:error, reason} ->
-            {:error, {:network_error, reason}}
+  defp parse_retry_after_header(headers) do
+    headers
+    |> Enum.find(fn {k, _v} -> String.downcase(k) == "retry-after" end)
+    |> case do
+      {_, value} ->
+        case Integer.parse(value) do
+          {int, _} -> int
+          :error -> nil
         end
+
+      nil ->
+        nil
     end
   end
 
