@@ -158,7 +158,8 @@ defmodule Vial.Runs do
         fn provider ->
           execute_provider(run, provider, rendered_prompt)
         end,
-        max_concurrency: 3
+        max_concurrency: 3,
+        timeout: 120_000
       )
       |> Enum.to_list()
 
