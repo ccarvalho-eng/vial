@@ -1,0 +1,16 @@
+name: 'Setup Node.js with Caching'
+description: 'Sets up Node.js with dependency caching'
+
+inputs:
+  node-version:
+    description: 'Node.js version'
+    required: true
+    default: '20'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: ${{ inputs.node-version }}

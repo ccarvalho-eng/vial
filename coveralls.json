@@ -1,0 +1,31 @@
+{
+  "coverage_options": {
+    "treat_no_relevant_lines_as_covered": true,
+    "output_dir": "cover/"
+  },
+  "terminal_options": {
+    "file_column_width": 40
+  },
+  "skip_files": [
+    "test/",
+    "priv/",
+    "lib/vial_web/channels/user_socket.ex",
+    "lib/vial_web/endpoint.ex",
+    "lib/vial_web/gettext.ex",
+    "lib/vial_web/telemetry.ex",
+    "lib/vial/application.ex",
+    "lib/vial/mailer.ex",
+    "lib/vial/repo.ex",
+    "lib/vial_web/controllers/error_json.ex",
+    "lib/vial_web/controllers/error_html.ex",
+    "lib/vial_web/components/core_components.ex",
+    "lib/vial_web/components/layouts.ex"
+  ],
+  "custom_skip_files": [
+    "_build/",
+    "deps/",
+    "assets/",
+    "priv/static/",
+    "node_modules/"
+  ]
+}
