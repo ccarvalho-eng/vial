@@ -96,7 +96,7 @@ defmodule Vial.LLM do
      }}
   end
 
-  defp generate_anthropic(_provider, _prompt, _opts) do
+  defp generate_anthropic(provider, prompt, _opts) do
     case Application.get_env(:vial, :llm)[:anthropic_api_key] do
       nil ->
         {:error, :missing_api_key}
@@ -104,9 +104,40 @@ defmodule Vial.LLM do
       "" ->
         {:error, :missing_api_key}
 
-      _api_key ->
-        # Placeholder - will implement in next task
-        {:error, :not_implemented}
+      api_key ->
+        url = "https://api.anthropic.com/v1/messages"
+
+        body = %{
+          model: provider.model,
+          messages: [%{role: "user", content: prompt}],
+          temperature: get_in(provider.config, ["temperature"]) || 0.5,
+          max_tokens: get_in(provider.config, ["max_tokens"]) || 1024
+        }
+
+        headers = [
+          {"x-api-key", api_key},
+          {"anthropic-version", "2023-06-01"},
+          {"content-type", "application/json"}
+        ]
+
+        case Req.post(url, json: body, headers: headers) do
+          {:ok, %{status: 200, body: response}} ->
+            content = get_in(response, ["content", Access.at(0), "text"])
+            usage = response["usage"]
+
+            {:ok,
+             %{
+               content: content,
+               input_tokens: usage["input_tokens"] || 0,
+               output_tokens: usage["output_tokens"] || 0
+             }}
+
+          {:ok, %{status: status, body: body}} ->
+            {:error, {:api_error, status, inspect(body)}}
+
+          {:error, reason} ->
+            {:error, {:network_error, reason}}
+        end
     end
   end
 

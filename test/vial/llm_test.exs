@@ -81,14 +81,17 @@ defmodule Vial.LLMTest do
       provider =
         provider_fixture(%{
           provider: :anthropic,
-          model: "claude-3-5-sonnet-20241022",
-          config: %{"temperature" => 0.5, "max_tokens" => 500}
+          model: "claude-sonnet-4-6",
+          config: %{"temperature" => 0.5, "max_tokens" => 100}
         })
 
-      assert {:ok, result} = LLM.call(provider, "test prompt", [])
+      assert {:ok, result} = LLM.call(provider, "Say hello", [])
       assert is_binary(result.output)
+      assert result.output != ""
       assert is_integer(result.input_tokens)
+      assert result.input_tokens > 0
       assert is_integer(result.output_tokens)
+      assert result.output_tokens > 0
       assert is_integer(result.latency_ms)
       assert is_float(result.cost_usd)
     end
@@ -98,7 +101,7 @@ defmodule Vial.LLMTest do
       provider =
         provider_fixture(%{
           provider: :anthropic,
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-sonnet-4-6",
           config: %{}
         })
 
