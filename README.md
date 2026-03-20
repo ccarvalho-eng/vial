@@ -17,6 +17,8 @@
 ```
 LLM prompt evaluation workbench
 
+<img width="1663" height="966" alt="Screenshot 2026-03-20 at 15 08 04" src="https://github.com/user-attachments/assets/c4fb97e4-18c6-44dd-9c70-aec74509ff18" />
+
 ## Features
 
 - **Prompt Management**: Create, edit, and version your prompts with variable support
@@ -24,13 +26,6 @@ LLM prompt evaluation workbench
 - **Evaluation Suites**: Build test suites with assertions to validate prompt behavior
 - **Run Comparison**: Execute prompts across multiple providers and compare results
 - **Real-time Dashboard**: Monitor evaluation metrics, test pass rates, and costs
-- **Minimalist UI**: Clean design with refined typography and smooth interactions
-
-## Prerequisites
-
-- Elixir 1.14+
-- PostgreSQL 14+
-- Node.js 18+ (for asset compilation)
 
 ## Setup
 
@@ -90,7 +85,7 @@ The seeds will create:
 
 **That's it!** You can now run prompts and evaluations locally without any API costs.
 
-## Adding Other Providers (Optional)
+## Adding Other Providers
 
 To compare results with OpenAI or Anthropic:
 
@@ -100,8 +95,6 @@ To compare results with OpenAI or Anthropic:
    - **OpenAI**: Requires API key from [platform.openai.com](https://platform.openai.com)
    - **Anthropic**: Requires API key from [console.anthropic.com](https://console.anthropic.com)
 4. Set model parameters (temperature, max_tokens, etc.)
-
-Vial will then show side-by-side comparisons across all configured providers.
 
 ## Quick Start
 
