@@ -1,0 +1,65 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h1 style="margin: 0;">Providers</h1>
+      <.link navigate={~p"/providers/new"} class="button-primary">
+        New Provider
+      </.link>
+    </div>
+
+    <div id="providers" style="display: flex; flex-direction: column; gap: 12px;">
+      <div :if={@providers == []} class="empty-state">
+        <div class="empty-state-description">
+          No providers yet. Add a provider to get started.
+        </div>
+      </div>
+
+      <%= for provider <- @providers do %>
+        <div class="vial-card">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <h3 style="margin: 0;">{provider.name}</h3>
+                <span class="tag">{provider.provider}</span>
+              </div>
+              <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 4px;">
+                Model: {provider.model}
+              </div>
+              <%= if provider.config && map_size(provider.config) > 0 do %>
+                <div style="font-size: 13px; color: var(--text-muted);">
+                  {map_size(provider.config)} configuration {if map_size(provider.config) == 1,
+                    do: "item",
+                    else: "items"}
+                </div>
+              <% end %>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <.link
+                navigate={~p"/providers/#{provider.id}/edit"}
+                class="button-secondary"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Edit
+              </.link>
+              <button
+                phx-click={show_modal("confirm-delete-provider-#{provider.id}")}
+                class="button-danger"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Delete
+              </button>
+              <.modal
+                id={"confirm-delete-provider-#{provider.id}"}
+                on_confirm={JS.push("delete", value: %{id: provider.id})}
+              >
+                Are you sure you want to delete "{provider.name}"?
+                <:confirm>Delete</:confirm>
+                <:cancel>Cancel</:cancel>
+              </.modal>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

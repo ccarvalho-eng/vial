@@ -11,6 +11,10 @@ config :vial,
   ecto_repos: [Vial.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
+config :vial, Vial.Repo,
+  migration_primary_key: [type: :binary_id],
+  migration_foreign_key: [type: :binary_id]
+
 # Configures the endpoint
 config :vial, VialWeb.Endpoint,
   url: [host: "localhost"],

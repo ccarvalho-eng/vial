@@ -1,0 +1,45 @@
+defmodule Vial.Evals.SuiteRun do
+  @moduledoc """
+  Schema for tracking suite execution results.
+
+  Records the outcome of running a test suite against a specific
+  prompt version and provider, storing individual test results and
+  summary counts.
+  """
+
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @type t :: %__MODULE__{}
+
+  @required_fields ~w(suite_id prompt_version_id provider_id)a
+  @optional_fields ~w(results passed failed)a
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+
+  schema "suite_runs" do
+    field :results, {:array, :map}, default: []
+    field :passed, :integer, default: 0
+    field :failed, :integer, default: 0
+
+    belongs_to :suite, Vial.Evals.Suite
+    belongs_to :prompt_version, Vial.Prompts.PromptVersion
+    belongs_to :provider, Vial.Providers.Provider
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc """
+  Changeset for creating or updating a suite run.
+
+  Validates that suite_id, prompt_version_id, and provider_id are
+  present.
+  """
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(suite_run, attrs) do
+    suite_run
+    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
+  end
+end

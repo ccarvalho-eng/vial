@@ -52,6 +52,8 @@ defmodule VialWeb do
     quote do
       use Phoenix.LiveView
 
+      on_mount {VialWeb.Hooks, :set_current_path}
+
       unquote(html_helpers())
     end
   end

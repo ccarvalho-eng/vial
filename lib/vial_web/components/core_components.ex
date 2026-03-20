@@ -54,7 +54,9 @@ defmodule VialWeb.CoreComponents do
     <div
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
+      phx-mounted={JS.transition("fade-in-scale", time: 200)}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
+      phx-hook="AutoDismissFlash"
       role="alert"
       class="toast toast-top toast-end z-50"
       {@rest}
@@ -71,8 +73,12 @@ defmodule VialWeb.CoreComponents do
           <p>{msg}</p>
         </div>
         <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+        <button
+          type="button"
+          class="alert-close-btn"
+          aria-label={gettext("close")}
+        >
+          <.icon name="hero-x-mark" class="size-4" />
         </button>
       </div>
     </div>
@@ -419,7 +425,119 @@ defmodule VialWeb.CoreComponents do
     """
   end
 
+  @doc """
+  Renders a confirmation modal.
+
+  ## Examples
+
+      <.modal id="confirm-delete" on_confirm={JS.push("delete")}>
+        Are you sure you want to delete this item?
+        <:confirm>Delete</:confirm>
+        <:cancel>Cancel</:cancel>
+      </.modal>
+  """
+  attr :id, :string, required: true
+  attr :show, :boolean, default: false
+  attr :on_confirm, JS, default: %JS{}
+
+  slot :inner_block, required: true
+  slot :confirm, required: true
+  slot :cancel, required: true
+
+  def modal(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      phx-mounted={@show && show_modal(@id)}
+      phx-remove={hide_modal(@id)}
+      class="relative z-50 hidden"
+    >
+      <div
+        id={"#{@id}-bg"}
+        class="fixed inset-0 bg-black/50 transition-opacity"
+        aria-hidden="true"
+      />
+      <div
+        class="fixed inset-0 overflow-y-auto"
+        aria-labelledby={"#{@id}-title"}
+        aria-describedby={"#{@id}-description"}
+        role="dialog"
+        aria-modal="true"
+        tabindex="0"
+      >
+        <div class="flex min-h-full items-center justify-center p-4">
+          <div
+            id={"#{@id}-container"}
+            class="vial-card"
+            style="max-width: 400px; width: 100%;"
+          >
+            <div id={"#{@id}-content"}>
+              <div style="margin-bottom: 20px; font-size: 16px; color: var(--text-primary);">
+                {render_slot(@inner_block)}
+              </div>
+              <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button
+                  type="button"
+                  phx-click={hide_modal(@id)}
+                  class="button-secondary"
+                  style="font-size: 13px; padding: 6px 12px;"
+                >
+                  {render_slot(@cancel)}
+                </button>
+                <button
+                  type="button"
+                  phx-click={@on_confirm |> hide_modal(@id)}
+                  class="button-danger"
+                  style="font-size: 13px; padding: 6px 12px;"
+                >
+                  {render_slot(@confirm)}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
   ## JS Commands
+
+  def show_modal(js \\ %JS{}, id) when is_binary(id) do
+    js
+    |> JS.show(to: "##{id}")
+    |> JS.show(
+      to: "##{id}-bg",
+      transition: {"transition-all ease-out duration-300", "opacity-0", "opacity-100"}
+    )
+    |> JS.show(
+      to: "##{id}-container",
+      transition:
+        {"transition-all ease-out duration-300",
+         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95",
+         "opacity-100 translate-y-0 sm:scale-100"}
+    )
+    |> JS.add_class("overflow-hidden", to: "body")
+    |> JS.focus_first(to: "##{id}-content")
+  end
+
+  def hide_modal(js \\ %JS{}, id) do
+    js
+    |> JS.hide(
+      to: "##{id}-bg",
+      transition: {"transition-all ease-in duration-200", "opacity-100", "opacity-0"}
+    )
+    |> JS.hide(
+      to: "##{id}-container",
+      time: 200,
+      transition:
+        {"transition-all ease-in duration-200", "opacity-100 translate-y-0 sm:scale-100",
+         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}
+    )
+    |> JS.hide(to: "##{id}", transition: {"block", "block", "hidden"})
+    |> JS.remove_class("overflow-hidden", to: "body")
+    |> JS.pop_focus()
+  end
 
   def show(js \\ %JS{}, selector) do
     JS.show(js,

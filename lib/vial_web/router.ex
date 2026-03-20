@@ -17,7 +17,24 @@ defmodule VialWeb.Router do
   scope "/", VialWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", DashboardLive, :index
+
+    live "/prompts", PromptLive.Index, :index
+    live "/prompts/new", PromptLive.New, :new
+    live "/prompts/:id/edit", PromptLive.New, :edit
+    live "/prompts/:id", PromptLive.Show, :show
+
+    live "/runs/new", RunLive.New, :new
+    live "/runs/:id", RunLive.Show, :show
+
+    live "/suites", SuiteLive.Index, :index
+    live "/suites/new", SuiteLive.New, :new
+    live "/suites/:id/edit", SuiteLive.New, :edit
+    live "/suites/:id", SuiteLive.Show, :show
+
+    live "/providers", ProviderLive.Index, :index
+    live "/providers/new", ProviderLive.New, :new
+    live "/providers/:id/edit", ProviderLive.New, :edit
   end
 
   # Other scopes may use custom stacks.

@@ -1,0 +1,77 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <div>
+        <h1 style="margin: 0 0 8px 0;">{@prompt.name}</h1>
+        <p :if={@prompt.description} style="color: var(--text-secondary); margin: 0;">
+          {@prompt.description}
+        </p>
+      </div>
+      <.link navigate={~p"/prompts/#{@prompt.id}/edit"} class="button-primary">
+        Edit Prompt
+      </.link>
+    </div>
+
+    <div :if={@prompt.tags != []} style="display: flex; gap: 8px; margin-bottom: 24px;">
+      <span
+        :for={tag <- @prompt.tags}
+        class="tag"
+      >
+        {tag}
+      </span>
+    </div>
+
+    <h2>Versions</h2>
+
+    <div :if={@prompt.versions == []} class="empty-state">
+      <div class="empty-state-description">
+        No versions yet. Edit this prompt to create the first version.
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div :for={version <- @prompt.versions} class="vial-card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="font-size: 14px; font-weight: 600;">v{version.version}</div>
+            <.link
+              navigate={~p"/runs/new?version=#{version.id}"}
+              class="button-primary"
+              style="font-size: 13px; padding: 6px 12px;"
+            >
+              Run
+            </.link>
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary);">
+            {Calendar.strftime(version.inserted_at, "%Y-%m-%d %H:%M")}
+          </div>
+        </div>
+
+        <div style="border-radius: 6px; padding: 12px; margin-bottom: 12px; background-color: var(--bg-tertiary); border: 1px solid var(--border);">
+          <pre style="font-size: 13px; white-space: pre-wrap; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; margin: 0; max-height: 300px; overflow-y: auto;">{version.template}</pre>
+        </div>
+
+        <div :if={version.variables != []} style="margin-top: 12px;">
+          <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Variables:</p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span
+              :for={var <- version.variables}
+              class="tag"
+            >
+              {var}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px;">
+      <.link
+        navigate={~p"/prompts"}
+        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
+      >
+        &larr; Back to prompts
+      </.link>
+    </div>
+  </div>
+</Layouts.app>

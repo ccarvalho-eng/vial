@@ -1,4 +1,18 @@
-<Layouts.flash_group flash={@flash} />
+<Layouts.app flash={@flash}>
+  <div class="text-center py-12">
+    <h1>Welcome to Vial</h1>
+    <p class="text-secondary mt-4">
+      Prompt testing and version control for LLM applications
+    </p>
+    <div class="mt-8">
+      <.button navigate={~p"/prompts"} variant="primary">
+        Get Started
+      </.button>
+    </div>
+  </div>
+</Layouts.app>
+
+<!--
 <div class="left-[40rem] fixed inset-y-0 right-0 z-0 hidden lg:block xl:left-[50rem]">
   <svg
     viewBox="0 0 1480 957"
@@ -200,3 +214,4 @@
     </div>
   </div>
 </div>
+-->

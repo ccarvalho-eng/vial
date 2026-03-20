@@ -1,0 +1,76 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h1 style="margin: 0;">Evaluation Suites</h1>
+      <.link id="new-suite-btn" navigate={~p"/suites/new"} class="button-primary">
+        New Suite
+      </.link>
+    </div>
+
+    <div id="suites" class="space-y-4">
+      <div :if={@suites == []} class="empty-state">
+        <div class="empty-state-title">No suites yet</div>
+        <div class="empty-state-description">
+          Create your first evaluation suite to get started.
+        </div>
+      </div>
+
+      <%= for suite <- @suites do %>
+        <div class="vial-card">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+              <.link navigate={~p"/suites/#{suite.id}"}>
+                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+                  {suite.name}
+                </h3>
+              </.link>
+              <div style="color: var(--text-secondary); font-size: 14px;">
+                Prompt: {suite.prompt.name}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button
+                phx-click="run_suite"
+                phx-value-id={suite.id}
+                class="button-primary"
+                style={"font-size: 13px; padding: 6px 12px; display: flex; align-items: center; gap: 4px; #{if @running_suite_id == suite.id, do: "opacity: 0.6; cursor: not-allowed;", else: ""}"}
+                title="Run suite with latest version and first provider"
+                disabled={@running_suite_id == suite.id}
+              >
+                <%= if @running_suite_id == suite.id do %>
+                  <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite;">
+                  </span>
+                  Running...
+                <% else %>
+                  <.icon name="hero-play" class="w-4 h-4" /> Run
+                <% end %>
+              </button>
+              <.link
+                navigate={~p"/suites/#{suite.id}/edit"}
+                class="button-secondary"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Edit
+              </.link>
+              <button
+                phx-click={show_modal("confirm-delete-suite-#{suite.id}")}
+                class="button-danger"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Delete
+              </button>
+              <.modal
+                id={"confirm-delete-suite-#{suite.id}"}
+                on_confirm={JS.push("delete", value: %{id: suite.id})}
+              >
+                Are you sure you want to delete "{suite.name}"?
+                <:confirm>Delete</:confirm>
+                <:cancel>Cancel</:cancel>
+              </.modal>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

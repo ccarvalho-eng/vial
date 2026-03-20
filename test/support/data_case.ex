@@ -24,6 +24,9 @@ defmodule Vial.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Vial.DataCase
+      import Vial.PromptsFixtures
+      import Vial.ProvidersFixtures
+      import Vial.EvalsFixtures
     end
   end
 

@@ -1,0 +1,207 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div id="dashboard" style="max-width: 1200px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h1 style="margin: 0;">Dashboard</h1>
+      <%= if @last_run_at do %>
+        <span style="font-size: 13px; color: var(--text-secondary);">
+          Last run: {Calendar.strftime(@last_run_at, "%b %d at %I:%M %p")}
+        </span>
+      <% end %>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+      <div class="vial-card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+          <div class="stat-label">Total Runs</div>
+          <.icon name="hero-play" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value">{@total_runs}</div>
+        <div class="stat-description">Evaluations executed</div>
+      </div>
+
+      <div class="vial-card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+          <div class="stat-label">Success Rate</div>
+          <.icon name="hero-check-circle" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value">{@success_rate}%</div>
+        <div class="stat-description">
+          {@total_passed} passed, {@total_failed} failed
+        </div>
+      </div>
+
+      <div class="vial-card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+          <div class="stat-label">Avg Response Time</div>
+          <.icon name="hero-clock" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value">{trunc(@avg_latency)}ms</div>
+        <div class="stat-description">Average latency</div>
+      </div>
+
+      <div id="cost-summary" class="vial-card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+          <div class="stat-label">Total Cost</div>
+          <.icon name="hero-currency-dollar" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value">${:erlang.float_to_binary(@total_cost, decimals: 4)}</div>
+        <div class="stat-description">All evaluations</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 32px;">
+      <h2>Quick Actions</h2>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+        <.link navigate={~p"/prompts/new"} style="text-decoration: none;">
+          <div
+            class="vial-card"
+            style="padding: 20px; transition: all 0.2s; cursor: pointer; border: 2px solid var(--accent); background-color: rgba(139, 92, 246, 0.03); display: flex; align-items: center; gap: 16px;"
+          >
+            <div style="color: var(--accent); flex-shrink: 0;">
+              <.icon name="hero-plus-circle" class="size-8" />
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 16px; font-weight: 500; color: var(--accent); margin-bottom: 4px;">
+                New Prompt
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary);">
+                Create a new prompt template
+              </div>
+            </div>
+          </div>
+        </.link>
+        <.link navigate={~p"/prompts"} style="text-decoration: none;">
+          <div
+            class="vial-card"
+            style="padding: 20px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 16px;"
+          >
+            <div class="text-secondary" style="flex-shrink: 0;">
+              <.icon name="hero-document-text" class="size-8" />
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 16px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">
+                View Prompts
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary);">Browse all prompts</div>
+            </div>
+          </div>
+        </.link>
+        <.link navigate={~p"/suites"} style="text-decoration: none;">
+          <div
+            class="vial-card"
+            style="padding: 20px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 16px;"
+          >
+            <div class="text-secondary" style="flex-shrink: 0;">
+              <.icon name="hero-beaker" class="size-8" />
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 16px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">
+                View Suites
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary);">Browse test suites</div>
+            </div>
+          </div>
+        </.link>
+      </div>
+    </div>
+
+    <%= if @pass_rates != [] do %>
+      <div id="pass-rates" style="margin-bottom: 32px;">
+        <h2>Pass Rates</h2>
+        <div class="vial-card" style="padding: 20px;">
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+            <%= for rate <- @pass_rates do %>
+              <% total = (rate.total_passed || 0) + (rate.total_failed || 0) %>
+              <% pass_rate =
+                if total > 0,
+                  do: Float.round((rate.total_passed || 0) / total * 100, 1),
+                  else: 0 %>
+              <div style="padding: 14px; background-color: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      {rate.prompt_name}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 0.02em;">
+                      {rate.total_passed || 0} / {total} passed
+                    </div>
+                  </div>
+                  <div style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-left: 12px;">
+                    {trunc(pass_rate)}<span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">%</span>
+                  </div>
+                </div>
+                <div class="progress-bar" style="height: 5px;">
+                  <div class="progress-bar-fill" style={"width: #{pass_rate}%"}></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <h2>Recent Evaluations</h2>
+    <%= if @recent_activity == [] do %>
+      <div class="empty-state">
+        <div class="empty-state-description">No recent runs</div>
+      </div>
+    <% else %>
+      <div id="recent-runs" class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Name</th>
+              <th>Prompt</th>
+              <th>Results</th>
+              <th>Cost</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for activity <- @recent_activity do %>
+              <tr>
+                <td>
+                  <span class="tag">
+                    {if activity.type == :suite_run, do: "Suite", else: "Run"}
+                  </span>
+                </td>
+                <td>
+                  <.link navigate={activity.path}>
+                    {activity.name}
+                  </.link>
+                </td>
+                <td>
+                  {activity.prompt_name}
+                </td>
+                <td>
+                  <%= if activity.type == :suite_run do %>
+                    <span style="color: var(--text-secondary); font-size: 13px;">
+                      {activity.passed} passed, {activity.failed} failed
+                    </span>
+                  <% else %>
+                    <span style="color: var(--text-secondary); font-size: 13px;">
+                      {activity.providers_count} {if activity.providers_count == 1,
+                        do: "provider",
+                        else: "providers"}
+                    </span>
+                  <% end %>
+                </td>
+                <td>
+                  <%= if activity.cost > 0 do %>
+                    ${:erlang.float_to_binary(activity.cost, decimals: 4)}
+                  <% else %>
+                    <span style="color: var(--text-muted);">—</span>
+                  <% end %>
+                </td>
+                <td style="color: var(--text-secondary);">
+                  {Calendar.strftime(activity.inserted_at, "%b %d, %Y")}
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>
