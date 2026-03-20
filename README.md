@@ -2,8 +2,12 @@
 
 **LLM prompt evaluation workbench**
 
-[![Elixir](https://img.shields.io/badge/Elixir-1.16-4B275F?logo=elixir&logoColor=white)](https://elixir-lang.org)
-[![Phoenix](https://img.shields.io/badge/Phoenix-1.7-orange?logo=phoenix-framework&logoColor=white)](https://phoenixframework.org)
+[![Elixir](https://img.shields.io/badge/Elixir-1.19-4B275F?logo=elixir&logoColor=white)](https://elixir-lang.org)
+[![Erlang/OTP](https://img.shields.io/badge/Erlang%2FOTP-28-A90533?logo=erlang&logoColor=white)](https://www.erlang.org)
+[![Phoenix](https://img.shields.io/badge/Phoenix-1.8-orange?logo=phoenix-framework&logoColor=white)](https://phoenixframework.org)
+[![CI](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml)
+[![Security](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/ccarvalho-eng/vial/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/vial)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 Test, compare, and monitor prompt behavior across LLM providers.
@@ -24,12 +28,23 @@ Test, compare, and monitor prompt behavior across LLM providers.
 
 ---
 
+## Prerequisites
+
+- [Elixir](https://elixir-lang.org/install.html) 1.19.5+
+- [Erlang/OTP](https://www.erlang.org/downloads) 28.4+
+- [PostgreSQL](https://www.postgresql.org/download/) 17+
+- [Node.js](https://nodejs.org/) 20+ (for asset compilation)
+
+**Recommended**: Use [asdf](https://asdf-vm.com/) with the included `.tool-versions` file to manage versions.
+
+---
+
 ## Setup
 
 **1. Clone and install dependencies**
 
 ```bash
-git clone https://github.com/yourusername/vial.git
+git clone https://github.com/ccarvalho-eng/vial.git
 cd vial
 mix deps.get
 ```
@@ -102,6 +117,29 @@ Explain {{topic}} in exactly 3 sentences.
 2. Click **New Provider**
 3. Select your provider type and enter your API key
 4. Configure model parameters (temperature, max\_tokens, etc.)
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes using [conventional commits](https://www.conventionalcommits.org/)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Before submitting:
+- Run `mix precommit` to ensure tests pass and code is formatted
+- Update documentation if needed
+
+---
+
+## Support
+
+- [Report issues](https://github.com/ccarvalho-eng/vial/issues)
+- [Discussions](https://github.com/ccarvalho-eng/vial/discussions)
 
 ---
 

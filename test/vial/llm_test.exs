@@ -67,6 +67,7 @@ defmodule Vial.LLMTest do
   end
 
   describe "call/3 with Ollama provider" do
+    @tag :ollama
     test "returns structured response" do
       provider =
         provider_fixture(%{
@@ -83,6 +84,7 @@ defmodule Vial.LLMTest do
       assert is_float(result.cost_usd)
     end
 
+    @tag :ollama
     test "returns zero cost for Ollama (local)" do
       provider =
         provider_fixture(%{
@@ -127,6 +129,7 @@ defmodule Vial.LLMTest do
   end
 
   describe "call/3 latency measurement" do
+    @tag :ollama
     test "measures execution time in milliseconds" do
       provider =
         provider_fixture(%{

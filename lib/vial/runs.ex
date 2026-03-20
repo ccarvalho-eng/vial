@@ -152,14 +152,15 @@ defmodule Vial.Runs do
         run.variable_values
       )
 
-    providers
-    |> Task.async_stream(
-      fn provider ->
-        execute_provider(run, provider, rendered_prompt)
-      end,
-      max_concurrency: 3
-    )
-    |> Enum.to_list()
+    _results =
+      providers
+      |> Task.async_stream(
+        fn provider ->
+          execute_provider(run, provider, rendered_prompt)
+        end,
+        max_concurrency: 3
+      )
+      |> Enum.to_list()
 
     case Repo.get(Run, run.id) do
       nil -> {:error, :run_not_found}

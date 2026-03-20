@@ -98,12 +98,12 @@ defmodule VialWeb.SuiteLive.Show do
         minutes = div(diff, 60)
         "#{minutes} #{if minutes == 1, do: "minute", else: "minutes"} ago"
 
-      diff < 86400 ->
+      diff < 86_400 ->
         hours = div(diff, 3600)
         "#{hours} #{if hours == 1, do: "hour", else: "hours"} ago"
 
       diff < 604_800 ->
-        days = div(diff, 86400)
+        days = div(diff, 86_400)
         "#{days} #{if days == 1, do: "day", else: "days"} ago"
 
       true ->
