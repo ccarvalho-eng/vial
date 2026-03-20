@@ -26,6 +26,8 @@
 
 Test, compare, and monitor prompt behavior across LLM providers.
 
+<img width="1663" height="966" alt="Screenshot 2026-03-20 at 15 08 04" src="https://github.com/user-attachments/assets/02e494cd-640e-4a6d-8875-2dbdc6e78714" />
+
 ---
 
 ## Features
