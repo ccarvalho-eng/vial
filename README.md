@@ -37,6 +37,8 @@ Recommended: use [asdf](https://asdf-vm.com/) with the included `.tool-versions`
 ```bash
 git clone https://github.com/ccarvalho-eng/vial.git
 cd vial
+cp .env.example .env
+# Edit .env and add your API keys (optional - Ollama works without them)
 mix deps.get
 mix ecto.setup
 mix phx.server
@@ -48,11 +50,11 @@ Visit [localhost:4000](http://localhost:4000).
 
 ## Providers
 
-| Provider | Notes |
-|---|---|
-| **Ollama** ⭐ | Local, no API key required |
-| **OpenAI** | [platform.openai.com](https://platform.openai.com) |
-| **Anthropic** | [console.anthropic.com](https://console.anthropic.com) |
+| Provider | API Key Required | Configuration |
+|---|---|---|
+| **Ollama** ⭐ | No | Local models - works out of the box |
+| **OpenAI** | Yes | Add `OPENAI_API_KEY` to `.env` ([Get key](https://platform.openai.com)) |
+| **Anthropic** | Yes | Add `ANTHROPIC_API_KEY` to `.env` ([Get key](https://console.anthropic.com)) |
 
 ### Ollama quickstart
 
@@ -79,7 +81,7 @@ Explain {{topic}} in exactly 3 sentences.
 
 **3. Build evaluation suites** — Go to **Suites → New Suite**, add test cases with assertions, and run regression tests.
 
-**4. Add a provider** — Go to **Providers → New Provider**, select the type, enter your API key, and configure model parameters.
+**4. Add a provider** — Go to **Providers → New Provider**, select the type, choose a model, and configure parameters (temperature, max_tokens, etc.). API keys are set via environment variables in `.env`.
 
 ---
 
