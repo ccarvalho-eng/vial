@@ -3,7 +3,6 @@
 **LLM prompt evaluation workbench**
 
 [![Elixir](https://img.shields.io/badge/Elixir-1.19-4B275F?logo=elixir&logoColor=white)](https://elixir-lang.org)
-[![Erlang/OTP](https://img.shields.io/badge/Erlang%2FOTP-28-A90533?logo=erlang&logoColor=white)](https://www.erlang.org)
 [![Phoenix](https://img.shields.io/badge/Phoenix-1.8-orange?logo=phoenix-framework&logoColor=white)](https://phoenixframework.org)
 [![CI](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml)
 [![Security](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml)
