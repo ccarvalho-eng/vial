@@ -1,80 +1,95 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
   <div style="max-width: 800px; margin: 0 auto;">
-    <.header>
-      Configure Run
-      <:subtitle>
-        Prompt: {@prompt.name} (v{@prompt_version.version})
-      </:subtitle>
-    </.header>
+    <h1>Configure Run</h1>
+    <p style="margin-bottom: 24px; color: var(--text-secondary);">
+      Prompt: {@prompt.name} (v{@prompt_version.version})
+    </p>
 
-    <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 24px;">
-      <div>
-        <h3>Template Preview</h3>
-        <pre style="margin-top: 8px; border-radius: 6px; background-color: var(--bg-secondary); padding: 16px; font-size: 14px; border: 1px solid var(--border); overflow-x: auto;">
-{@prompt_version.template}</pre>
+    <.form for={@form} id="run-form" phx-submit="save">
+      <div class="vial-card" style="margin-bottom: 24px;">
+        <h2 style="margin-bottom: 12px;">Template Preview</h2>
+        <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);">{@prompt_version.template}</pre>
       </div>
 
-      <.form
-        for={@form}
-        id="run-form"
-        phx-submit="save"
-        style="display: flex; flex-direction: column; gap: 24px;"
-      >
-        <.input field={@form[:name]} type="text" label="Run Name (optional)" />
+      <div class="vial-card" style="margin-bottom: 24px;">
+        <h2 style="margin-bottom: 16px;">Run Configuration</h2>
 
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <h3>Variable Values</h3>
-          <%= for variable <- @variables do %>
-            <div class="mb-4">
-              <label class="block text-sm font-semibold leading-6 text-zinc-800">
-                {variable}
-              </label>
-              <input
-                type="text"
-                name={"run[variables][#{variable}]"}
-                id={"variable-#{variable}"}
-                required
-                class="mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 border-zinc-300 focus:border-zinc-400"
-              />
+        <div style="margin-bottom: 16px;">
+          <label for="run_name">Run Name (optional)</label>
+          <.input field={@form[:name]} type="text" placeholder="My comparison run" />
+        </div>
+
+        <%= if @variables != [] do %>
+          <div style="margin-bottom: 16px;">
+            <h3 style="margin-bottom: 12px;">Variable Values</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <%= for variable <- @variables do %>
+                <div>
+                  <label for={"variable-#{variable}"} style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; display: block;">
+                    {variable}
+                  </label>
+                  <input
+                    type="text"
+                    name={"run[variables][#{variable}]"}
+                    id={"variable-#{variable}"}
+                    required
+                    style="width: 100%; padding: 8px 12px; background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; font-size: 14px; color: var(--text-primary);"
+                    placeholder={"Enter value for {{#{variable}}}"}
+                  />
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <div>
+          <h3 style="margin-bottom: 12px;">Select Providers</h3>
+          <%= if @providers == [] do %>
+            <div style="padding: 20px; text-align: center; color: var(--text-secondary); background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px;">
+              <div style="font-size: 14px; margin-bottom: 8px;">No providers configured</div>
+              <.link navigate={~p"/providers/new"} style="color: var(--link-color); font-size: 13px;">
+                Add your first provider →
+              </.link>
+            </div>
+          <% else %>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <%= for provider <- @providers do %>
+                <label
+                  for={"provider-#{provider.id}"}
+                  style="display: flex; align-items: center; padding: 12px; background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all 0.15s ease;"
+                  onmouseover="this.style.borderColor='var(--border-hover)'; this.style.backgroundColor='var(--bg-secondary)';"
+                  onmouseout="this.style.borderColor='var(--border)'; this.style.backgroundColor='var(--bg-tertiary)';"
+                >
+                  <input
+                    type="checkbox"
+                    name="run[provider_ids][]"
+                    value={provider.id}
+                    id={"provider-#{provider.id}"}
+                    style="margin-right: 12px; width: 16px; height: 16px;"
+                  />
+                  <div>
+                    <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                      {provider.name}
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                      {provider.model}
+                    </div>
+                  </div>
+                </label>
+              <% end %>
             </div>
           <% end %>
         </div>
+      </div>
 
-        <div class="space-y-2">
-          <label class="block text-sm font-semibold leading-6 text-zinc-800">
-            Select Providers
-          </label>
-          <%= for provider <- @providers do %>
-            <div class="flex items-center">
-              <input
-                type="checkbox"
-                name="run[provider_ids][]"
-                value={provider.id}
-                id={"provider-#{provider.id}"}
-                class="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-900"
-              />
-              <label
-                for={"provider-#{provider.id}"}
-                class="ml-2 text-sm text-gray-700"
-              >
-                {provider.name}
-              </label>
-            </div>
-          <% end %>
-        </div>
-
-        <div class="flex items-center justify-between gap-6 mt-6">
-          <.button type="submit" phx-disable-with="Launching...">
-            Launch Run
-          </.button>
-          <.link
-            navigate={~p"/prompts/#{@prompt.id}"}
-            class="text-sm font-semibold"
-          >
-            Cancel
-          </.link>
-        </div>
-      </.form>
-    </div>
+      <div style="display: flex; gap: 12px;">
+        <button type="submit" class="button-primary" phx-disable-with="Launching...">
+          Launch Run
+        </button>
+        <.link navigate={~p"/prompts/#{@prompt.id}"} class="button-secondary">
+          Cancel
+        </.link>
+      </div>
+    </.form>
   </div>
 </Layouts.app>
