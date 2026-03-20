@@ -1,6 +1,6 @@
 # Vial
 
-**LLM prompt evaluation workbench**
+**Elixir-native prompt evaluation workbench**
 
 [![Elixir](https://img.shields.io/badge/Elixir-1.19-4B275F?logo=elixir&logoColor=white)](https://elixir-lang.org)
 [![Erlang/OTP](https://img.shields.io/badge/Erlang%2FOTP-28-A90533?logo=erlang&logoColor=white)](https://www.erlang.org)
@@ -10,7 +10,7 @@
 [![codecov](https://codecov.io/gh/ccarvalho-eng/vial/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/vial)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-Test, compare, and monitor prompt behavior across LLM providers.
+**Compare LLM providers side-by-side.** Test prompts across OpenAI, Anthropic, and Ollama with real-time streaming results, cost tracking, and automated evaluation suites.
 
 <img width="1663" height="966" alt="Screenshot 2026-03-20 at 15 08 04" src="https://github.com/user-attachments/assets/02e494cd-640e-4a6d-8875-2dbdc6e78714" />
 
@@ -18,13 +18,31 @@ Test, compare, and monitor prompt behavior across LLM providers.
 
 ## Features
 
-| Feature | Description |
-|---|---|
-| **Prompt Management** | Create, edit, and version prompts with variable support (`{{topic}}`) |
-| **Provider Management** | Configure OpenAI, Anthropic, and Ollama with custom model settings |
-| **Evaluation Suites** | Build test suites with typed assertions to validate prompt behavior |
-| **Run Comparison** | Execute prompts across providers and compare results side-by-side |
-| **Real-time Dashboard** | Monitor pass rates, costs, and latency metrics live |
+### Multi-Provider Comparison
+Run the same prompt across multiple LLM providers simultaneously and compare:
+- **Output quality** - See responses side-by-side
+- **Performance** - Compare latency and token usage
+- **Cost** - Track spend per provider with automatic cost calculation
+
+### Prompt Management
+- Version-controlled prompt templates with `{{variable}}` interpolation
+- Immutable version history - every edit creates a new version
+- Organize with tags and descriptions
+
+### Evaluation Suites
+- Automated testing with assertions (`contains`, `regex`, `exact_match`)
+- Track pass rates over time
+- Regression testing for prompt changes
+
+### Provider Support
+- **OpenAI** (GPT-4, GPT-3.5, etc.)
+- **Anthropic** (Claude 3.5 Sonnet, Opus, etc.)
+- **Ollama** (Local models - Llama 3, Mistral, etc.)
+
+### Real-time Dashboard
+- Live metrics as runs execute
+- Cost tracking and trends
+- Performance analytics per provider
 
 ---
 
@@ -97,17 +115,30 @@ The seeds create a default Ollama provider, 3 sample prompts, and 3 evaluation s
 
 ## Quick Start
 
-**1.** Go to **Prompts → New Prompt** and write a prompt with variables, e.g.:
+**1. Create a prompt** with variables:
 
+Go to **Prompts → New Prompt**:
 ```
 Explain {{topic}} in exactly 3 sentences.
 ```
 
-**2.** Go to **Suites → New Suite**, add test cases with variable values and assertions.
+**2. Run it across multiple providers:**
 
-**3.** Run the suite and compare results across providers side-by-side.
+- Click **New Run** on your prompt
+- Fill in variables (e.g., `topic = "quantum computing"`)
+- Select multiple providers (OpenAI, Anthropic, Ollama)
+- Watch results stream in real-time, side-by-side
 
-**4.** Monitor the **Dashboard** to track pass rates, costs, and metrics over time.
+**3. Build evaluation suites:**
+
+- Go to **Suites → New Suite**
+- Add test cases with expected outputs and assertions
+- Run regression tests to catch prompt degradation
+
+**4. Monitor performance:**
+
+- Track costs, latency, and pass rates on the **Dashboard**
+- Compare provider performance over time
 
 ---
 
