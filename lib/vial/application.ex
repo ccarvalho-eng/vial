@@ -12,6 +12,7 @@ defmodule Vial.Application do
       Vial.Repo,
       {DNSCluster, query: Application.get_env(:vial, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Vial.PubSub},
+      {Task.Supervisor, name: Vial.TaskSupervisor},
       # Start a worker by calling: Vial.Worker.start_link(arg)
       # {Vial.Worker, arg},
       # Start to serve requests, typically the last entry

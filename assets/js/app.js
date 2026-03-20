@@ -25,11 +25,75 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/vial"
 import topbar from "../vendor/topbar"
 
+// Auto-dismiss flash messages after 5 seconds
+const AutoDismissFlash = {
+  mounted() {
+    this.timer = setTimeout(() => {
+      this.el.click()
+    }, 5000)
+  },
+  destroyed() {
+    clearTimeout(this.timer)
+  }
+}
+
+// Theme switching logic
+function getPreferredTheme() {
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme && savedTheme !== 'system') {
+    return savedTheme
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function setTheme(theme) {
+  localStorage.setItem('theme', theme)
+
+  let appliedTheme = theme
+  if (theme === 'system') {
+    appliedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+
+  document.documentElement.setAttribute('data-theme', appliedTheme)
+
+  // Update button states
+  document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+    if (btn.getAttribute('data-phx-theme') === theme) {
+      btn.setAttribute('data-theme-active', theme)
+    } else {
+      btn.removeAttribute('data-theme-active')
+    }
+  })
+}
+
+// Apply theme on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme') || 'system'
+  setTheme(savedTheme)
+})
+
+// Listen for theme toggle events
+window.addEventListener('phx:set-theme', (e) => {
+  const theme = e.target.getAttribute('data-phx-theme')
+  if (theme) {
+    setTheme(theme)
+  }
+})
+
+// Watch for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  const currentTheme = localStorage.getItem('theme')
+  if (currentTheme === 'system' || !currentTheme) {
+    setTheme('system')
+  }
+})
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, AutoDismissFlash},
 })
 
 // Show progress bar on live navigation and form submits

@@ -1,0 +1,80 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 800px; margin: 0 auto;">
+    <.header>
+      Configure Run
+      <:subtitle>
+        Prompt: {@prompt.name} (v{@prompt_version.version})
+      </:subtitle>
+    </.header>
+
+    <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 24px;">
+      <div>
+        <h3>Template Preview</h3>
+        <pre style="margin-top: 8px; border-radius: 6px; background-color: var(--bg-secondary); padding: 16px; font-size: 14px; border: 1px solid var(--border); overflow-x: auto;">
+{@prompt_version.template}</pre>
+      </div>
+
+      <.form
+        for={@form}
+        id="run-form"
+        phx-submit="save"
+        style="display: flex; flex-direction: column; gap: 24px;"
+      >
+        <.input field={@form[:name]} type="text" label="Run Name (optional)" />
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <h3>Variable Values</h3>
+          <%= for variable <- @variables do %>
+            <div class="mb-4">
+              <label class="block text-sm font-semibold leading-6 text-zinc-800">
+                {variable}
+              </label>
+              <input
+                type="text"
+                name={"run[variables][#{variable}]"}
+                id={"variable-#{variable}"}
+                required
+                class="mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 border-zinc-300 focus:border-zinc-400"
+              />
+            </div>
+          <% end %>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold leading-6 text-zinc-800">
+            Select Providers
+          </label>
+          <%= for provider <- @providers do %>
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                name="run[provider_ids][]"
+                value={provider.id}
+                id={"provider-#{provider.id}"}
+                class="h-4 w-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-900"
+              />
+              <label
+                for={"provider-#{provider.id}"}
+                class="ml-2 text-sm text-gray-700"
+              >
+                {provider.name}
+              </label>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="flex items-center justify-between gap-6 mt-6">
+          <.button type="submit" phx-disable-with="Launching...">
+            Launch Run
+          </.button>
+          <.link
+            navigate={~p"/prompts/#{@prompt.id}"}
+            class="text-sm font-semibold"
+          >
+            Cancel
+          </.link>
+        </div>
+      </.form>
+    </div>
+  </div>
+</Layouts.app>
