@@ -139,7 +139,6 @@ Before submitting:
 ## Support
 
 - [Report issues](https://github.com/ccarvalho-eng/vial/issues)
-- [Discussions](https://github.com/ccarvalho-eng/vial/discussions)
 
 ---
 
