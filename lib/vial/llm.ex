@@ -125,12 +125,16 @@ defmodule Vial.LLM do
             content = get_in(response, ["content", Access.at(0), "text"])
             usage = response["usage"]
 
-            {:ok,
-             %{
-               content: content,
-               input_tokens: usage["input_tokens"] || 0,
-               output_tokens: usage["output_tokens"] || 0
-             }}
+            if content do
+              {:ok,
+               %{
+                 content: content,
+                 input_tokens: usage["input_tokens"] || 0,
+                 output_tokens: usage["output_tokens"] || 0
+               }}
+            else
+              {:error, {:api_error, 200, "Unexpected response structure: missing content"}}
+            end
 
           {:ok, %{status: status, body: body}} ->
             {:error, {:api_error, status, inspect(body)}}
@@ -178,15 +182,15 @@ defmodule Vial.LLM do
   defp calculate_cost(provider, response) do
     case provider.provider do
       :openai ->
-        # OpenAI GPT-4o pricing: ~$0.005/1k input, ~$0.015/1k output
-        input_cost = response.input_tokens * 0.005 / 1000
-        output_cost = response.output_tokens * 0.015 / 1000
+        # OpenAI GPT-4o pricing: $5/million input, $15/million output
+        input_cost = response.input_tokens * 5.0 / 1_000_000
+        output_cost = response.output_tokens * 15.0 / 1_000_000
         Float.round(input_cost + output_cost, 6)
 
       :anthropic ->
-        # Anthropic Claude pricing: ~$0.003/1k input, ~$0.015/1k output
-        input_cost = response.input_tokens * 0.003 / 1000
-        output_cost = response.output_tokens * 0.015 / 1000
+        # Anthropic Claude pricing: $3/million input, $15/million output
+        input_cost = response.input_tokens * 3.0 / 1_000_000
+        output_cost = response.output_tokens * 15.0 / 1_000_000
         Float.round(input_cost + output_cost, 6)
 
       :ollama ->
