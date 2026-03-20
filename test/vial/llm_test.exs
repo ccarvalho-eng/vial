@@ -108,6 +108,42 @@ defmodule Vial.LLMTest do
       {:ok, result} = LLM.call(provider, "test", [])
       assert result.cost_usd > 0
     end
+
+    @tag :anthropic_integration
+    test "returns auth error for invalid API key" do
+      # Temporarily set invalid key
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, anthropic_api_key: "invalid-key-12345")
+
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "claude-sonnet-4-6",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      # Restore config
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, {:auth_error, _message}} = result
+    end
+
+    @tag :anthropic_integration
+    test "returns invalid_request error for bad parameters" do
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "invalid-model",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      assert match?({:error, {:invalid_request, _}}, result) or
+               match?({:error, {:api_error, 400, _}}, result)
+    end
   end
 
   describe "call/3 with Ollama provider" do

@@ -22,6 +22,14 @@ defmodule Vial.LLM do
 
   alias Vial.Providers.Provider
 
+  @type error_reason ::
+          :missing_api_key
+          | {:auth_error, String.t()}
+          | {:rate_limit, non_neg_integer() | nil}
+          | {:invalid_request, String.t()}
+          | {:api_error, non_neg_integer(), String.t()}
+          | {:network_error, term()}
+
   @doc """
   Calls an LLM provider with a prompt and returns structured result.
 
@@ -42,7 +50,7 @@ defmodule Vial.LLM do
       true
   """
   @spec call(Provider.t(), String.t(), keyword()) ::
-          {:ok, llm_result()} | {:error, term()}
+          {:ok, llm_result()} | {:error, error_reason()}
   def call(%Provider{} = provider, prompt, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
@@ -123,9 +131,10 @@ defmodule Vial.LLM do
         case Req.post(url, json: body, headers: headers) do
           {:ok, %{status: 200, body: response}} ->
             content = get_in(response, ["content", Access.at(0), "text"])
-            usage = response["usage"]
 
             if content do
+              usage = response["usage"]
+
               {:ok,
                %{
                  content: content,
@@ -136,8 +145,34 @@ defmodule Vial.LLM do
               {:error, {:api_error, 200, "Unexpected response structure: missing content"}}
             end
 
+          {:ok, %{status: 401, body: body}} ->
+            message = get_in(body, ["error", "message"]) || "Invalid API key"
+            {:error, {:auth_error, message}}
+
+          {:ok, %{status: 429, headers: headers}} ->
+            retry_after =
+              headers
+              |> Enum.find(fn {k, _v} -> String.downcase(k) == "retry-after" end)
+              |> case do
+                {_, value} ->
+                  case Integer.parse(value) do
+                    {int, _} -> int
+                    :error -> nil
+                  end
+
+                nil ->
+                  nil
+              end
+
+            {:error, {:rate_limit, retry_after}}
+
+          {:ok, %{status: status, body: body}} when status in [400, 404] ->
+            message = get_in(body, ["error", "message"]) || "Invalid request"
+            {:error, {:invalid_request, message}}
+
           {:ok, %{status: status, body: body}} ->
-            {:error, {:api_error, status, inspect(body)}}
+            message = get_in(body, ["error", "message"]) || inspect(body)
+            {:error, {:api_error, status, message}}
 
           {:error, reason} ->
             {:error, {:network_error, reason}}
