@@ -39,3 +39,4 @@ npm-debug.log
 /docs/plans/
 
 .env
+priv/plts/
