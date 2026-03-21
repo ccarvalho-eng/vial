@@ -253,6 +253,7 @@ defmodule Vial.EvalsTest do
   end
 
   describe "execute_suite/3" do
+    @tag :openai_integration
     test "executes suite with passing test cases" do
       suite = suite_fixture()
       prompt = prompt_fixture()
@@ -302,6 +303,7 @@ defmodule Vial.EvalsTest do
       assert suite_run.failed == 1
     end
 
+    @tag :openai_integration
     test "evaluates contains assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
@@ -320,6 +322,7 @@ defmodule Vial.EvalsTest do
       assert suite_run.failed == 0
     end
 
+    @tag :openai_integration
     test "evaluates not_contains assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
@@ -337,6 +340,7 @@ defmodule Vial.EvalsTest do
       assert suite_run.passed == 1
     end
 
+    @tag :openai_integration
     test "evaluates regex assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
@@ -354,6 +358,7 @@ defmodule Vial.EvalsTest do
       assert suite_run.passed == 1
     end
 
+    @tag :openai_integration
     test "evaluates exact_match assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
@@ -373,6 +378,7 @@ defmodule Vial.EvalsTest do
       assert suite_run.passed == 1
     end
 
+    @tag :openai_integration
     test "evaluates multiple assertions per test case" do
       suite = suite_fixture()
       prompt = prompt_fixture()

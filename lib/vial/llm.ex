@@ -81,27 +81,35 @@ defmodule Vial.LLM do
 
   # Private implementation functions
 
-  defp generate_openai(_provider, prompt, _opts) do
-    # Mock implementation for V1 - will integrate real LangChain later
-    # Real implementation would use:
-    # model = LangChain.ChatModels.ChatOpenAI.new!(%{
-    #   model: provider.model,
-    #   temperature: get_in(provider.config, ["temperature"]) || 0.7
-    # })
-    # LangChain.Chains.LLMChain.run(model, prompt)
+  defp generate_openai(provider, prompt, _opts) do
+    case get_openai_api_key() do
+      {:ok, api_key} ->
+        case make_openai_request(provider, prompt, api_key) do
+          {:ok, response} -> parse_openai_response(response)
+          {:error, reason} -> {:error, reason}
+        end
 
-    # Simulate processing time
-    Process.sleep(1)
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 
-    input_tokens = estimate_tokens(prompt)
-    output_tokens = 20
+  defp get_openai_api_key do
+    case Application.get_env(:vial, :llm)[:openai_api_key] do
+      nil -> {:error, :missing_api_key}
+      "" -> {:error, :missing_api_key}
+      api_key -> {:ok, api_key}
+    end
+  end
 
-    {:ok,
-     %{
-       content: "Mock OpenAI response for: #{prompt}",
-       input_tokens: input_tokens,
-       output_tokens: output_tokens
-     }}
+  defp make_openai_request(_provider, _prompt, _api_key) do
+    # Placeholder - will implement in next task
+    {:error, :not_implemented}
+  end
+
+  defp parse_openai_response(_response) do
+    # Placeholder - will implement in next task
+    {:error, :not_implemented}
   end
 
   defp generate_anthropic(provider, prompt, _opts) do
@@ -245,11 +253,5 @@ defmodule Vial.LLM do
         # Ollama is local, no cost
         0.0
     end
-  end
-
-  defp estimate_tokens(text) do
-    # Simple estimation: ~4 chars per token (rough GPT approximation)
-    # Real implementation would use tiktoken or similar
-    max(1, div(String.length(text), 4))
   end
 end

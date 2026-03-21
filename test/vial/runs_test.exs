@@ -234,6 +234,7 @@ defmodule Vial.RunsTest do
       {:ok, run: run, provider: provider, prompt_version: version}
     end
 
+    @tag :openai_integration
     test "executes run with single provider", %{
       run: run,
       provider: provider
@@ -253,6 +254,7 @@ defmodule Vial.RunsTest do
       assert result.latency_ms > 0
     end
 
+    @tag :openai_integration
     test "executes run with multiple providers concurrently", %{
       run: run,
       provider: provider1
@@ -280,6 +282,7 @@ defmodule Vial.RunsTest do
       end
     end
 
+    @tag :openai_integration
     test "broadcasts PubSub updates during execution", %{
       run: run,
       provider: provider
@@ -294,6 +297,7 @@ defmodule Vial.RunsTest do
                      1000
     end
 
+    @tag :openai_integration
     test "renders template with variable values", %{
       run: run,
       provider: provider
