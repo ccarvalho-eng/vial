@@ -86,6 +86,39 @@ defmodule Vial.LLMTest do
       assert result.input_tokens > 0
       assert result.output_tokens > 0
     end
+
+    @tag :openai_integration
+    test "returns auth error for invalid API key" do
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, openai_api_key: "sk-invalid-key")
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, {:auth_error, _message}} = result
+    end
+
+    @tag :openai_integration
+    test "returns invalid_request error for bad parameters" do
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "invalid-model-name",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      assert match?({:error, {:invalid_request, _}}, result) or
+               match?({:error, {:api_error, _, _}}, result)
+    end
   end
 
   describe "call/3 with Anthropic provider" do

@@ -117,9 +117,15 @@ defmodule Vial.LLM do
       {"content-type", "application/json"}
     ]
 
-    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000) do
-      {:ok, response} -> {:ok, response}
-      {:error, reason} -> {:error, {:network_error, reason}}
+    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000, decode_json: true) do
+      {:ok, %{body: body} = response} when is_binary(body) ->
+        {:ok, %{response | body: Jason.decode!(body)}}
+
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, reason} ->
+        {:error, {:network_error, reason}}
     end
   end
 
@@ -140,8 +146,24 @@ defmodule Vial.LLM do
     end
   end
 
+  defp parse_openai_response(%{status: 401, body: body}) do
+    message = get_in(body, ["error", "message"]) || "Invalid API key"
+    {:error, {:auth_error, message}}
+  end
+
+  defp parse_openai_response(%{status: 429, headers: headers}) do
+    retry_after = parse_retry_after_header(headers)
+    {:error, {:rate_limit, retry_after}}
+  end
+
+  defp parse_openai_response(%{status: status, body: body}) when status in [400, 404] do
+    message = get_in(body, ["error", "message"]) || "Invalid request"
+    {:error, {:invalid_request, message}}
+  end
+
   defp parse_openai_response(%{status: status, body: body}) do
-    {:error, {:api_error, status, inspect(body)}}
+    message = get_in(body, ["error", "message"]) || inspect(body)
+    {:error, {:api_error, status, message}}
   end
 
   defp generate_anthropic(provider, prompt, _opts) do
