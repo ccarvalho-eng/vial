@@ -26,65 +26,57 @@
 
     <div style="margin-top: 32px;">
       <h2>Results</h2>
-      <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
         <%= for result <- @run_results do %>
-          <div class="vial-card">
+          <div class="vial-card" style="display: flex; flex-direction: column; height: 100%;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
               <div>
-                <h3 style="margin: 0;">{result.provider.name}</h3>
+                <h3 style="margin: 0; font-size: 16px;">{result.provider.name}</h3>
               </div>
-              <span style={"padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; #{if result.status == :completed, do: "background-color: rgba(16, 185, 129, 0.1); color: #10b981;", else: "background-color: rgba(220, 38, 38, 0.1); color: #dc2626;"}"}>
+              <span style={"padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; #{if result.status == :completed, do: "background-color: rgba(16, 185, 129, 0.1); color: #10b981;", else: "background-color: rgba(220, 38, 38, 0.1); color: #dc2626;"}"}>
                 {result.status}
               </span>
             </div>
 
             <%= if result.status == :completed do %>
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 12px 0; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px 0; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
                 <div>
-                  <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
-                    Input Tokens
+                  <div style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+                    Tokens
                   </div>
-                  <div style="font-size: 15px; font-weight: 500; color: var(--text-primary);">
-                    {result.input_tokens}
+                  <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
+                    {result.input_tokens} / {result.output_tokens}
                   </div>
                 </div>
                 <div>
-                  <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
-                    Output Tokens
-                  </div>
-                  <div style="font-size: 15px; font-weight: 500; color: var(--text-primary);">
-                    {result.output_tokens}
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                  <div style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
                     Latency
                   </div>
-                  <div style="font-size: 15px; font-weight: 500; color: var(--text-primary);">
+                  <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
                     {result.latency_ms} ms
                   </div>
                 </div>
                 <div>
-                  <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                  <div style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
                     Cost
                   </div>
-                  <div style="font-size: 15px; font-weight: 500; color: var(--text-primary);">
+                  <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
                     ${:erlang.float_to_binary(result.cost_usd, decimals: 4)}
                   </div>
                 </div>
               </div>
             <% end %>
 
-            <div>
+            <div style="flex: 1; display: flex; flex-direction: column;">
               <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
                 Output
               </div>
               <%= if result.status == :error do %>
-                <div style="background-color: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 4px; color: #dc2626; font-size: 14px;">
+                <div style="background-color: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 4px; color: #dc2626; font-size: 13px;">
                   <strong>Error:</strong> {result.error}
                 </div>
               <% else %>
-                <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 16px; border-radius: 4px; font-size: 13px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word;"><%= result.output %></pre>
+                <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; flex: 1;"><%= result.output %></pre>
               <% end %>
             </div>
           </div>

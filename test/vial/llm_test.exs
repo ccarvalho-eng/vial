@@ -4,6 +4,41 @@ defmodule Vial.LLMTest do
   alias Vial.LLM
 
   describe "call/3 with OpenAI provider" do
+    test "returns error when API key is missing" do
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, openai_api_key: nil)
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    test "returns error when API key is empty string" do
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, openai_api_key: "")
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    @tag :openai_integration
     test "returns structured response with all required fields" do
       provider =
         provider_fixture(%{
@@ -22,6 +57,7 @@ defmodule Vial.LLMTest do
       assert result.latency_ms > 0
     end
 
+    @tag :openai_integration
     test "calculates cost for OpenAI" do
       provider =
         provider_fixture(%{
@@ -33,6 +69,55 @@ defmodule Vial.LLMTest do
       {:ok, result} = LLM.call(provider, "test", [])
       # Should have non-zero cost for OpenAI
       assert result.cost_usd > 0
+    end
+
+    @tag :openai_integration
+    test "calls real OpenAI API successfully" do
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o",
+          config: %{"temperature" => 0.7, "max_tokens" => 100}
+        })
+
+      assert {:ok, result} = LLM.call(provider, "Say hello", [])
+      assert is_binary(result.output)
+      assert result.output != ""
+      assert result.input_tokens > 0
+      assert result.output_tokens > 0
+    end
+
+    @tag :openai_integration
+    test "returns auth error for invalid API key" do
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, openai_api_key: "sk-invalid-key")
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, {:auth_error, _message}} = result
+    end
+
+    @tag :openai_integration
+    test "returns invalid_request error for bad parameters" do
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "invalid-model-name",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      assert match?({:error, {:invalid_request, _}}, result) or
+               match?({:error, {:api_error, _, _}}, result)
     end
   end
 
@@ -194,6 +279,7 @@ defmodule Vial.LLMTest do
   end
 
   describe "call/3 token counting" do
+    @tag :openai_integration
     test "counts tokens for input and output" do
       provider =
         provider_fixture(%{

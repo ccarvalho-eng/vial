@@ -81,27 +81,83 @@ defmodule Vial.LLM do
 
   # Private implementation functions
 
-  defp generate_openai(_provider, prompt, _opts) do
-    # Mock implementation for V1 - will integrate real LangChain later
-    # Real implementation would use:
-    # model = LangChain.ChatModels.ChatOpenAI.new!(%{
-    #   model: provider.model,
-    #   temperature: get_in(provider.config, ["temperature"]) || 0.7
-    # })
-    # LangChain.Chains.LLMChain.run(model, prompt)
+  defp generate_openai(provider, prompt, _opts) do
+    with {:ok, api_key} <- get_openai_api_key(),
+         {:ok, response} <- make_openai_request(provider, prompt, api_key) do
+      parse_openai_response(response)
+    end
+  end
 
-    # Simulate processing time
-    Process.sleep(1)
+  defp get_openai_api_key do
+    case Application.get_env(:vial, :llm)[:openai_api_key] do
+      nil -> {:error, :missing_api_key}
+      "" -> {:error, :missing_api_key}
+      api_key -> {:ok, api_key}
+    end
+  end
 
-    input_tokens = estimate_tokens(prompt)
-    output_tokens = 20
+  defp make_openai_request(provider, prompt, api_key) do
+    url = "https://api.openai.com/v1/chat/completions"
 
-    {:ok,
-     %{
-       content: "Mock OpenAI response for: #{prompt}",
-       input_tokens: input_tokens,
-       output_tokens: output_tokens
-     }}
+    body = %{
+      model: provider.model,
+      messages: [%{role: "user", content: prompt}],
+      temperature: get_in(provider.config, ["temperature"]) || 0.7,
+      max_tokens: get_in(provider.config, ["max_tokens"]) || 1000
+    }
+
+    headers = [
+      {"authorization", "Bearer #{api_key}"},
+      {"content-type", "application/json"}
+    ]
+
+    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000) do
+      {:ok, response} -> {:ok, decode_openai_response_body(response)}
+      {:error, reason} -> {:error, {:network_error, reason}}
+    end
+  end
+
+  defp decode_openai_response_body(%{body: body} = response) when is_binary(body) do
+    %{response | body: Jason.decode!(body)}
+  end
+
+  defp decode_openai_response_body(response), do: response
+
+  defp parse_openai_response(%{status: 200, body: response}) do
+    content = get_in(response, ["choices", Access.at(0), "message", "content"])
+
+    if content do
+      usage = response["usage"] || %{}
+
+      {:ok,
+       %{
+         content: content,
+         input_tokens: usage["prompt_tokens"] || 0,
+         output_tokens: usage["completion_tokens"] || 0
+       }}
+    else
+      {:error, {:api_error, 200, "Unexpected response structure: missing content"}}
+    end
+  end
+
+  defp parse_openai_response(%{status: 401, body: body}) do
+    message = get_in(body, ["error", "message"]) || "Invalid API key"
+    {:error, {:auth_error, message}}
+  end
+
+  defp parse_openai_response(%{status: 429, headers: headers}) do
+    retry_after = parse_retry_after_header(headers)
+    {:error, {:rate_limit, retry_after}}
+  end
+
+  defp parse_openai_response(%{status: status, body: body}) when status in [400, 404] do
+    message = get_in(body, ["error", "message"]) || "Invalid request"
+    {:error, {:invalid_request, message}}
+  end
+
+  defp parse_openai_response(%{status: status, body: body}) do
+    message = get_in(body, ["error", "message"]) || inspect(body)
+    {:error, {:api_error, status, message}}
   end
 
   defp generate_anthropic(provider, prompt, _opts) do
@@ -245,11 +301,5 @@ defmodule Vial.LLM do
         # Ollama is local, no cost
         0.0
     end
-  end
-
-  defp estimate_tokens(text) do
-    # Simple estimation: ~4 chars per token (rough GPT approximation)
-    # Real implementation would use tiktoken or similar
-    max(1, div(String.length(text), 4))
   end
 end
