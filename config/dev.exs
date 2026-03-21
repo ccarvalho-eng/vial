@@ -29,6 +29,10 @@ config :vial, VialWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:vial, ~w(--watch)]}
   ]
 
+config :vial, :llm,
+  openai_api_key: System.get_env("OPENAI_API_KEY"),
+  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

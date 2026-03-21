@@ -37,23 +37,11 @@ defmodule Vial.LLMTest do
   end
 
   describe "call/3 with Anthropic provider" do
-    test "returns structured response" do
-      provider =
-        provider_fixture(%{
-          provider: :anthropic,
-          model: "claude-3-5-sonnet-20241022",
-          config: %{"temperature" => 0.5, "max_tokens" => 500}
-        })
+    test "returns error when API key is missing" do
+      # Temporarily clear the config
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, anthropic_api_key: nil)
 
-      assert {:ok, result} = LLM.call(provider, "test prompt", [])
-      assert is_binary(result.output)
-      assert is_integer(result.input_tokens)
-      assert is_integer(result.output_tokens)
-      assert is_integer(result.latency_ms)
-      assert is_float(result.cost_usd)
-    end
-
-    test "calculates cost for Anthropic" do
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -61,8 +49,100 @@ defmodule Vial.LLMTest do
           config: %{}
         })
 
+      result = LLM.call(provider, "test", [])
+
+      # Restore original config
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    test "returns error when API key is empty string" do
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, anthropic_api_key: "")
+
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "claude-3-5-sonnet-20241022",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      # Restore original config
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    @tag :anthropic_integration
+    test "returns structured response" do
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "claude-sonnet-4-6",
+          config: %{"temperature" => 0.5, "max_tokens" => 100}
+        })
+
+      assert {:ok, result} = LLM.call(provider, "Say hello", [])
+      assert is_binary(result.output)
+      assert result.output != ""
+      assert is_integer(result.input_tokens)
+      assert result.input_tokens > 0
+      assert is_integer(result.output_tokens)
+      assert result.output_tokens > 0
+      assert is_integer(result.latency_ms)
+      assert is_float(result.cost_usd)
+    end
+
+    @tag :anthropic_integration
+    test "calculates cost for Anthropic" do
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "claude-sonnet-4-6",
+          config: %{}
+        })
+
       {:ok, result} = LLM.call(provider, "test", [])
       assert result.cost_usd > 0
+    end
+
+    @tag :anthropic_integration
+    test "returns auth error for invalid API key" do
+      # Temporarily set invalid key
+      original_config = Application.get_env(:vial, :llm)
+      Application.put_env(:vial, :llm, anthropic_api_key: "invalid-key-12345")
+
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "claude-sonnet-4-6",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      # Restore config
+      Application.put_env(:vial, :llm, original_config)
+
+      assert {:error, {:auth_error, _message}} = result
+    end
+
+    @tag :anthropic_integration
+    test "returns invalid_request error for bad parameters" do
+      provider =
+        provider_fixture(%{
+          provider: :anthropic,
+          model: "invalid-model",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      assert match?({:error, {:invalid_request, _}}, result) or
+               match?({:error, {:api_error, 400, _}}, result)
     end
   end
 

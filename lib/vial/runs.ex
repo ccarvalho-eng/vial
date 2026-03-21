@@ -3,11 +3,11 @@ defmodule Vial.Runs do
   Context for managing runs and run results.
   """
 
+  alias Vial.LLM
+  alias Vial.Providers.Provider
   alias Vial.Repo
   alias Vial.Runs.Run
   alias Vial.Runs.RunResult
-  alias Vial.Providers.Provider
-  alias Vial.LLM
 
   @doc """
   Lists all runs in the system.
@@ -158,7 +158,8 @@ defmodule Vial.Runs do
         fn provider ->
           execute_provider(run, provider, rendered_prompt)
         end,
-        max_concurrency: 3
+        max_concurrency: 3,
+        timeout: 120_000
       )
       |> Enum.to_list()
 

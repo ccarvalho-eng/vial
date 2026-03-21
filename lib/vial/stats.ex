@@ -5,9 +5,9 @@ defmodule Vial.Stats do
 
   import Ecto.Query
 
+  alias Vial.Evals.SuiteRun
   alias Vial.Repo
   alias Vial.Runs.{Run, RunResult}
-  alias Vial.Evals.SuiteRun
 
   @doc """
   Returns total number of test runs (suite runs + prompt runs).

@@ -5,13 +5,13 @@ defmodule Vial.Evals do
 
   import Ecto.Query
 
-  alias Vial.Repo
   alias Vial.Evals.Suite
-  alias Vial.Evals.TestCase
   alias Vial.Evals.SuiteRun
+  alias Vial.Evals.TestCase
+  alias Vial.LLM
   alias Vial.Prompts.PromptVersion
   alias Vial.Providers.Provider
-  alias Vial.LLM
+  alias Vial.Repo
 
   # Suite functions
 

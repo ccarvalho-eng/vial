@@ -22,6 +22,14 @@ defmodule Vial.LLM do
 
   alias Vial.Providers.Provider
 
+  @type error_reason ::
+          :missing_api_key
+          | {:auth_error, String.t()}
+          | {:rate_limit, non_neg_integer() | nil}
+          | {:invalid_request, String.t()}
+          | {:api_error, non_neg_integer(), String.t()}
+          | {:network_error, term()}
+
   @doc """
   Calls an LLM provider with a prompt and returns structured result.
 
@@ -42,7 +50,7 @@ defmodule Vial.LLM do
       true
   """
   @spec call(Provider.t(), String.t(), keyword()) ::
-          {:ok, llm_result()} | {:error, term()}
+          {:ok, llm_result()} | {:error, error_reason()}
   def call(%Provider{} = provider, prompt, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
@@ -96,27 +104,93 @@ defmodule Vial.LLM do
      }}
   end
 
-  defp generate_anthropic(_provider, prompt, _opts) do
-    # Mock implementation for V1 - will integrate real LangChain later
-    # Real implementation would use:
-    # model = LangChain.ChatModels.ChatAnthropic.new!(%{
-    #   model: provider.model,
-    #   temperature: get_in(provider.config, ["temperature"]) || 0.5
-    # })
-    # LangChain.Chains.LLMChain.run(model, prompt)
+  defp generate_anthropic(provider, prompt, _opts) do
+    with {:ok, api_key} <- get_anthropic_api_key(),
+         {:ok, response} <- make_anthropic_request(provider, prompt, api_key) do
+      parse_anthropic_response(response)
+    end
+  end
 
-    # Simulate processing time
-    Process.sleep(1)
+  defp get_anthropic_api_key do
+    case Application.get_env(:vial, :llm)[:anthropic_api_key] do
+      nil -> {:error, :missing_api_key}
+      "" -> {:error, :missing_api_key}
+      api_key -> {:ok, api_key}
+    end
+  end
 
-    input_tokens = estimate_tokens(prompt)
-    output_tokens = 25
+  defp make_anthropic_request(provider, prompt, api_key) do
+    url = "https://api.anthropic.com/v1/messages"
 
-    {:ok,
-     %{
-       content: "Mock Anthropic response for: #{prompt}",
-       input_tokens: input_tokens,
-       output_tokens: output_tokens
-     }}
+    body = %{
+      model: provider.model,
+      messages: [%{role: "user", content: prompt}],
+      temperature: get_in(provider.config, ["temperature"]) || 0.5,
+      max_tokens: get_in(provider.config, ["max_tokens"]) || 1024
+    }
+
+    headers = [
+      {"x-api-key", api_key},
+      {"anthropic-version", "2023-06-01"},
+      {"content-type", "application/json"}
+    ]
+
+    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000) do
+      {:ok, response} -> {:ok, response}
+      {:error, reason} -> {:error, {:network_error, reason}}
+    end
+  end
+
+  defp parse_anthropic_response(%{status: 200, body: response}) do
+    content = get_in(response, ["content", Access.at(0), "text"])
+
+    if content do
+      usage = response["usage"]
+
+      {:ok,
+       %{
+         content: content,
+         input_tokens: usage["input_tokens"] || 0,
+         output_tokens: usage["output_tokens"] || 0
+       }}
+    else
+      {:error, {:api_error, 200, "Unexpected response structure: missing content"}}
+    end
+  end
+
+  defp parse_anthropic_response(%{status: 401, body: body}) do
+    message = get_in(body, ["error", "message"]) || "Invalid API key"
+    {:error, {:auth_error, message}}
+  end
+
+  defp parse_anthropic_response(%{status: 429, headers: headers}) do
+    retry_after = parse_retry_after_header(headers)
+    {:error, {:rate_limit, retry_after}}
+  end
+
+  defp parse_anthropic_response(%{status: status, body: body}) when status in [400, 404] do
+    message = get_in(body, ["error", "message"]) || "Invalid request"
+    {:error, {:invalid_request, message}}
+  end
+
+  defp parse_anthropic_response(%{status: status, body: body}) do
+    message = get_in(body, ["error", "message"]) || inspect(body)
+    {:error, {:api_error, status, message}}
+  end
+
+  defp parse_retry_after_header(headers) do
+    headers
+    |> Enum.find(fn {k, _v} -> String.downcase(k) == "retry-after" end)
+    |> case do
+      {_, value} ->
+        case Integer.parse(value) do
+          {int, _} -> int
+          :error -> nil
+        end
+
+      nil ->
+        nil
+    end
   end
 
   defp generate_ollama(provider, prompt, _opts) do
@@ -156,15 +230,15 @@ defmodule Vial.LLM do
   defp calculate_cost(provider, response) do
     case provider.provider do
       :openai ->
-        # OpenAI GPT-4o pricing: ~$0.005/1k input, ~$0.015/1k output
-        input_cost = response.input_tokens * 0.005 / 1000
-        output_cost = response.output_tokens * 0.015 / 1000
+        # OpenAI GPT-4o pricing: $5/million input, $15/million output
+        input_cost = response.input_tokens * 5.0 / 1_000_000
+        output_cost = response.output_tokens * 15.0 / 1_000_000
         Float.round(input_cost + output_cost, 6)
 
       :anthropic ->
-        # Anthropic Claude pricing: ~$0.003/1k input, ~$0.015/1k output
-        input_cost = response.input_tokens * 0.003 / 1000
-        output_cost = response.output_tokens * 0.015 / 1000
+        # Anthropic Claude pricing: $3/million input, $15/million output
+        input_cost = response.input_tokens * 3.0 / 1_000_000
+        output_cost = response.output_tokens * 15.0 / 1_000_000
         Float.round(input_cost + output_cost, 6)
 
       :ollama ->

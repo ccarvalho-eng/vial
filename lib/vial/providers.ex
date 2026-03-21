@@ -3,8 +3,8 @@ defmodule Vial.Providers do
   Context for managing AI provider configurations.
   """
 
-  alias Vial.Repo
   alias Vial.Providers.Provider
+  alias Vial.Repo
 
   @doc """
   Lists all providers in the system.

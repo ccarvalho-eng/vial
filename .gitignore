@@ -37,3 +37,6 @@ npm-debug.log
 
 # Ignore planning documentation
 /docs/plans/
+
+.env
+priv/plts/

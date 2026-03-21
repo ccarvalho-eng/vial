@@ -5,9 +5,9 @@ defmodule Vial.Prompts do
 
   import Ecto.Query
 
-  alias Vial.Repo
   alias Vial.Prompts.Prompt
   alias Vial.Prompts.PromptVersion
+  alias Vial.Repo
 
   @doc """
   Lists all prompts in the system.

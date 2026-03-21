@@ -35,3 +35,8 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+# LLM Provider API Keys - use bogus keys to prevent hitting real APIs in tests
+config :vial, :llm,
+  openai_api_key: "sk-test-fake-openai-key-for-testing",
+  anthropic_api_key: "sk-ant-test-fake-anthropic-key-for-testing"
