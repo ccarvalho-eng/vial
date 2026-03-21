@@ -70,6 +70,22 @@ defmodule Vial.LLMTest do
       # Should have non-zero cost for OpenAI
       assert result.cost_usd > 0
     end
+
+    @tag :openai_integration
+    test "calls real OpenAI API successfully" do
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o",
+          config: %{"temperature" => 0.7, "max_tokens" => 100}
+        })
+
+      assert {:ok, result} = LLM.call(provider, "Say hello", [])
+      assert is_binary(result.output)
+      assert result.output != ""
+      assert result.input_tokens > 0
+      assert result.output_tokens > 0
+    end
   end
 
   describe "call/3 with Anthropic provider" do

@@ -102,14 +102,46 @@ defmodule Vial.LLM do
     end
   end
 
-  defp make_openai_request(_provider, _prompt, _api_key) do
-    # Placeholder - will implement in next task
-    {:error, :not_implemented}
+  defp make_openai_request(provider, prompt, api_key) do
+    url = "https://api.openai.com/v1/chat/completions"
+
+    body = %{
+      model: provider.model,
+      messages: [%{role: "user", content: prompt}],
+      temperature: get_in(provider.config, ["temperature"]) || 0.7,
+      max_tokens: get_in(provider.config, ["max_tokens"]) || 1000
+    }
+
+    headers = [
+      {"authorization", "Bearer #{api_key}"},
+      {"content-type", "application/json"}
+    ]
+
+    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000) do
+      {:ok, response} -> {:ok, response}
+      {:error, reason} -> {:error, {:network_error, reason}}
+    end
   end
 
-  defp parse_openai_response(_response) do
-    # Placeholder - will implement in next task
-    {:error, :not_implemented}
+  defp parse_openai_response(%{status: 200, body: response}) do
+    content = get_in(response, ["choices", Access.at(0), "message", "content"])
+
+    if content do
+      usage = response["usage"] || %{}
+
+      {:ok,
+       %{
+         content: content,
+         input_tokens: usage["prompt_tokens"] || 0,
+         output_tokens: usage["completion_tokens"] || 0
+       }}
+    else
+      {:error, {:api_error, 200, "Unexpected response structure: missing content"}}
+    end
+  end
+
+  defp parse_openai_response(%{status: status, body: body}) do
+    {:error, {:api_error, status, inspect(body)}}
   end
 
   defp generate_anthropic(provider, prompt, _opts) do
