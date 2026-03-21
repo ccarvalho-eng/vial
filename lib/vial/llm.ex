@@ -82,15 +82,9 @@ defmodule Vial.LLM do
   # Private implementation functions
 
   defp generate_openai(provider, prompt, _opts) do
-    case get_openai_api_key() do
-      {:ok, api_key} ->
-        case make_openai_request(provider, prompt, api_key) do
-          {:ok, response} -> parse_openai_response(response)
-          {:error, reason} -> {:error, reason}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
+    with {:ok, api_key} <- get_openai_api_key(),
+         {:ok, response} <- make_openai_request(provider, prompt, api_key) do
+      parse_openai_response(response)
     end
   end
 
@@ -117,17 +111,17 @@ defmodule Vial.LLM do
       {"content-type", "application/json"}
     ]
 
-    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000, decode_json: true) do
-      {:ok, %{body: body} = response} when is_binary(body) ->
-        {:ok, %{response | body: Jason.decode!(body)}}
-
-      {:ok, response} ->
-        {:ok, response}
-
-      {:error, reason} ->
-        {:error, {:network_error, reason}}
+    case Req.post(url, json: body, headers: headers, receive_timeout: 60_000) do
+      {:ok, response} -> {:ok, decode_openai_response_body(response)}
+      {:error, reason} -> {:error, {:network_error, reason}}
     end
   end
+
+  defp decode_openai_response_body(%{body: body} = response) when is_binary(body) do
+    %{response | body: Jason.decode!(body)}
+  end
+
+  defp decode_openai_response_body(response), do: response
 
   defp parse_openai_response(%{status: 200, body: response}) do
     content = get_in(response, ["choices", Access.at(0), "message", "content"])
