@@ -87,7 +87,13 @@
                   <td style="padding: 16px;">
                     <%= if metric.avg_pass_rate do %>
                       <% pass_rate = metric.avg_pass_rate %>
-                      <span style={"display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500; #{if pass_rate >= 80, do: "color: #10b981;", else: if pass_rate >= 50, do: "color: #f59e0b;", else: "color: #ef4444;"}"}>
+                      <% color =
+                        if(pass_rate >= 80,
+                          do: "color: #10b981;",
+                          else:
+                            if(pass_rate >= 50, do: "color: #f59e0b;", else: "color: #ef4444;")
+                        ) %>
+                      <span style={"display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500; #{color}"}>
                         <%= cond do %>
                           <% pass_rate >= 80 -> %>
                             <.icon name="hero-check-badge-solid" class="size-3" />
@@ -136,7 +142,16 @@
                             </div>
                             <%= if breakdown.avg_pass_rate do %>
                               <% pass_rate = breakdown.avg_pass_rate %>
-                              <span style={"display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500; #{if pass_rate >= 80, do: "color: #10b981;", else: if pass_rate >= 50, do: "color: #f59e0b;", else: "color: #ef4444;"}"}>
+                              <% color =
+                                if(pass_rate >= 80,
+                                  do: "color: #10b981;",
+                                  else:
+                                    if(pass_rate >= 50,
+                                      do: "color: #f59e0b;",
+                                      else: "color: #ef4444;"
+                                    )
+                                ) %>
+                              <span style={"display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500; #{color}"}>
                                 <%= cond do %>
                                   <% pass_rate >= 80 -> %>
                                     <.icon name="hero-check-badge-solid" class="size-3" />

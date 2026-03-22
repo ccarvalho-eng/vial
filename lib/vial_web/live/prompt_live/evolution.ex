@@ -24,8 +24,4 @@ defmodule VialWeb.PromptLive.Evolution do
      |> assign(:prompt, prompt)
      |> assign(:metrics, metrics)}
   end
-
-  defp pass_rate_color(rate) when rate >= 90, do: "bg-green-100 text-green-800"
-  defp pass_rate_color(rate) when rate >= 70, do: "bg-yellow-100 text-yellow-800"
-  defp pass_rate_color(_rate), do: "bg-red-100 text-red-800"
 end
