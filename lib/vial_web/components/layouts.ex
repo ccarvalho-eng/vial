@@ -41,7 +41,10 @@ defmodule VialWeb.Layouts do
       <div class="vial-header-inner">
         <nav class="vial-nav">
           <.nav_link href={~p"/"} current_path={@current_path}>
-            Home
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <.icon name="hero-beaker" class="size-4" />
+              <span>Vial</span>
+            </div>
           </.nav_link>
           <.nav_link href={~p"/prompts"} current_path={@current_path}>
             Prompts
