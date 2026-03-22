@@ -1,15 +1,25 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div style="max-width: 800px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-      <div>
-        <h1 style="margin: 0 0 8px 0;">{@prompt.name}</h1>
-        <p :if={@prompt.description} style="color: var(--text-secondary); margin: 0;">
-          {@prompt.description}
-        </p>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 600;">{@prompt.name}</h1>
+          <p
+            :if={@prompt.description}
+            style="color: var(--text-secondary); margin: 0; font-size: 15px;"
+          >
+            {@prompt.description}
+          </p>
+        </div>
+        <.link navigate={~p"/prompts/#{@prompt.id}/edit"} class="button-primary">
+          <.icon name="hero-pencil" class="size-4" /> Edit Prompt
+        </.link>
       </div>
-      <.link navigate={~p"/prompts/#{@prompt.id}/edit"} class="button-primary">
-        Edit Prompt
-      </.link>
+      <div :if={@prompt.tags != []} style="display: flex; gap: 8px;">
+        <span :for={tag <- @prompt.tags} class="tag">
+          {tag}
+        </span>
+      </div>
     </div>
 
     <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
@@ -29,24 +39,22 @@
       </nav>
     </div>
 
-    <div :if={@prompt.tags != []} style="display: flex; gap: 8px; margin-bottom: 24px;">
-      <span
-        :for={tag <- @prompt.tags}
-        class="tag"
-      >
-        {tag}
-      </span>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Versions</h2>
     </div>
 
-    <h2>Versions</h2>
-
-    <div :if={@prompt.versions == []} class="empty-state">
+    <div
+      :if={@prompt.versions == []}
+      class="vial-card"
+      style="padding: 60px 20px; text-align: center;"
+    >
+      <.icon name="hero-clock" class="size-12 text-muted" style="margin: 0 auto 12px;" />
       <div class="empty-state-description">
         No versions yet. Edit this prompt to create the first version.
       </div>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 16px;">
       <div :for={version <- @prompt.versions} class="vial-card">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 16px;">
