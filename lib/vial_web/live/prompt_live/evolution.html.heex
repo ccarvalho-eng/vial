@@ -1,19 +1,13 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div style="max-width: 800px; margin: 0 auto;">
+  <div class="evolution-container">
     <h1>{@prompt.name}</h1>
 
-    <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
-      <nav style="display: flex; gap: 32px; margin-bottom: -1px;">
-        <.link
-          navigate={~p"/prompts/#{@prompt.id}"}
-          style="border-bottom: 2px solid transparent; padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none;"
-        >
+    <div class="evolution-tabs">
+      <nav class="evolution-tabs-nav">
+        <.link navigate={~p"/prompts/#{@prompt.id}"} class="evolution-tab-link">
           Details
         </.link>
-        <.link
-          navigate={~p"/prompts/#{@prompt.id}/evolution"}
-          style="border-bottom: 2px solid var(--accent); padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none;"
-        >
+        <.link navigate={~p"/prompts/#{@prompt.id}/evolution"} class="evolution-tab-link-active">
           Evolution
         </.link>
       </nav>
@@ -28,61 +22,46 @@
       </div>
     <% else %>
       <div class="vial-card" style="padding: 0; overflow: hidden;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead style="background-color: var(--bg-secondary);">
+        <table class="evolution-table">
+          <thead>
             <tr>
-              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                Version
-              </th>
-              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                Created
-              </th>
-              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                Runs
-              </th>
-              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                Pass Rate
-              </th>
-              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                Avg Cost
-              </th>
-              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                Avg Latency
-              </th>
+              <th>Version</th>
+              <th>Created</th>
+              <th>Runs</th>
+              <th>Pass Rate</th>
+              <th>Avg Cost</th>
+              <th>Avg Latency</th>
             </tr>
           </thead>
-          <tbody style="background-color: var(--bg-primary);">
+          <tbody>
             <%= for metric <- @metrics do %>
-              <tr style="border-top: 1px solid var(--border);">
-                <td style="padding: 16px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+              <tr>
+                <td class="evolution-table-version">
                   v{metric.version_number}
                 </td>
-                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                <td>
                   {Calendar.strftime(metric.created_at, "%b %d, %Y")}
                 </td>
-                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                <td>
                   {metric.total_runs}
                 </td>
-                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                <td>
                   <%= if metric.avg_pass_rate do %>
-                    <span
-                      class={pass_rate_color(metric.avg_pass_rate)}
-                      style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;"
-                    >
+                    <span class={[pass_rate_color(metric.avg_pass_rate), "evolution-pass-rate-badge"]}>
                       {metric.avg_pass_rate}%
                     </span>
                   <% else %>
                     <span style="color: var(--text-tertiary);">-</span>
                   <% end %>
                 </td>
-                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                <td>
                   <%= if metric.avg_cost_usd do %>
                     ${:erlang.float_to_binary(metric.avg_cost_usd, decimals: 4)}
                   <% else %>
                     <span style="color: var(--text-tertiary);">-</span>
                   <% end %>
                 </td>
-                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                <td>
                   <%= if metric.avg_latency_ms do %>
                     {metric.avg_latency_ms}ms
                   <% else %>
@@ -91,26 +70,23 @@
                 </td>
               </tr>
               <%= if not Enum.empty?(metric.provider_breakdown) do %>
-                <tr style="background-color: var(--bg-secondary); border-top: 1px solid var(--border);">
-                  <td colspan="6" style="padding: 12px 16px;">
-                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                <tr class="evolution-provider-breakdown">
+                  <td colspan="6">
+                    <div class="evolution-provider-breakdown-title">
                       Provider Breakdown:
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    <div class="evolution-provider-grid">
                       <%= for breakdown <- metric.provider_breakdown do %>
-                        <div style="background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px;">
-                          <div style="font-weight: 500; font-size: 14px; color: var(--text-primary);">
+                        <div class="evolution-provider-card">
+                          <div class="evolution-provider-name">
                             {breakdown.provider_name}
                           </div>
-                          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                          <div class="evolution-provider-runs">
                             {breakdown.runs} runs
                           </div>
                           <%= if breakdown.avg_pass_rate do %>
-                            <div style="margin-top: 8px;">
-                              <span
-                                class={pass_rate_color(breakdown.avg_pass_rate)}
-                                style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;"
-                              >
+                            <div class="evolution-provider-pass-rate">
+                              <span class={[pass_rate_color(breakdown.avg_pass_rate), "evolution-pass-rate-badge"]}>
                                 {breakdown.avg_pass_rate}%
                               </span>
                             </div>
@@ -127,11 +103,8 @@
       </div>
     <% end %>
 
-    <div style="margin-top: 24px;">
-      <.link
-        navigate={~p"/prompts"}
-        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
-      >
+    <div class="evolution-back-link">
+      <.link navigate={~p"/prompts"}>
         &larr; Back to prompts
       </.link>
     </div>

@@ -891,3 +891,140 @@ a:has(.vial-card) .vial-card:hover {
     transform: rotate(360deg);
   }
 }
+
+/* Evolution Page Styles */
+.evolution-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.evolution-tabs {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.evolution-tabs-nav {
+  display: flex;
+  gap: 32px;
+  margin-bottom: -1px;
+}
+
+.evolution-tab-link {
+  border-bottom: 2px solid transparent;
+  padding: 16px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.evolution-tab-link-active {
+  border-bottom: 2px solid var(--accent);
+  padding: 16px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.evolution-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.evolution-table thead {
+  background-color: var(--bg-secondary);
+}
+
+.evolution-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.evolution-table tbody {
+  background-color: var(--bg-primary);
+}
+
+.evolution-table tbody tr {
+  border-top: 1px solid var(--border);
+}
+
+.evolution-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.evolution-table-version {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.evolution-pass-rate-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.evolution-provider-breakdown {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+}
+
+.evolution-provider-breakdown td {
+  padding: 12px 16px;
+}
+
+.evolution-provider-breakdown-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.evolution-provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.evolution-provider-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.evolution-provider-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.evolution-provider-runs {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.evolution-provider-pass-rate {
+  margin-top: 8px;
+}
+
+.evolution-back-link {
+  margin-top: 24px;
+}
+
+.evolution-back-link a {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
