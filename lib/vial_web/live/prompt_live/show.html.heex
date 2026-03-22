@@ -12,6 +12,23 @@
       </.link>
     </div>
 
+    <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
+      <nav style="display: flex; gap: 32px; margin-bottom: -1px;">
+        <.link
+          navigate={~p"/prompts/#{@prompt.id}"}
+          style="border-bottom: 2px solid var(--accent); padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none;"
+        >
+          Details
+        </.link>
+        <.link
+          navigate={~p"/prompts/#{@prompt.id}/evolution"}
+          style="border-bottom: 2px solid transparent; padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none;"
+        >
+          Evolution
+        </.link>
+      </nav>
+    </div>
+
     <div :if={@prompt.tags != []} style="display: flex; gap: 8px; margin-bottom: 24px;">
       <span
         :for={tag <- @prompt.tags}
