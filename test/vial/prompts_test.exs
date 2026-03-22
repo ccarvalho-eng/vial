@@ -66,4 +66,16 @@ defmodule Vial.PromptsTest do
       assert Prompts.extract_variables(template) == ["name", "age"]
     end
   end
+
+  describe "evolution" do
+    test "get_evolution_metrics/1 returns metrics for prompt" do
+      prompt = prompt_fixture()
+      {:ok, _version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+
+      metrics = Prompts.get_evolution_metrics(prompt.id)
+
+      assert is_list(metrics)
+      assert length(metrics) == 1
+    end
+  end
 end

@@ -5,6 +5,7 @@ defmodule Vial.Prompts do
 
   import Ecto.Query
 
+  alias Vial.Prompts.Evolution
   alias Vial.Prompts.Prompt
   alias Vial.Prompts.PromptVersion
   alias Vial.Repo
@@ -124,6 +125,16 @@ defmodule Vial.Prompts do
     |> Regex.scan(template, capture: :all_but_first)
     |> List.flatten()
     |> Enum.uniq()
+  end
+
+  @doc """
+  Returns aggregated evolution metrics for all versions of a prompt.
+
+  Includes pass rates, cost, latency, and per-provider breakdown.
+  """
+  @spec get_evolution_metrics(binary()) :: [map()]
+  def get_evolution_metrics(prompt_id) do
+    Evolution.get_metrics(prompt_id)
   end
 
   defp get_next_version_number(prompt_id) do
