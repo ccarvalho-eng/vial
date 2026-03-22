@@ -47,7 +47,10 @@
                 </td>
                 <td>
                   <%= if metric.avg_pass_rate do %>
-                    <span class={[pass_rate_color(metric.avg_pass_rate), "evolution-pass-rate-badge"]}>
+                    <span class={[
+                      pass_rate_color(metric.avg_pass_rate),
+                      "evolution-pass-rate-badge"
+                    ]}>
                       {metric.avg_pass_rate}%
                     </span>
                   <% else %>
@@ -86,7 +89,10 @@
                           </div>
                           <%= if breakdown.avg_pass_rate do %>
                             <div class="evolution-provider-pass-rate">
-                              <span class={[pass_rate_color(breakdown.avg_pass_rate), "evolution-pass-rate-badge"]}>
+                              <span class={[
+                                pass_rate_color(breakdown.avg_pass_rate),
+                                "evolution-pass-rate-badge"
+                              ]}>
                                 {breakdown.avg_pass_rate}%
                               </span>
                             </div>
