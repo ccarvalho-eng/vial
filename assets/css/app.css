@@ -417,13 +417,25 @@ a.button-secondary:hover {
 /* Card Styles */
 .card,
 .vial-card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: rgba(28, 28, 30, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 20px;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 0.2s ease;
+}
+
+[data-theme="light"] .vial-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 /* Tag Styles */
@@ -741,11 +753,23 @@ select:-webkit-autofill:focus {
   color: var(--text-muted);
 }
 
+/* Card hover effects */
+.vial-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="light"] .vial-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
 /* Quick action cards */
 a:has(.vial-card) .vial-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border-color: #d0d0d0;
 }
 
 /* Grid layouts */

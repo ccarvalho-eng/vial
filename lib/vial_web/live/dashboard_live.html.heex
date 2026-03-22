@@ -14,53 +14,45 @@
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 40px;">
-      <div class="vial-card" style="padding: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
-          <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px;">
-            <.icon name="hero-play" class="size-6 text-muted" />
-          </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 40px;">
+      <div class="vial-card" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <.icon name="hero-play" class="size-5 text-muted" />
         </div>
-        <div class="stat-value" style="margin-bottom: 4px;">{@total_runs}</div>
-        <div class="stat-label" style="font-size: 14px; font-weight: 500;">Total Runs</div>
-        <div class="stat-description" style="margin-top: 4px;">Evaluations executed</div>
+        <div class="stat-value" style="margin-bottom: 2px;">{@total_runs}</div>
+        <div class="stat-label" style="font-size: 13px; font-weight: 500;">Total Runs</div>
+        <div class="stat-description" style="margin-top: 2px;">Evaluations executed</div>
       </div>
 
-      <div class="vial-card" style="padding: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
-          <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px;">
-            <.icon name="hero-check-circle" class="size-6 text-muted" />
-          </div>
+      <div class="vial-card" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <.icon name="hero-check-circle" class="size-5 text-muted" />
         </div>
-        <div class="stat-value" style="margin-bottom: 4px;">{@success_rate}%</div>
-        <div class="stat-label" style="font-size: 14px; font-weight: 500;">Success Rate</div>
-        <div class="stat-description" style="margin-top: 4px;">
+        <div class="stat-value" style="margin-bottom: 2px;">{@success_rate}%</div>
+        <div class="stat-label" style="font-size: 13px; font-weight: 500;">Success Rate</div>
+        <div class="stat-description" style="margin-top: 2px;">
           {@total_passed} passed, {@total_failed} failed
         </div>
       </div>
 
-      <div class="vial-card" style="padding: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
-          <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px;">
-            <.icon name="hero-clock" class="size-6 text-muted" />
-          </div>
+      <div class="vial-card" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <.icon name="hero-clock" class="size-5 text-muted" />
         </div>
-        <div class="stat-value" style="margin-bottom: 4px;">{trunc(@avg_latency)}ms</div>
-        <div class="stat-label" style="font-size: 14px; font-weight: 500;">Avg Response</div>
-        <div class="stat-description" style="margin-top: 4px;">Average latency</div>
+        <div class="stat-value" style="margin-bottom: 2px;">{trunc(@avg_latency)}ms</div>
+        <div class="stat-label" style="font-size: 13px; font-weight: 500;">Avg Response</div>
+        <div class="stat-description" style="margin-top: 2px;">Average latency</div>
       </div>
 
-      <div id="cost-summary" class="vial-card" style="padding: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
-          <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px;">
-            <.icon name="hero-currency-dollar" class="size-6 text-muted" />
-          </div>
+      <div id="cost-summary" class="vial-card" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <.icon name="hero-currency-dollar" class="size-5 text-muted" />
         </div>
-        <div class="stat-value" style="margin-bottom: 4px;">
+        <div class="stat-value" style="margin-bottom: 2px;">
           ${:erlang.float_to_binary(@total_cost, decimals: 4)}
         </div>
-        <div class="stat-label" style="font-size: 14px; font-weight: 500;">Total Cost</div>
-        <div class="stat-description" style="margin-top: 4px;">All evaluations</div>
+        <div class="stat-label" style="font-size: 13px; font-weight: 500;">Total Cost</div>
+        <div class="stat-description" style="margin-top: 2px;">All evaluations</div>
       </div>
     </div>
 
