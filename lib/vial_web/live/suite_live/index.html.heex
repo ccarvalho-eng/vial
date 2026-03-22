@@ -1,17 +1,20 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div style="max-width: 800px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-      <h1 style="margin: 0;">Evaluation Suites</h1>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <.icon name="hero-beaker" class="size-7 text-muted" />
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Evaluation Suites</h1>
+      </div>
       <.link id="new-suite-btn" navigate={~p"/suites/new"} class="button-primary">
-        New Suite
+        <.icon name="hero-plus" class="size-4" /> New Suite
       </.link>
     </div>
 
-    <div id="suites" class="space-y-4">
-      <div :if={@suites == []} class="empty-state">
-        <div class="empty-state-title">No suites yet</div>
+    <div id="suites" style="display: flex; flex-direction: column; gap: 16px;">
+      <div :if={@suites == []} class="vial-card" style="padding: 60px 20px; text-align: center;">
+        <.icon name="hero-beaker" class="size-12 text-muted" style="margin: 0 auto 12px;" />
         <div class="empty-state-description">
-          Create your first evaluation suite to get started.
+          No suites yet. Create your first evaluation suite to get started.
         </div>
       </div>
 
