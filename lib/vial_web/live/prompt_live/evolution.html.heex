@@ -1,141 +1,132 @@
-<div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-3xl font-bold">{@prompt.name}</h1>
-    <.link navigate={~p"/prompts"} class="text-blue-600 hover:text-blue-800">
-      ← Back to Prompts
-    </.link>
-  </div>
-
-  <div class="border-b border-gray-200">
-    <nav class="-mb-px flex space-x-8">
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h1 style="margin: 0;">{@prompt.name}</h1>
       <.link
-        navigate={~p"/prompts/#{@prompt.id}"}
-        class={[
-          "border-b-2 py-4 px-1 text-sm font-medium",
-          "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-        ]}
+        navigate={~p"/prompts"}
+        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
       >
-        Details
+        &larr; Back to Prompts
       </.link>
-      <.link
-        navigate={~p"/prompts/#{@prompt.id}/evolution"}
-        class={[
-          "border-b-2 py-4 px-1 text-sm font-medium",
-          "border-blue-500 text-blue-600"
-        ]}
-      >
-        Evolution
-      </.link>
-    </nav>
-  </div>
-
-  <h2 class="text-xl font-semibold">Evolution</h2>
-
-  <%= if Enum.empty?(@metrics) do %>
-    <div class="bg-gray-50 border border-gray-200 rounded p-8 text-center">
-      <p class="text-gray-600">No versions have been created yet.</p>
-      <p class="text-sm text-gray-500 mt-2">
-        Create a version and run test suites to see evolution metrics.
-      </p>
     </div>
-  <% else %>
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Version
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Created
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Runs
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Pass Rate
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Avg Cost
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Avg Latency
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <%= for metric <- @metrics do %>
+
+    <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
+      <nav style="display: flex; gap: 32px; margin-bottom: -1px;">
+        <.link
+          navigate={~p"/prompts/#{@prompt.id}"}
+          style="border-bottom: 2px solid transparent; padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none;"
+        >
+          Details
+        </.link>
+        <.link
+          navigate={~p"/prompts/#{@prompt.id}/evolution"}
+          style="border-bottom: 2px solid var(--accent); padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none;"
+        >
+          Evolution
+        </.link>
+      </nav>
+    </div>
+
+    <%= if Enum.empty?(@metrics) do %>
+      <div class="empty-state">
+        <div class="empty-state-description">
+          No versions have been created yet. Create a version and run test
+          suites to see evolution metrics.
+        </div>
+      </div>
+    <% else %>
+      <div class="vial-card" style="padding: 0; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: var(--bg-secondary);">
             <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                v{metric.version_number}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {Calendar.strftime(metric.created_at, "%b %d, %Y")}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {metric.total_suite_runs}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= if metric.avg_pass_rate do %>
-                  <span class={[
-                    "inline-flex px-2 py-1 text-xs font-semibold rounded-full",
-                    pass_rate_color(metric.avg_pass_rate)
-                  ]}>
-                    {metric.avg_pass_rate}%
-                  </span>
-                <% else %>
-                  <span class="text-gray-400">-</span>
-                <% end %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= if metric.avg_cost_usd do %>
-                  ${:erlang.float_to_binary(metric.avg_cost_usd, decimals: 4)}
-                <% else %>
-                  <span class="text-gray-400">-</span>
-                <% end %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= if metric.avg_latency_ms do %>
-                  {metric.avg_latency_ms}ms
-                <% else %>
-                  <span class="text-gray-400">-</span>
-                <% end %>
-              </td>
+              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                Version
+              </th>
+              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                Created
+              </th>
+              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                Runs
+              </th>
+              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                Pass Rate
+              </th>
+              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                Avg Cost
+              </th>
+              <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                Avg Latency
+              </th>
             </tr>
-            <%= if not Enum.empty?(metric.provider_breakdown) do %>
-              <tr class="bg-gray-50">
-                <td colspan="6" class="px-6 py-3">
-                  <div class="text-xs font-semibold text-gray-700 mb-2">
-                    Provider Breakdown:
-                  </div>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <%= for breakdown <- metric.provider_breakdown do %>
-                      <div class="bg-white border border-gray-200 rounded p-3">
-                        <div class="font-medium text-sm text-gray-900">
-                          {breakdown.provider_name}
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1">
-                          {breakdown.runs} runs
-                        </div>
-                        <%= if breakdown.avg_pass_rate do %>
-                          <div class="mt-2">
-                            <span class={[
-                              "inline-flex px-2 py-1 text-xs font-semibold rounded-full",
-                              pass_rate_color(breakdown.avg_pass_rate)
-                            ]}>
-                              {breakdown.avg_pass_rate}%
-                            </span>
-                          </div>
-                        <% end %>
-                      </div>
-                    <% end %>
-                  </div>
+          </thead>
+          <tbody style="background-color: var(--bg-primary);">
+            <%= for metric <- @metrics do %>
+              <tr style="border-top: 1px solid var(--border);">
+                <td style="padding: 16px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                  v{metric.version_number}
+                </td>
+                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                  {Calendar.strftime(metric.created_at, "%b %d, %Y")}
+                </td>
+                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                  {metric.total_suite_runs}
+                </td>
+                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                  <%= if metric.avg_pass_rate do %>
+                    <span class={pass_rate_color(metric.avg_pass_rate)} style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;">
+                      {metric.avg_pass_rate}%
+                    </span>
+                  <% else %>
+                    <span style="color: var(--text-tertiary);">-</span>
+                  <% end %>
+                </td>
+                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                  <%= if metric.avg_cost_usd do %>
+                    ${:erlang.float_to_binary(metric.avg_cost_usd, decimals: 4)}
+                  <% else %>
+                    <span style="color: var(--text-tertiary);">-</span>
+                  <% end %>
+                </td>
+                <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                  <%= if metric.avg_latency_ms do %>
+                    {metric.avg_latency_ms}ms
+                  <% else %>
+                    <span style="color: var(--text-tertiary);">-</span>
+                  <% end %>
                 </td>
               </tr>
+              <%= if not Enum.empty?(metric.provider_breakdown) do %>
+                <tr style="background-color: var(--bg-secondary); border-top: 1px solid var(--border);">
+                  <td colspan="6" style="padding: 12px 16px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                      Provider Breakdown:
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                      <%= for breakdown <- metric.provider_breakdown do %>
+                        <div style="background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px;">
+                          <div style="font-weight: 500; font-size: 14px; color: var(--text-primary);">
+                            {breakdown.provider_name}
+                          </div>
+                          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                            {breakdown.runs} runs
+                          </div>
+                          <%= if breakdown.avg_pass_rate do %>
+                            <div style="margin-top: 8px;">
+                              <span class={pass_rate_color(breakdown.avg_pass_rate)} style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;">
+                                {breakdown.avg_pass_rate}%
+                              </span>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
             <% end %>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-  <% end %>
-</div>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>
