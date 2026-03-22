@@ -62,18 +62,35 @@
               >
                 Delete
               </button>
-              <.modal
-                id={"confirm-delete-suite-#{suite.id}"}
-                on_confirm={JS.push("delete", value: %{id: suite.id})}
-              >
-                Are you sure you want to delete "{suite.name}"?
-                <:confirm>Delete</:confirm>
-                <:cancel>Cancel</:cancel>
-              </.modal>
             </div>
           </div>
         </div>
       <% end %>
     </div>
+
+    <%!-- Modals outside cards --%>
+    <.modal
+      :for={suite <- @suites}
+      id={"confirm-delete-suite-#{suite.id}"}
+      on_confirm={JS.push("delete", value: %{id: suite.id})}
+    >
+      <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+        <.icon
+          name="hero-exclamation-triangle"
+          class="size-6 text-red-600"
+          style="flex-shrink: 0;"
+        />
+        <div>
+          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+            Delete Suite
+          </h3>
+          <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+            Are you sure you want to delete "<strong style="color: var(--text-primary);">{suite.name}</strong>"? This action cannot be undone.
+          </p>
+        </div>
+      </div>
+      <:confirm>Delete Suite</:confirm>
+      <:cancel>Cancel</:cancel>
+    </.modal>
   </div>
 </Layouts.app>

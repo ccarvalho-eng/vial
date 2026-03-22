@@ -1,116 +1,171 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div class="evolution-container">
-    <h1>{@prompt.name}</h1>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 600;">{@prompt.name}</h1>
+          <p
+            :if={@prompt.description}
+            style="color: var(--text-secondary); margin: 0; font-size: 15px;"
+          >
+            {@prompt.description}
+          </p>
+        </div>
+        <.link navigate={~p"/prompts/#{@prompt.id}/edit"} class="button-primary">
+          <.icon name="hero-pencil" class="size-4" /> Edit Prompt
+        </.link>
+      </div>
+      <div :if={@prompt.tags != []} style="display: flex; gap: 8px;">
+        <span :for={tag <- @prompt.tags} class="tag">
+          {tag}
+        </span>
+      </div>
+    </div>
 
-    <div class="evolution-tabs">
-      <nav class="evolution-tabs-nav">
-        <.link navigate={~p"/prompts/#{@prompt.id}"} class="evolution-tab-link">
+    <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
+      <nav style="display: flex; gap: 32px; margin-bottom: -1px;">
+        <.link
+          navigate={~p"/prompts/#{@prompt.id}"}
+          style="border-bottom: 2px solid transparent; padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none;"
+        >
           Details
         </.link>
-        <.link navigate={~p"/prompts/#{@prompt.id}/evolution"} class="evolution-tab-link-active">
+        <.link
+          navigate={~p"/prompts/#{@prompt.id}/evolution"}
+          style="border-bottom: 2px solid var(--accent); padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none;"
+        >
           Evolution
         </.link>
       </nav>
     </div>
 
     <%= if Enum.empty?(@metrics) do %>
-      <div class="empty-state">
+      <div class="vial-card" style="padding: 60px 20px; text-align: center;">
+        <.icon name="hero-chart-bar" class="size-12 text-muted" style="margin: 0 auto 12px;" />
         <div class="empty-state-description">
-          No versions have been created yet. Create a version and run test
-          suites to see evolution metrics.
+          No versions have been created yet. Create a version and run test suites to see evolution metrics.
         </div>
       </div>
     <% else %>
-      <div class="vial-card" style="padding: 0; overflow: hidden;">
-        <table class="evolution-table">
-          <thead>
-            <tr>
-              <th>Version</th>
-              <th>Created</th>
-              <th>Runs</th>
-              <th>Pass Rate</th>
-              <th>Avg Cost</th>
-              <th>Avg Latency</th>
-            </tr>
-          </thead>
-          <tbody>
-            <%= for metric <- @metrics do %>
-              <tr>
-                <td class="evolution-table-version">
-                  v{metric.version_number}
-                </td>
-                <td>
-                  {Calendar.strftime(metric.created_at, "%b %d, %Y")}
-                </td>
-                <td>
-                  {metric.total_runs}
-                </td>
-                <td>
-                  <%= if metric.avg_pass_rate do %>
-                    <span class={[
-                      pass_rate_color(metric.avg_pass_rate),
-                      "evolution-pass-rate-badge"
-                    ]}>
-                      {metric.avg_pass_rate}%
-                    </span>
-                  <% else %>
-                    <span style="color: var(--text-tertiary);">-</span>
-                  <% end %>
-                </td>
-                <td>
-                  <%= if metric.avg_cost_usd do %>
-                    ${:erlang.float_to_binary(metric.avg_cost_usd, decimals: 4)}
-                  <% else %>
-                    <span style="color: var(--text-tertiary);">-</span>
-                  <% end %>
-                </td>
-                <td>
-                  <%= if metric.avg_latency_ms do %>
-                    {metric.avg_latency_ms}ms
-                  <% else %>
-                    <span style="color: var(--text-tertiary);">-</span>
-                  <% end %>
-                </td>
+      <div class="vial-card" style="overflow: hidden;">
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Version
+                </th>
+                <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Created
+                </th>
+                <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Runs
+                </th>
+                <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Pass Rate
+                </th>
+                <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Avg Cost
+                </th>
+                <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Avg Latency
+                </th>
               </tr>
-              <%= if not Enum.empty?(metric.provider_breakdown) do %>
-                <tr class="evolution-provider-breakdown">
-                  <td colspan="6">
-                    <div class="evolution-provider-breakdown-title">
-                      Provider Breakdown:
-                    </div>
-                    <div class="evolution-provider-grid">
-                      <%= for breakdown <- metric.provider_breakdown do %>
-                        <div class="evolution-provider-card">
-                          <div class="evolution-provider-name">
-                            {breakdown.provider_name}
-                          </div>
-                          <div class="evolution-provider-runs">
-                            {breakdown.runs} runs
-                          </div>
-                          <%= if breakdown.avg_pass_rate do %>
-                            <div class="evolution-provider-pass-rate">
-                              <span class={[
-                                pass_rate_color(breakdown.avg_pass_rate),
-                                "evolution-pass-rate-badge"
-                              ]}>
-                                {breakdown.avg_pass_rate}%
-                              </span>
-                            </div>
-                          <% end %>
-                        </div>
-                      <% end %>
-                    </div>
+            </thead>
+            <tbody>
+              <%= for metric <- @metrics do %>
+                <tr style="border-bottom: 1px solid var(--border); transition: background-color 0.15s;">
+                  <td style="padding: 16px; font-weight: 600; color: var(--text-primary);">
+                    v{metric.version_number}
+                  </td>
+                  <td style="padding: 16px; color: var(--text-secondary); font-size: 14px;">
+                    {Calendar.strftime(metric.created_at, "%b %d, %Y")}
+                  </td>
+                  <td style="padding: 16px; color: var(--text-primary); font-size: 14px;">
+                    {metric.total_runs}
+                  </td>
+                  <td style="padding: 16px;">
+                    <%= if metric.avg_pass_rate do %>
+                      <% pass_rate = metric.avg_pass_rate %>
+                      <span style={"display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500; #{if pass_rate >= 80, do: "color: #10b981;", else: if pass_rate >= 50, do: "color: #f59e0b;", else: "color: #ef4444;"}"}>
+                        <%= cond do %>
+                          <% pass_rate >= 80 -> %>
+                            <.icon name="hero-check-badge-solid" class="size-3" />
+                          <% pass_rate >= 50 -> %>
+                            <.icon name="hero-exclamation-circle" class="size-3" />
+                          <% true -> %>
+                            <.icon name="hero-x-circle" class="size-3" />
+                        <% end %>
+                        {pass_rate}%
+                      </span>
+                    <% else %>
+                      <span style="color: var(--text-muted);">—</span>
+                    <% end %>
+                  </td>
+                  <td style="padding: 16px; font-size: 14px; font-family: 'SF Mono', 'Monaco', monospace;">
+                    <%= if metric.avg_cost_usd do %>
+                      <span style="color: var(--text-secondary);">
+                        ${:erlang.float_to_binary(metric.avg_cost_usd, decimals: 4)}
+                      </span>
+                    <% else %>
+                      <span style="color: var(--text-muted);">—</span>
+                    <% end %>
+                  </td>
+                  <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                    <%= if metric.avg_latency_ms do %>
+                      {metric.avg_latency_ms}ms
+                    <% else %>
+                      <span style="color: var(--text-muted);">—</span>
+                    <% end %>
                   </td>
                 </tr>
+                <%= if not Enum.empty?(metric.provider_breakdown) do %>
+                  <tr style="border-bottom: 1px solid var(--border); background-color: var(--bg-tertiary);">
+                    <td colspan="6" style="padding: 20px;">
+                      <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+                        Provider Breakdown
+                      </div>
+                      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                        <%= for breakdown <- metric.provider_breakdown do %>
+                          <div style="padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px;">
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                              {breakdown.provider_name}
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                              {breakdown.runs} runs
+                            </div>
+                            <%= if breakdown.avg_pass_rate do %>
+                              <% pass_rate = breakdown.avg_pass_rate %>
+                              <span style={"display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500; #{if pass_rate >= 80, do: "color: #10b981;", else: if pass_rate >= 50, do: "color: #f59e0b;", else: "color: #ef4444;"}"}>
+                                <%= cond do %>
+                                  <% pass_rate >= 80 -> %>
+                                    <.icon name="hero-check-badge-solid" class="size-3" />
+                                  <% pass_rate >= 50 -> %>
+                                    <.icon name="hero-exclamation-circle" class="size-3" />
+                                  <% true -> %>
+                                    <.icon name="hero-x-circle" class="size-3" />
+                                <% end %>
+                                {pass_rate}%
+                              </span>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
               <% end %>
-            <% end %>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
     <% end %>
 
-    <div class="evolution-back-link">
-      <.link navigate={~p"/prompts"}>
+    <div style="margin-top: 24px;">
+      <.link
+        navigate={~p"/prompts"}
+        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
+      >
         &larr; Back to prompts
       </.link>
     </div>
