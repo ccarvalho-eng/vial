@@ -1,0 +1,87 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-3xl font-bold">{@prompt.name}</h1>
+    <.link navigate={~p"/prompts/#{@prompt.id}"} class="text-blue-600 hover:text-blue-800">
+      ← Back to Prompt
+    </.link>
+  </div>
+
+  <h2 class="text-xl font-semibold">Evolution</h2>
+
+  <%= if Enum.empty?(@metrics) do %>
+    <div class="bg-gray-50 border border-gray-200 rounded p-8 text-center">
+      <p class="text-gray-600">No versions have been created yet.</p>
+      <p class="text-sm text-gray-500 mt-2">
+        Create a version and run test suites to see evolution metrics.
+      </p>
+    </div>
+  <% else %>
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Version
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Created
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Runs
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Pass Rate
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Avg Cost
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Avg Latency
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <%= for metric <- @metrics do %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                v{metric.version_number}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {Calendar.strftime(metric.created_at, "%b %d, %Y")}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {metric.total_suite_runs}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= if metric.avg_pass_rate do %>
+                  <span class={[
+                    "inline-flex px-2 py-1 text-xs font-semibold rounded-full",
+                    pass_rate_color(metric.avg_pass_rate)
+                  ]}>
+                    {metric.avg_pass_rate}%
+                  </span>
+                <% else %>
+                  <span class="text-gray-400">-</span>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= if metric.avg_cost_usd do %>
+                  ${:erlang.float_to_binary(metric.avg_cost_usd, decimals: 4)}
+                <% else %>
+                  <span class="text-gray-400">-</span>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= if metric.avg_latency_ms do %>
+                  {metric.avg_latency_ms}ms
+                <% else %>
+                  <span class="text-gray-400">-</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</div>
