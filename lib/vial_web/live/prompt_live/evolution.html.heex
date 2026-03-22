@@ -69,11 +69,14 @@
                   {Calendar.strftime(metric.created_at, "%b %d, %Y")}
                 </td>
                 <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
-                  {metric.total_suite_runs}
+                  {metric.total_runs}
                 </td>
                 <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
                   <%= if metric.avg_pass_rate do %>
-                    <span class={pass_rate_color(metric.avg_pass_rate)} style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;">
+                    <span
+                      class={pass_rate_color(metric.avg_pass_rate)}
+                      style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;"
+                    >
                       {metric.avg_pass_rate}%
                     </span>
                   <% else %>
@@ -112,7 +115,10 @@
                           </div>
                           <%= if breakdown.avg_pass_rate do %>
                             <div style="margin-top: 8px;">
-                              <span class={pass_rate_color(breakdown.avg_pass_rate)} style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;">
+                              <span
+                                class={pass_rate_color(breakdown.avg_pass_rate)}
+                                style="display: inline-flex; padding: 4px 8px; font-size: 12px; font-weight: 600; border-radius: 12px;"
+                              >
                                 {breakdown.avg_pass_rate}%
                               </span>
                             </div>

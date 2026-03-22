@@ -19,7 +19,7 @@ defmodule Vial.Prompts.Evolution do
   - version_id: binary_id
   - version_number: integer
   - created_at: datetime
-  - total_suite_runs: integer
+  - total_runs: integer (includes both suite runs and prompt runs)
   - avg_pass_rate: float | nil
   - avg_cost_usd: float | nil
   - avg_latency_ms: float | nil
@@ -47,7 +47,7 @@ defmodule Vial.Prompts.Evolution do
       version_id: version.id,
       version_number: version.version,
       created_at: version.inserted_at,
-      total_suite_runs: length(suite_runs),
+      total_runs: length(suite_runs) + length(run_results),
       avg_pass_rate: calculate_avg_pass_rate(suite_runs),
       avg_cost_usd: calculate_avg_cost(run_results),
       avg_latency_ms: calculate_avg_latency(run_results),

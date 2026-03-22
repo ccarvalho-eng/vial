@@ -25,7 +25,7 @@ defmodule Vial.Prompts.EvolutionTest do
       assert [metric] = metrics
       assert metric.version_id == version.id
       assert metric.version_number == 1
-      assert metric.total_suite_runs == 0
+      assert metric.total_runs == 0
       assert metric.avg_pass_rate == nil
       assert metric.avg_cost_usd == nil
       assert metric.avg_latency_ms == nil
@@ -62,7 +62,7 @@ defmodule Vial.Prompts.EvolutionTest do
       assert length(metrics) == 1
       assert [metric] = metrics
       assert metric.version_number == 1
-      assert metric.total_suite_runs == 2
+      assert metric.total_runs == 2
       # (8+9) / (10+10) * 100 = 85.0
       assert metric.avg_pass_rate == 85.0
       assert length(metric.provider_breakdown) == 1
