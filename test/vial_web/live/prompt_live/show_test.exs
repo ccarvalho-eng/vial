@@ -102,5 +102,13 @@ defmodule VialWeb.PromptLive.ShowTest do
                "a[href*='/runs/new'][href*='version=#{version.id}']"
              )
     end
+
+    test "shows evolution tab link", %{conn: conn} do
+      prompt = prompt_fixture(%{name: "Test Prompt"})
+
+      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}")
+
+      assert has_element?(view, "a[href=\"/prompts/#{prompt.id}/evolution\"]")
+    end
   end
 end

@@ -1,0 +1,118 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div class="evolution-container">
+    <h1>{@prompt.name}</h1>
+
+    <div class="evolution-tabs">
+      <nav class="evolution-tabs-nav">
+        <.link navigate={~p"/prompts/#{@prompt.id}"} class="evolution-tab-link">
+          Details
+        </.link>
+        <.link navigate={~p"/prompts/#{@prompt.id}/evolution"} class="evolution-tab-link-active">
+          Evolution
+        </.link>
+      </nav>
+    </div>
+
+    <%= if Enum.empty?(@metrics) do %>
+      <div class="empty-state">
+        <div class="empty-state-description">
+          No versions have been created yet. Create a version and run test
+          suites to see evolution metrics.
+        </div>
+      </div>
+    <% else %>
+      <div class="vial-card" style="padding: 0; overflow: hidden;">
+        <table class="evolution-table">
+          <thead>
+            <tr>
+              <th>Version</th>
+              <th>Created</th>
+              <th>Runs</th>
+              <th>Pass Rate</th>
+              <th>Avg Cost</th>
+              <th>Avg Latency</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for metric <- @metrics do %>
+              <tr>
+                <td class="evolution-table-version">
+                  v{metric.version_number}
+                </td>
+                <td>
+                  {Calendar.strftime(metric.created_at, "%b %d, %Y")}
+                </td>
+                <td>
+                  {metric.total_runs}
+                </td>
+                <td>
+                  <%= if metric.avg_pass_rate do %>
+                    <span class={[
+                      pass_rate_color(metric.avg_pass_rate),
+                      "evolution-pass-rate-badge"
+                    ]}>
+                      {metric.avg_pass_rate}%
+                    </span>
+                  <% else %>
+                    <span style="color: var(--text-tertiary);">-</span>
+                  <% end %>
+                </td>
+                <td>
+                  <%= if metric.avg_cost_usd do %>
+                    ${:erlang.float_to_binary(metric.avg_cost_usd, decimals: 4)}
+                  <% else %>
+                    <span style="color: var(--text-tertiary);">-</span>
+                  <% end %>
+                </td>
+                <td>
+                  <%= if metric.avg_latency_ms do %>
+                    {metric.avg_latency_ms}ms
+                  <% else %>
+                    <span style="color: var(--text-tertiary);">-</span>
+                  <% end %>
+                </td>
+              </tr>
+              <%= if not Enum.empty?(metric.provider_breakdown) do %>
+                <tr class="evolution-provider-breakdown">
+                  <td colspan="6">
+                    <div class="evolution-provider-breakdown-title">
+                      Provider Breakdown:
+                    </div>
+                    <div class="evolution-provider-grid">
+                      <%= for breakdown <- metric.provider_breakdown do %>
+                        <div class="evolution-provider-card">
+                          <div class="evolution-provider-name">
+                            {breakdown.provider_name}
+                          </div>
+                          <div class="evolution-provider-runs">
+                            {breakdown.runs} runs
+                          </div>
+                          <%= if breakdown.avg_pass_rate do %>
+                            <div class="evolution-provider-pass-rate">
+                              <span class={[
+                                pass_rate_color(breakdown.avg_pass_rate),
+                                "evolution-pass-rate-badge"
+                              ]}>
+                                {breakdown.avg_pass_rate}%
+                              </span>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+
+    <div class="evolution-back-link">
+      <.link navigate={~p"/prompts"}>
+        &larr; Back to prompts
+      </.link>
+    </div>
+  </div>
+</Layouts.app>

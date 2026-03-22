@@ -83,5 +83,14 @@
         <% end %>
       </div>
     </div>
+
+    <div style="margin-top: 24px;">
+      <.link
+        navigate={~p"/prompts/#{@run.prompt_version.prompt.id}"}
+        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
+      >
+        &larr; Back to prompt
+      </.link>
+    </div>
   </div>
 </Layouts.app>

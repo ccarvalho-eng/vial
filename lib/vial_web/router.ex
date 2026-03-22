@@ -22,6 +22,7 @@ defmodule VialWeb.Router do
     live "/prompts", PromptLive.Index, :index
     live "/prompts/new", PromptLive.New, :new
     live "/prompts/:id/edit", PromptLive.New, :edit
+    live "/prompts/:id/evolution", PromptLive.Evolution, :show
     live "/prompts/:id", PromptLive.Show, :show
 
     live "/runs/new", RunLive.New, :new
