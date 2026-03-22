@@ -67,7 +67,7 @@
             style="padding: 20px; transition: all 0.2s; cursor: pointer; border: 2px solid var(--accent); display: flex; align-items: center; gap: 16px;"
           >
             <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px; flex-shrink: 0;">
-              <.icon name="hero-plus-circle" class="size-6" style="color: var(--accent);" />
+              <.icon name="hero-plus-circle" class="size-6 text-[var(--accent)]" />
             </div>
             <div style="flex: 1;">
               <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
@@ -195,7 +195,7 @@
       </div>
       <%= if @recent_activity == [] do %>
         <div class="vial-card" style="padding: 60px 20px; text-align: center;">
-          <.icon name="hero-inbox" class="size-12 text-muted" style="margin: 0 auto 12px;" />
+          <.icon name="hero-inbox" class="size-12 text-muted empty-state-icon" />
           <div class="empty-state-description">No recent runs</div>
         </div>
       <% else %>

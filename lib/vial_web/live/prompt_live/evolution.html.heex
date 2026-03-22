@@ -41,7 +41,7 @@
 
     <%= if Enum.empty?(@metrics) do %>
       <div class="vial-card" style="padding: 60px 20px; text-align: center;">
-        <.icon name="hero-chart-bar" class="size-12 text-muted" style="margin: 0 auto 12px;" />
+        <.icon name="hero-chart-bar" class="size-12 text-muted empty-state-icon" />
         <div class="empty-state-description">
           No versions have been created yet. Create a version and run test suites to see evolution metrics.
         </div>
