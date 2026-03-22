@@ -1,14 +1,22 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div style="max-width: 800px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-      <h1 style="margin: 0;">Providers</h1>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <.icon name="hero-server-stack" class="size-7 text-muted" />
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Providers</h1>
+      </div>
       <.link navigate={~p"/providers/new"} class="button-primary">
-        New Provider
+        <.icon name="hero-plus" class="size-4" /> New Provider
       </.link>
     </div>
 
-    <div id="providers" style="display: flex; flex-direction: column; gap: 12px;">
-      <div :if={@providers == []} class="empty-state">
+    <div id="providers" style="display: flex; flex-direction: column; gap: 16px;">
+      <div
+        :if={@providers == []}
+        class="vial-card"
+        style="padding: 60px 20px; text-align: center;"
+      >
+        <.icon name="hero-server-stack" class="size-12 text-muted empty-state-icon" />
         <div class="empty-state-description">
           No providers yet. Add a provider to get started.
         </div>
@@ -48,18 +56,34 @@
               >
                 Delete
               </button>
-              <.modal
-                id={"confirm-delete-provider-#{provider.id}"}
-                on_confirm={JS.push("delete", value: %{id: provider.id})}
-              >
-                Are you sure you want to delete "{provider.name}"?
-                <:confirm>Delete</:confirm>
-                <:cancel>Cancel</:cancel>
-              </.modal>
             </div>
           </div>
         </div>
       <% end %>
     </div>
+
+    <%!-- Modals outside cards --%>
+    <.modal
+      :for={provider <- @providers}
+      id={"confirm-delete-provider-#{provider.id}"}
+      on_confirm={JS.push("delete", value: %{id: provider.id})}
+    >
+      <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+        <.icon
+          name="hero-exclamation-triangle"
+          class="size-6 text-red-600 flex-shrink-0"
+        />
+        <div>
+          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+            Delete Provider
+          </h3>
+          <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+            Are you sure you want to delete "<strong style="color: var(--text-primary);">{provider.name}</strong>"? This action cannot be undone.
+          </p>
+        </div>
+      </div>
+      <:confirm>Delete Provider</:confirm>
+      <:cancel>Cancel</:cancel>
+    </.modal>
   </div>
 </Layouts.app>
