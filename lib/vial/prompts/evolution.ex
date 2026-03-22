@@ -51,7 +51,7 @@ defmodule Vial.Prompts.Evolution do
       avg_pass_rate: calculate_avg_pass_rate(suite_runs),
       avg_cost_usd: calculate_avg_cost(run_results),
       avg_latency_ms: calculate_avg_latency(run_results),
-      provider_breakdown: build_provider_breakdown(suite_runs)
+      provider_breakdown: build_provider_breakdown(suite_runs, run_results)
     }
   end
 
@@ -110,28 +110,61 @@ defmodule Vial.Prompts.Evolution do
     end
   end
 
-  defp build_provider_breakdown([]), do: []
+  defp build_provider_breakdown([], []), do: []
 
-  defp build_provider_breakdown(suite_runs) do
-    suite_runs
-    |> Enum.group_by(& &1.provider_id)
-    |> Enum.map(fn {provider_id, runs} ->
+  defp build_provider_breakdown(suite_runs, run_results) do
+    # Group suite runs by provider
+    suite_breakdown =
+      suite_runs
+      |> Enum.group_by(& &1.provider_id)
+      |> Enum.into(%{}, fn {provider_id, runs} ->
+        total_tests = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed + sr.failed end)
+        total_passed = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed end)
+
+        {provider_id,
+         %{suite_runs: length(runs), total_tests: total_tests, total_passed: total_passed}}
+      end)
+
+    # Group run results by provider
+    run_results_with_provider = Repo.preload(run_results, :provider)
+
+    run_breakdown =
+      run_results_with_provider
+      |> Enum.group_by(& &1.provider_id)
+      |> Enum.into(%{}, fn {provider_id, results} ->
+        {provider_id, %{prompt_runs: length(results)}}
+      end)
+
+    # Combine all provider IDs
+    all_provider_ids =
+      MapSet.union(
+        MapSet.new(Map.keys(suite_breakdown)),
+        MapSet.new(Map.keys(run_breakdown))
+      )
+
+    # Build breakdown for each provider
+    all_provider_ids
+    |> Enum.map(fn provider_id ->
       provider = Repo.get!(Provider, provider_id)
 
-      total_tests = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed + sr.failed end)
-      total_passed = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed end)
+      suite_data =
+        Map.get(suite_breakdown, provider_id, %{suite_runs: 0, total_tests: 0, total_passed: 0})
+
+      run_data = Map.get(run_breakdown, provider_id, %{prompt_runs: 0})
+
+      total_runs = suite_data[:suite_runs] + run_data[:prompt_runs]
 
       avg_pass_rate =
-        if total_tests == 0 do
+        if suite_data[:total_tests] == 0 do
           nil
         else
-          Float.round(total_passed / total_tests * 100, 2)
+          Float.round(suite_data[:total_passed] / suite_data[:total_tests] * 100, 2)
         end
 
       %{
         provider_id: provider_id,
         provider_name: provider.name,
-        runs: length(runs),
+        runs: total_runs,
         avg_pass_rate: avg_pass_rate
       }
     end)

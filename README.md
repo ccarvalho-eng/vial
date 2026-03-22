@@ -16,6 +16,7 @@ Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output 
 
 - **Multi-provider comparison** — Run the same prompt across providers side-by-side. Track latency, token usage, and cost per run.
 - **Prompt management** — Version-controlled templates with `{{variable}}` interpolation. Every edit creates an immutable new version. Supports tags and descriptions.
+- **Evolution tracking** — Visualize prompt version performance over time. Track pass rates, cost, and latency trends across versions and providers.
 - **Evaluation suites** — Automated test cases with `contains`, `regex`, and `exact_match` assertions. Track pass rates and catch regressions over time.
 - **Dashboard** — Live metrics as runs execute: cost trends, latency, and per-provider performance.
 
@@ -81,7 +82,9 @@ Explain {{topic}} in exactly 3 sentences.
 
 **3. Build evaluation suites** — Go to **Suites → New Suite**, add test cases with assertions, and run regression tests.
 
-**4. Add a provider** — Go to **Providers → New Provider**, select the type, choose a model, and configure parameters (temperature, max_tokens, etc.). API keys are set via environment variables in `.env`.
+**4. Track evolution** — View the **Evolution** tab on any prompt to see how versions improve over time. Metrics show pass rates, cost, and latency per version and provider.
+
+**5. Add a provider** — Go to **Providers → New Provider**, select the type, choose a model, and configure parameters (temperature, max_tokens, etc.). API keys are set via environment variables in `.env`.
 
 ---
 
