@@ -53,13 +53,14 @@ defmodule Vial.Runs do
   @doc """
   Gets a run by ID, raising if not found.
 
-  Preloads run_results and their associated providers.
+  Preloads run_results and their associated providers, as well as
+  the prompt through the prompt_version.
   """
   @spec get_run!(binary()) :: Run.t()
   def get_run!(id) do
     Run
     |> Repo.get!(id)
-    |> Repo.preload([:prompt_version, run_results: :provider])
+    |> Repo.preload(prompt_version: :prompt, run_results: :provider)
   end
 
   @doc """

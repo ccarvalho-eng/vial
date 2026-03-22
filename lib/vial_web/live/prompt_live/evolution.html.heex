@@ -1,14 +1,6 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
   <div style="max-width: 800px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-      <h1 style="margin: 0;">{@prompt.name}</h1>
-      <.link
-        navigate={~p"/prompts"}
-        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
-      >
-        &larr; Back to Prompts
-      </.link>
-    </div>
+    <h1>{@prompt.name}</h1>
 
     <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
       <nav style="display: flex; gap: 32px; margin-bottom: -1px;">
@@ -134,5 +126,14 @@
         </table>
       </div>
     <% end %>
+
+    <div style="margin-top: 24px;">
+      <.link
+        navigate={~p"/prompts"}
+        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
+      >
+        &larr; Back to prompts
+      </.link>
+    </div>
   </div>
 </Layouts.app>

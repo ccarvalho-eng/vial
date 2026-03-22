@@ -5,9 +5,9 @@ defmodule Vial.Prompts.EvolutionTest do
   import Vial.ProvidersFixtures
   import Vial.EvalsFixtures
 
-  alias Vial.Prompts.Evolution
-  alias Vial.Prompts
   alias Vial.Evals
+  alias Vial.Prompts
+  alias Vial.Prompts.Evolution
 
   describe "get_metrics/1" do
     test "returns empty list when prompt has no versions" do
