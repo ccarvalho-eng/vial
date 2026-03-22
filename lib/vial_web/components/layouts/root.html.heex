@@ -7,7 +7,8 @@
     <.live_title prefix="Vial · ">
       {assigns[:page_title] || "Dashboard"}
     </.live_title>
-    <link rel="icon" type="image/x-icon" href={~p"/favicon.ico"} />
+    <link phx-track-static rel="icon" type="image/png" href={~p"/favicon.ico"} />
+    <link phx-track-static rel="apple-touch-icon" href={~p"/favicon.ico"} />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
