@@ -374,20 +374,18 @@ button:disabled,
 button[type="submit"],
 .button-primary,
 a.button-primary {
-  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-emphasis) 100%);
+  background-color: var(--accent);
   color: #ffffff;
   border: none;
-  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 button[type="submit"]:hover,
 .button-primary:hover,
 a.button-primary:hover {
-  background: linear-gradient(180deg, var(--accent-emphasis) 0%, #6D28D9 100%);
-  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.5);
-  transform: translateY(-1px);
+  background-color: var(--accent-emphasis);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.15);
   color: #ffffff;
   border: none;
 }
@@ -395,8 +393,8 @@ a.button-primary:hover {
 button[type="submit"]:active,
 .button-primary:active,
 a.button-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(139, 92, 246, 0.25);
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Secondary button style */
