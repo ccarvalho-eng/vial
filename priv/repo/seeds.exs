@@ -42,12 +42,41 @@ case Prompts.list_prompts() do
         tags: ["testing", "instruction-following"]
       })
 
-    {:ok, instruction_version} =
+    # Create v1 - basic prompt
+    {:ok, instruction_v1} =
+      Prompts.create_prompt_version(
+        instruction_prompt,
+        """
+        Please respond to the following question with EXACTLY three sentences.
+
+        Question: {{question}}
+        """
+      )
+
+    # Create v2 - improved with numbering instruction
+    {:ok, instruction_v2} =
       Prompts.create_prompt_version(
         instruction_prompt,
         """
         Please respond to the following question with EXACTLY three sentences. \
         No more, no less. Each sentence should start with a number followed by a period.
+
+        Question: {{question}}
+        """
+      )
+
+    # Create v3 - most refined with format example
+    {:ok, instruction_v3} =
+      Prompts.create_prompt_version(
+        instruction_prompt,
+        """
+        Please respond to the following question with EXACTLY three sentences. \
+        No more, no less. Each sentence should start with a number followed by a period.
+
+        Format:
+        1. [First sentence]
+        2. [Second sentence]
+        3. [Third sentence]
 
         Question: {{question}}
         """
@@ -61,7 +90,7 @@ case Prompts.list_prompts() do
         tags: ["testing", "context"]
       })
 
-    {:ok, context_version} =
+    {:ok, _context_version} =
       Prompts.create_prompt_version(
         context_prompt,
         """
@@ -85,7 +114,7 @@ case Prompts.list_prompts() do
         tags: ["testing", "safety"]
       })
 
-    {:ok, refusal_version} =
+    {:ok, _refusal_version} =
       Prompts.create_prompt_version(
         refusal_prompt,
         """
@@ -150,6 +179,43 @@ case Prompts.list_prompts() do
             }
           ]
         })
+
+        # Create suite runs to demonstrate evolution
+        provider = List.first(Providers.list_providers())
+
+        if provider do
+          # v1 runs - lower pass rate
+          {:ok, _sr1} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v1.id,
+              provider_id: provider.id,
+              passed: 6,
+              failed: 4
+            })
+
+          # v2 runs - improved pass rate
+          {:ok, _sr2} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v2.id,
+              provider_id: provider.id,
+              passed: 8,
+              failed: 2
+            })
+
+          # v3 runs - best pass rate
+          {:ok, _sr3} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v3.id,
+              provider_id: provider.id,
+              passed: 9,
+              failed: 1
+            })
+
+          IO.puts("✓ Created evolution demo data with improving pass rates")
+        end
 
         # Suite 2: Context Retention Suite
         {:ok, context_suite} =
