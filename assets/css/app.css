@@ -1065,3 +1065,291 @@ a:has(.vial-card) .vial-card:hover {
   color: var(--accent);
   text-decoration: none;
 }
+
+/* Layout Utilities */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.page-container-wide {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.page-container-narrow {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.page-title {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.page-description {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Flexbox Utilities */
+.flex-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-start {
+  display: flex;
+  justify-content: flex-start;
+  align-items: start;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+/* Grid Utilities */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* Typography Utilities */
+.text-xs {
+  font-size: 12px;
+}
+
+.text-sm {
+  font-size: 13px;
+}
+
+.text-base {
+  font-size: 14px;
+}
+
+.text-lg {
+  font-size: 16px;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+/* Spacing Utilities */
+.gap-xs { gap: 4px; }
+.gap-sm { gap: 6px; }
+.gap-md { gap: 8px; }
+.gap-lg { gap: 12px; }
+.gap-xl { gap: 16px; }
+.gap-2xl { gap: 20px; }
+.gap-3xl { gap: 32px; }
+
+.p-xs { padding: 12px; }
+.p-sm { padding: 16px; }
+.p-md { padding: 20px; }
+
+.mb-xs { margin-bottom: 4px; }
+.mb-sm { margin-bottom: 8px; }
+.mb-md { margin-bottom: 12px; }
+.mb-lg { margin-bottom: 16px; }
+.mb-xl { margin-bottom: 20px; }
+.mb-2xl { margin-bottom: 24px; }
+.mb-3xl { margin-bottom: 32px; }
+.mb-4xl { margin-bottom: 40px; }
+.mb-6xl { margin-bottom: 48px; }
+
+.mt-xs { margin-top: 4px; }
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 12px; }
+.mt-lg { margin-top: 16px; }
+.mt-xl { margin-top: 20px; }
+.mt-2xl { margin-top: 24px; }
+
+/* Stat Card */
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Empty State */
+.empty-state-card {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  margin: 0 auto 12px;
+}
+
+/* Action Buttons */
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* Tab Navigation */
+.tab-nav {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.tab-nav-links {
+  display: flex;
+  gap: 32px;
+  margin-bottom: -1px;
+}
+
+.tab-link {
+  border-bottom: 2px solid transparent;
+  padding: 16px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.tab-link-active {
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+.tab-link-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Table Utilities */
+.table-container {
+  overflow-x: auto;
+}
+
+.table-header {
+  padding: 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-cell {
+  padding: 16px;
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.15s;
+}
+
+/* Back Link */
+.back-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* Pass Rate Row */
+.pass-rate-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 16px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.pass-rate-name {
+  flex: 0 0 200px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pass-rate-progress {
+  flex: 1;
+  min-width: 0;
+}
+
+.pass-rate-stats {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 20px;
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+
+.pass-rate-stat {
+  text-align: center;
+}
+
+.pass-rate-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pass-rate-stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
