@@ -30,18 +30,32 @@
         <form phx-submit="run_suite" style="display: flex; flex-direction: column; gap: 16px;">
           <div>
             <label>Prompt Version</label>
-            <select name="version_id" required disabled={@running}>
+            <select
+              phx-change="select_version"
+              name="version_id"
+              required
+              disabled={@running}
+            >
               <%= for version <- @prompt.versions do %>
-                <option value={version.id}>v{version.version}</option>
+                <option value={version.id} selected={version.id == @selected_version_id}>
+                  v{version.version}
+                </option>
               <% end %>
             </select>
           </div>
 
           <div>
             <label>Provider</label>
-            <select name="provider_id" required disabled={@running}>
+            <select
+              phx-change="select_provider"
+              name="provider_id"
+              required
+              disabled={@running}
+            >
               <%= for provider <- @providers do %>
-                <option value={provider.id}>{provider.name}</option>
+                <option value={provider.id} selected={provider.id == @selected_provider_id}>
+                  {provider.name}
+                </option>
               <% end %>
             </select>
           </div>

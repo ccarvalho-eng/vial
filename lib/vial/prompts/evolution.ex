@@ -10,7 +10,6 @@ defmodule Vial.Prompts.Evolution do
   alias Vial.Prompts.PromptVersion
   alias Vial.Providers.Provider
   alias Vial.Repo
-  alias Vial.Runs.RunResult
 
   @doc """
   Returns aggregated metrics for all versions of a prompt.
@@ -21,8 +20,8 @@ defmodule Vial.Prompts.Evolution do
   - created_at: datetime
   - total_runs: integer (suite runs only)
   - avg_pass_rate: float | nil
-  - avg_cost_usd: float | nil
-  - avg_latency_ms: float | nil
+  - avg_cost_usd: Decimal.t() | nil
+  - avg_latency_ms: integer | nil
   - provider_breakdown: list of provider-specific metrics
   """
   @spec get_metrics(binary()) :: [map()]
@@ -41,7 +40,6 @@ defmodule Vial.Prompts.Evolution do
 
   defp build_version_metrics(version) do
     suite_runs = get_suite_runs(version.id)
-    run_results = get_run_results(version.id)
 
     %{
       version_id: version.id,
@@ -49,8 +47,8 @@ defmodule Vial.Prompts.Evolution do
       created_at: version.inserted_at,
       total_runs: length(suite_runs),
       avg_pass_rate: calculate_avg_pass_rate(suite_runs),
-      avg_cost_usd: calculate_avg_cost(run_results),
-      avg_latency_ms: calculate_avg_latency(run_results),
+      avg_cost_usd: calculate_avg_cost(suite_runs),
+      avg_latency_ms: calculate_avg_latency(suite_runs),
       provider_breakdown: build_provider_breakdown(suite_runs)
     }
   end
@@ -58,14 +56,6 @@ defmodule Vial.Prompts.Evolution do
   defp get_suite_runs(version_id) do
     SuiteRun
     |> where([sr], sr.prompt_version_id == ^version_id)
-    |> Repo.all()
-  end
-
-  defp get_run_results(version_id) do
-    RunResult
-    |> join(:inner, [rr], r in assoc(rr, :run))
-    |> where([rr, r], r.prompt_version_id == ^version_id)
-    |> where([rr], rr.status == :completed)
     |> Repo.all()
   end
 
@@ -85,23 +75,32 @@ defmodule Vial.Prompts.Evolution do
     end
   end
 
-  defp calculate_avg_cost([]), do: nil
+  @doc false
+  def calculate_avg_cost([]), do: nil
 
-  defp calculate_avg_cost(run_results) do
-    costs = Enum.map(run_results, & &1.cost_usd) |> Enum.reject(&is_nil/1)
+  def calculate_avg_cost(suite_runs) do
+    costs =
+      suite_runs
+      |> Enum.map(& &1.avg_cost_usd)
+      |> Enum.reject(&is_nil/1)
 
     if Enum.empty?(costs) do
       nil
     else
-      avg = Enum.sum(costs) / length(costs)
-      Float.round(avg, 4)
+      avg = Enum.reduce(costs, Decimal.new("0"), &Decimal.add/2)
+      avg = Decimal.div(avg, Decimal.new(length(costs)))
+      Decimal.round(avg, 4)
     end
   end
 
-  defp calculate_avg_latency([]), do: nil
+  @doc false
+  def calculate_avg_latency([]), do: nil
 
-  defp calculate_avg_latency(run_results) do
-    latencies = Enum.map(run_results, & &1.latency_ms) |> Enum.reject(&is_nil/1)
+  def calculate_avg_latency(suite_runs) do
+    latencies =
+      suite_runs
+      |> Enum.map(& &1.avg_latency_ms)
+      |> Enum.reject(&is_nil/1)
 
     if Enum.empty?(latencies) do
       nil
@@ -132,7 +131,9 @@ defmodule Vial.Prompts.Evolution do
         provider_id: provider_id,
         provider_name: provider.name,
         runs: length(runs),
-        avg_pass_rate: avg_pass_rate
+        avg_pass_rate: avg_pass_rate,
+        avg_cost_usd: calculate_avg_cost(runs),
+        avg_latency_ms: calculate_avg_latency(runs)
       }
     end)
     |> Enum.sort_by(& &1.provider_name)
@@ -188,7 +189,22 @@ defmodule Vial.Prompts.Evolution do
           breakdown.avg_pass_rate
         end)
 
-      {provider_name, %{pass_rates: pass_rates}}
+      costs =
+        Enum.map(sorted_entries, fn {_name, _version, breakdown} ->
+          breakdown.avg_cost_usd
+        end)
+
+      latencies =
+        Enum.map(sorted_entries, fn {_name, _version, breakdown} ->
+          breakdown.avg_latency_ms
+        end)
+
+      {provider_name,
+       %{
+         pass_rates: pass_rates,
+         costs: costs,
+         latencies: latencies
+       }}
     end)
     |> Map.new()
   end

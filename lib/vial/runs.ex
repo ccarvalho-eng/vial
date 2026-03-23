@@ -3,6 +3,9 @@ defmodule Vial.Runs do
   Context for managing runs and run results.
   """
 
+  import Ecto.Query
+
+  alias Vial.Evals.SuiteRun
   alias Vial.LLM
   alias Vial.Providers.Provider
   alias Vial.Repo
@@ -25,8 +28,6 @@ defmodule Vial.Runs do
   """
   @spec list_recent_runs(integer()) :: [Run.t()]
   def list_recent_runs(limit \\ 10) do
-    import Ecto.Query
-
     Run
     |> order_by([r], desc: r.inserted_at)
     |> limit(^limit)
@@ -35,19 +36,36 @@ defmodule Vial.Runs do
   end
 
   @doc """
-  Calculates the total cost across all run results.
+  Calculates the total cost across all run results and suite runs.
 
-  Returns the sum of cost_usd from all run_results.
+  Returns the sum of cost_usd from all run_results plus avg_cost_usd
+  from all suite_runs.
   """
   @spec total_cost() :: float()
   def total_cost do
-    import Ecto.Query
+    # Individual runs cost
+    run_cost =
+      from(rr in RunResult,
+        select: sum(rr.cost_usd)
+      )
+      |> Repo.one() || 0.0
 
-    query =
-      from r in RunResult,
-        select: sum(r.cost_usd)
+    # Suite runs cost
+    suite_cost =
+      from(sr in SuiteRun,
+        where: not is_nil(sr.avg_cost_usd),
+        select: sum(sr.avg_cost_usd)
+      )
+      |> Repo.one()
 
-    Repo.one(query) || 0.0
+    suite_cost_float =
+      if suite_cost do
+        Decimal.to_float(suite_cost)
+      else
+        0.0
+      end
+
+    run_cost + suite_cost_float
   end
 
   @doc """

@@ -29,6 +29,10 @@ defmodule VialWeb.SuiteLive.Show do
       Evals.list_suite_runs_for_suite(id)
       |> Repo.preload([:prompt_version, :provider])
 
+    # Set default selections to first version and first provider
+    default_version_id = List.first(prompt.versions) |> then(&if &1, do: &1.id, else: nil)
+    default_provider_id = List.first(providers) |> then(&if &1, do: &1.id, else: nil)
+
     socket =
       socket
       |> assign(:page_title, suite.name)
@@ -37,16 +41,27 @@ defmodule VialWeb.SuiteLive.Show do
       |> assign(:providers, providers)
       |> assign(:suite_runs, suite_runs)
       |> assign(:running, false)
+      |> assign(:selected_version_id, default_version_id)
+      |> assign(:selected_provider_id, default_provider_id)
 
     {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
-  def handle_event("run_suite", params, socket) do
-    version_id = Map.get(params, "version_id")
-    provider_id = Map.get(params, "provider_id")
+  def handle_event("select_version", %{"version_id" => version_id}, socket) do
+    {:noreply, assign(socket, :selected_version_id, version_id)}
+  end
 
-    IO.puts("Starting suite execution...")
+  @impl Phoenix.LiveView
+  def handle_event("select_provider", %{"provider_id" => provider_id}, socket) do
+    {:noreply, assign(socket, :selected_provider_id, provider_id)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("run_suite", _params, socket) do
+    # Use the stored selections instead of params
+    version_id = socket.assigns.selected_version_id
+    provider_id = socket.assigns.selected_provider_id
 
     # Start async execution
     pid = self()
@@ -57,13 +72,10 @@ defmodule VialWeb.SuiteLive.Show do
       provider = Providers.get_provider!(provider_id)
       suite = Evals.get_suite_with_test_cases!(suite_id)
 
-      IO.puts("Executing suite in task...")
       result = Evals.execute_suite(suite, version, provider)
-      IO.puts("Suite execution complete, sending result...")
       send(pid, {:suite_completed, result})
     end)
 
-    IO.puts("Setting running to true...")
     {:noreply, assign(socket, :running, true)}
   end
 

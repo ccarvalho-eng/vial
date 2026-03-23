@@ -92,15 +92,18 @@ export const EvolutionChart = {
 
     // Update Cost Chart
     if (this.charts.cost) {
-      const hasCost = this.hasData(chartData.overall.costs)
+      const hasCost = viewMode === 'overall'
+        ? this.hasData(chartData.overall.costs)
+        : this.hasProviderData(chartData.by_provider, 'costs')
       const costContainer = this.el.querySelector('#cost-chart-container')
 
-      // Only show in overall mode for now (per-provider cost not in backend data)
-      if (hasCost && viewMode === 'overall') {
+      if (hasCost) {
         costContainer.style.display = 'block'
-        const costDatasets = this.buildCostDatasets(chartData)
+        const costDatasets = this.buildCostDatasets(chartData, viewMode)
         this.charts.cost.data.labels = labels
         this.charts.cost.data.datasets = costDatasets
+        // Show legend in per-provider mode
+        this.charts.cost.options.plugins.legend.display = viewMode === 'by_provider'
         this.charts.cost.update()
       } else {
         costContainer.style.display = 'none'
@@ -109,15 +112,18 @@ export const EvolutionChart = {
 
     // Update Latency Chart
     if (this.charts.latency) {
-      const hasLatency = this.hasData(chartData.overall.latencies)
+      const hasLatency = viewMode === 'overall'
+        ? this.hasData(chartData.overall.latencies)
+        : this.hasProviderData(chartData.by_provider, 'latencies')
       const latencyContainer = this.el.querySelector('#latency-chart-container')
 
-      // Only show in overall mode for now (per-provider latency not in backend data)
-      if (hasLatency && viewMode === 'overall') {
+      if (hasLatency) {
         latencyContainer.style.display = 'block'
-        const latencyDatasets = this.buildLatencyDatasets(chartData)
+        const latencyDatasets = this.buildLatencyDatasets(chartData, viewMode)
         this.charts.latency.data.labels = labels
         this.charts.latency.data.datasets = latencyDatasets
+        // Show legend in per-provider mode
+        this.charts.latency.options.plugins.legend.display = viewMode === 'by_provider'
         this.charts.latency.update()
       } else {
         latencyContainer.style.display = 'none'
@@ -153,30 +159,71 @@ export const EvolutionChart = {
     }
   },
 
-  buildCostDatasets(chartData) {
-    return [{
-      label: 'Average Cost',
-      data: chartData.overall.costs,
-      borderColor: '#f59e0b',
-      backgroundColor: 'rgba(245, 158, 11, 0.1)',
-      tension: 0.3,
-      fill: true
-    }]
+  buildCostDatasets(chartData, viewMode) {
+    if (viewMode === 'overall') {
+      return [{
+        label: 'Average Cost',
+        data: chartData.overall.costs,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        tension: 0.3,
+        fill: true
+      }]
+    } else {
+      // Per-provider mode
+      const colors = [
+        '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
+        '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+      ]
+
+      return Object.entries(chartData.by_provider || {}).map(([providerName, data], index) => ({
+        label: providerName,
+        data: data.costs,
+        borderColor: colors[index % colors.length],
+        backgroundColor: `${colors[index % colors.length]}33`,
+        tension: 0.3,
+        fill: false
+      }))
+    }
   },
 
-  buildLatencyDatasets(chartData) {
-    return [{
-      label: 'Average Latency',
-      data: chartData.overall.latencies,
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      tension: 0.3,
-      fill: true
-    }]
+  buildLatencyDatasets(chartData, viewMode) {
+    if (viewMode === 'overall') {
+      return [{
+        label: 'Average Latency',
+        data: chartData.overall.latencies,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.3,
+        fill: true
+      }]
+    } else {
+      // Per-provider mode
+      const colors = [
+        '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
+        '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+      ]
+
+      return Object.entries(chartData.by_provider || {}).map(([providerName, data], index) => ({
+        label: providerName,
+        data: data.latencies,
+        borderColor: colors[index % colors.length],
+        backgroundColor: `${colors[index % colors.length]}33`,
+        tension: 0.3,
+        fill: false
+      }))
+    }
   },
 
   hasData(arr) {
     return arr && arr.some(v => v !== null && v !== undefined)
+  },
+
+  hasProviderData(providerData, field) {
+    if (!providerData) return false
+    return Object.values(providerData).some(data =>
+      data[field] && data[field].some(v => v !== null && v !== undefined)
+    )
   },
 
   getChartOptions(yAxisLabel, min, max, showLegend = false) {

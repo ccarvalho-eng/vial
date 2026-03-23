@@ -250,9 +250,91 @@ defmodule Vial.EvalsTest do
       assert {:ok, _suite_run} = Evals.delete_suite_run(suite_run)
       assert_raise Ecto.NoResultsError, fn -> Evals.get_suite_run!(suite_run.id) end
     end
+
+    test "changeset accepts avg_cost_usd and avg_latency_ms" do
+      suite = suite_fixture()
+      prompt = prompt_fixture()
+      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      provider = provider_fixture()
+
+      attrs = %{
+        suite_id: suite.id,
+        prompt_version_id: version.id,
+        provider_id: provider.id,
+        avg_cost_usd: Decimal.new("0.0042"),
+        avg_latency_ms: 350
+      }
+
+      changeset = Vial.Evals.SuiteRun.changeset(%Vial.Evals.SuiteRun{}, attrs)
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_change(changeset, :avg_cost_usd) == Decimal.new("0.0042")
+      assert Ecto.Changeset.get_change(changeset, :avg_latency_ms) == 350
+    end
   end
 
   describe "execute_suite/3" do
+    @tag :openai_integration
+    test "execute_suite captures avg_cost_usd and avg_latency_ms" do
+      suite = suite_fixture()
+      prompt = prompt_fixture()
+      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      provider = provider_fixture()
+
+      # Create test cases that will succeed
+      _tc1 =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          variable_values: %{"input" => "value1"},
+          assertions: [%{"type" => "contains", "value" => "Mock"}]
+        })
+
+      _tc2 =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          variable_values: %{"input" => "value2"},
+          assertions: [%{"type" => "contains", "value" => "response"}]
+        })
+
+      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+
+      assert suite_run.avg_cost_usd != nil
+      assert suite_run.avg_latency_ms != nil
+      assert Decimal.compare(suite_run.avg_cost_usd, Decimal.new("0")) == :gt
+      assert suite_run.avg_latency_ms > 0
+    end
+
+    @tag :openai_integration
+    test "execute_suite handles partial failures in metrics" do
+      suite = suite_fixture()
+      prompt = prompt_fixture()
+      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      provider = provider_fixture()
+
+      # Create one passing and one failing test case
+      _tc1 =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          variable_values: %{"input" => "value1"},
+          assertions: [%{"type" => "contains", "value" => "Mock"}]
+        })
+
+      _tc2 =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          variable_values: %{"input" => "value2"},
+          assertions: [%{"type" => "contains", "value" => "NOTFOUND"}]
+        })
+
+      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+
+      # Should still have metrics from successful tests
+      assert is_nil(suite_run.avg_cost_usd) or
+               Decimal.compare(suite_run.avg_cost_usd, Decimal.new("0")) == :gt
+
+      assert is_nil(suite_run.avg_latency_ms) or suite_run.avg_latency_ms > 0
+    end
+
     @tag :openai_integration
     test "executes suite with passing test cases" do
       suite = suite_fixture()
