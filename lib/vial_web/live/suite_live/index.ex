@@ -8,7 +8,6 @@ defmodule VialWeb.SuiteLive.Index do
   use VialWeb, :live_view
 
   alias Vial.Evals
-  alias Vial.Repo
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -17,7 +16,7 @@ defmodule VialWeb.SuiteLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
-    suites = Evals.list_suites() |> Repo.preload(:prompt)
+    suites = Evals.list_suites_with_prompt()
 
     socket =
       socket
@@ -35,13 +34,13 @@ defmodule VialWeb.SuiteLive.Index do
 
     {:noreply,
      socket
-     |> assign(:suites, Evals.list_suites() |> Repo.preload(:prompt))
+     |> assign(:suites, Evals.list_suites_with_prompt())
      |> put_flash(:info, "Suite deleted successfully")}
   end
 
   @impl Phoenix.LiveView
   def handle_event("run_suite", %{"id" => id}, socket) do
-    suite = Evals.get_suite_with_test_cases!(id) |> Repo.preload(:prompt)
+    suite = Evals.get_suite_with_test_cases_and_prompt!(id)
     prompt = Vial.Prompts.get_prompt_with_versions!(suite.prompt_id)
     providers = Vial.Providers.list_providers()
 
@@ -58,7 +57,7 @@ defmodule VialWeb.SuiteLive.Index do
         suite_id = suite.id
 
         Task.Supervisor.start_child(Vial.TaskSupervisor, fn ->
-          suite = Evals.get_suite_with_test_cases!(suite_id) |> Repo.preload(:prompt)
+          suite = Evals.get_suite_with_test_cases_and_prompt!(suite_id)
           result = Evals.execute_suite(suite, version, provider)
           send(pid, {:suite_run_completed, suite_id, result})
         end)
@@ -69,7 +68,7 @@ defmodule VialWeb.SuiteLive.Index do
 
   @impl Phoenix.LiveView
   def handle_info({:suite_run_completed, suite_id, {:ok, _suite_run}}, socket) do
-    suite = Evals.get_suite!(suite_id) |> Repo.preload(:prompt)
+    suite = Evals.get_suite_with_prompt!(suite_id)
 
     {:noreply,
      socket

@@ -12,10 +12,18 @@ defmodule VialWeb.RunLive.Show do
   alias Vial.Runs
 
   @impl Phoenix.LiveView
-  def mount(%{"id" => id}, _session, socket) do
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_params(%{"id" => id}, _uri, socket) do
     run = Runs.get_run!(id)
 
     if connected?(socket) do
+      # Subscribe to run-specific updates. Topic format: "run:#{run_id}"
+      # NOTE: If multi-tenancy is added in the future, scope topics by org/user:
+      # "run:#{org_id}:#{id}" to prevent data leaks between tenants
       Phoenix.PubSub.subscribe(Vial.PubSub, "run:#{id}")
     end
 
@@ -27,7 +35,7 @@ defmodule VialWeb.RunLive.Show do
       |> assign(:run, run)
       |> assign(:run_results, run.run_results)
 
-    {:ok, socket}
+    {:noreply, socket}
   end
 
   @impl Phoenix.LiveView

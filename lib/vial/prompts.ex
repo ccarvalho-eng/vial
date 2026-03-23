@@ -19,6 +19,20 @@ defmodule Vial.Prompts do
   end
 
   @doc """
+  Lists all prompts with their versions preloaded.
+
+  Versions are ordered by version number descending.
+  """
+  @spec list_prompts_with_versions() :: [Prompt.t()]
+  def list_prompts_with_versions do
+    query =
+      from p in Prompt,
+        preload: [versions: ^from(v in PromptVersion, order_by: [desc: v.version])]
+
+    Repo.all(query)
+  end
+
+  @doc """
   Gets a prompt by ID, raising if not found.
   """
   @spec get_prompt!(binary()) :: Prompt.t()

@@ -51,7 +51,7 @@ defmodule VialWeb.SuiteLive.New do
 
   defp apply_action(socket, :new, _params) do
     changeset = Evals.change_suite(%Suite{})
-    prompts = Prompts.list_prompts() |> Vial.Repo.preload(:versions)
+    prompts = Prompts.list_prompts_with_versions()
 
     socket
     |> assign(:page_title, "New Suite")
@@ -63,9 +63,9 @@ defmodule VialWeb.SuiteLive.New do
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    suite = Evals.get_suite!(id) |> Vial.Repo.preload([:prompt, :test_cases])
+    suite = Evals.get_suite_with_test_cases_and_prompt!(id)
     changeset = Evals.change_suite(suite)
-    prompts = Prompts.list_prompts() |> Vial.Repo.preload(:versions)
+    prompts = Prompts.list_prompts_with_versions()
 
     # Get the selected prompt if suite has one
     selected_prompt =

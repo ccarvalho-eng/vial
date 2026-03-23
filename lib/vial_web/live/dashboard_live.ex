@@ -12,6 +12,11 @@ defmodule VialWeb.DashboardLive do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_params(_params, _uri, socket) do
     recent_activity = Stats.list_recent_activity(10)
     pass_rates = Evals.pass_rates_by_prompt() |> sort_by_pass_rate()
 
@@ -27,6 +32,7 @@ defmodule VialWeb.DashboardLive do
 
     socket =
       socket
+      |> assign(:page_title, "Dashboard")
       |> assign(:recent_activity, recent_activity)
       |> assign(:pass_rates, pass_rates)
       |> assign(:total_runs, total_runs)
@@ -37,7 +43,7 @@ defmodule VialWeb.DashboardLive do
       |> assign(:total_cost, total_cost)
       |> assign(:last_run_at, last_run_at)
 
-    {:ok, socket}
+    {:noreply, socket}
   end
 
   defp sort_by_pass_rate(pass_rates) do

@@ -9,16 +9,7 @@ defmodule VialWeb.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
-    all_prompts = Prompts.list_prompts()
-    all_tags = extract_all_tags(all_prompts)
-
-    {:ok,
-     assign(socket,
-       prompts: [],
-       search_query: "",
-       selected_tags: [],
-       all_tags: all_tags
-     )}
+    {:ok, socket}
   end
 
   @impl Phoenix.LiveView

@@ -24,11 +24,31 @@ defmodule Vial.Evals do
   end
 
   @doc """
+  Lists all suites with their associated prompt preloaded.
+  """
+  @spec list_suites_with_prompt() :: [Suite.t()]
+  def list_suites_with_prompt do
+    Suite
+    |> preload(:prompt)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a suite by ID, raising if not found.
   """
   @spec get_suite!(binary()) :: Suite.t()
   def get_suite!(id) do
     Repo.get!(Suite, id)
+  end
+
+  @doc """
+  Gets a suite by ID with prompt preloaded, raising if not found.
+  """
+  @spec get_suite_with_prompt!(binary()) :: Suite.t()
+  def get_suite_with_prompt!(id) do
+    Suite
+    |> Repo.get!(id)
+    |> Repo.preload(:prompt)
   end
 
   @doc """
@@ -39,6 +59,16 @@ defmodule Vial.Evals do
     Suite
     |> Repo.get!(id)
     |> Repo.preload(:test_cases)
+  end
+
+  @doc """
+  Gets a suite with test cases and prompt preloaded.
+  """
+  @spec get_suite_with_test_cases_and_prompt!(binary()) :: Suite.t()
+  def get_suite_with_test_cases_and_prompt!(id) do
+    Suite
+    |> Repo.get!(id)
+    |> Repo.preload([:test_cases, :prompt])
   end
 
   @doc """
@@ -153,6 +183,18 @@ defmodule Vial.Evals do
     SuiteRun
     |> where([sr], sr.suite_id == ^suite_id)
     |> order_by([sr], desc: sr.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets suite runs for a specific suite with prompt_version and provider
+  preloaded.
+  """
+  def list_suite_runs_for_suite_with_associations(suite_id) do
+    SuiteRun
+    |> where([sr], sr.suite_id == ^suite_id)
+    |> order_by([sr], desc: sr.inserted_at)
+    |> preload([:prompt_version, :provider])
     |> Repo.all()
   end
 

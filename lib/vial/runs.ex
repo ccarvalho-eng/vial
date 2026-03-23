@@ -172,8 +172,9 @@ defmodule Vial.Runs do
       )
 
     _results =
-      providers
-      |> Task.async_stream(
+      Task.Supervisor.async_stream(
+        Vial.TaskSupervisor,
+        providers,
         fn provider ->
           execute_provider(run, provider, rendered_prompt)
         end,

@@ -11,7 +11,6 @@ defmodule VialWeb.SuiteLive.Show do
   alias Vial.Evals
   alias Vial.Prompts
   alias Vial.Providers
-  alias Vial.Repo
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -20,14 +19,12 @@ defmodule VialWeb.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_params(%{"id" => id}, _uri, socket) do
-    suite = Evals.get_suite_with_test_cases!(id) |> Repo.preload(:prompt)
+    suite = Evals.get_suite_with_test_cases_and_prompt!(id)
     prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
     providers = Providers.list_providers()
 
     # Load existing suite runs
-    suite_runs =
-      Evals.list_suite_runs_for_suite(id)
-      |> Repo.preload([:prompt_version, :provider])
+    suite_runs = Evals.list_suite_runs_for_suite_with_associations(id)
 
     # Set default selections to first version and first provider
     default_version_id = List.first(prompt.versions) |> then(&if &1, do: &1.id, else: nil)
@@ -81,7 +78,9 @@ defmodule VialWeb.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_info({:suite_completed, {:ok, suite_run}}, socket) do
-    suite_run = Repo.preload(suite_run, [:prompt_version, :provider])
+    # Suite run comes from execute_suite which returns it after insert,
+    # so we need to preload associations here since it's not from a context query
+    suite_run = Vial.Repo.preload(suite_run, [:prompt_version, :provider])
 
     {:noreply,
      socket
