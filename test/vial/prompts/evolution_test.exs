@@ -174,4 +174,77 @@ defmodule Vial.Prompts.EvolutionTest do
       assert metric.avg_pass_rate == nil
     end
   end
+
+  describe "prepare_chart_data/1" do
+    test "transforms metrics into chart-ready structure" do
+      metrics = [
+        %{
+          version_number: 1,
+          avg_pass_rate: 78.5,
+          avg_cost_usd: 0.021,
+          avg_latency_ms: 480,
+          provider_breakdown: [
+            %{provider_name: "OpenAI", avg_pass_rate: 80.0},
+            %{provider_name: "Anthropic", avg_pass_rate: 77.0}
+          ]
+        },
+        %{
+          version_number: 2,
+          avg_pass_rate: 85.2,
+          avg_cost_usd: 0.019,
+          avg_latency_ms: 420,
+          provider_breakdown: [
+            %{provider_name: "OpenAI", avg_pass_rate: 87.0},
+            %{provider_name: "Anthropic", avg_pass_rate: 83.5}
+          ]
+        }
+      ]
+
+      result = Evolution.prepare_chart_data(metrics)
+
+      assert result.versions == [1, 2]
+      assert result.overall.pass_rates == [78.5, 85.2]
+      assert result.overall.costs == [0.021, 0.019]
+      assert result.overall.latencies == [480, 420]
+      assert result.by_provider["OpenAI"].pass_rates == [80.0, 87.0]
+      assert result.by_provider["Anthropic"].pass_rates == [77.0, 83.5]
+    end
+
+    test "handles nil values gracefully" do
+      metrics = [
+        %{
+          version_number: 1,
+          avg_pass_rate: nil,
+          avg_cost_usd: nil,
+          avg_latency_ms: nil,
+          provider_breakdown: []
+        },
+        %{
+          version_number: 2,
+          avg_pass_rate: 85.2,
+          avg_cost_usd: 0.019,
+          avg_latency_ms: 420,
+          provider_breakdown: []
+        }
+      ]
+
+      result = Evolution.prepare_chart_data(metrics)
+
+      assert result.versions == [1, 2]
+      assert result.overall.pass_rates == [nil, 85.2]
+      assert result.overall.costs == [nil, 0.019]
+      assert result.overall.latencies == [nil, 420]
+      assert result.by_provider == %{}
+    end
+
+    test "handles empty metrics list" do
+      result = Evolution.prepare_chart_data([])
+
+      assert result.versions == []
+      assert result.overall.pass_rates == []
+      assert result.overall.costs == []
+      assert result.overall.latencies == []
+      assert result.by_provider == %{}
+    end
+  end
 end
