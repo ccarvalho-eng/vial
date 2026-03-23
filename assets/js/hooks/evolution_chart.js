@@ -61,7 +61,27 @@ export const EvolutionChart = {
 
     this.chart.data.labels = chartData.versions.map(v => `v${v}`)
     this.chart.data.datasets = datasets
-    this.chart.update('none') // No animation for updates
+
+    // Update scale visibility based on data
+    this.updateScales(chartData, viewMode)
+
+    this.chart.update() // Full update with recalculation
+  },
+
+  updateScales(chartData, viewMode) {
+    if (viewMode === 'overall') {
+      const hasCost = chartData.overall.costs && chartData.overall.costs.some(c => c !== null)
+      const hasLatency = chartData.overall.latencies && chartData.overall.latencies.some(l => l !== null)
+
+      this.chart.options.scales.y.display = true
+      this.chart.options.scales.y1.display = hasCost
+      this.chart.options.scales.y2.display = hasLatency
+    } else {
+      // Per-provider only shows pass rate
+      this.chart.options.scales.y.display = true
+      this.chart.options.scales.y1.display = false
+      this.chart.options.scales.y2.display = false
+    }
   },
 
   buildOverallDatasets(chartData) {
