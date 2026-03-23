@@ -168,7 +168,9 @@
                   <td style="padding: 16px; font-size: 14px; font-family: 'SF Mono', 'Monaco', monospace;">
                     <%= if metric.avg_cost_usd do %>
                       <span style="color: var(--text-secondary);">
-                        ${:erlang.float_to_binary(Decimal.to_float(metric.avg_cost_usd), decimals: 4)}
+                        ${:erlang.float_to_binary(Decimal.to_float(metric.avg_cost_usd),
+                          decimals: 4
+                        )}
                       </span>
                     <% else %>
                       <span style="color: var(--text-muted);">—</span>
