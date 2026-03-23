@@ -93,6 +93,7 @@ export const EvolutionChart = {
       const hasCost = this.hasData(chartData.overall.costs)
       const costContainer = this.el.querySelector('#cost-chart-container')
 
+      // Only show in overall mode for now (per-provider cost not in backend data)
       if (hasCost && viewMode === 'overall') {
         costContainer.style.display = 'block'
         const costDatasets = this.buildCostDatasets(chartData)
@@ -109,6 +110,7 @@ export const EvolutionChart = {
       const hasLatency = this.hasData(chartData.overall.latencies)
       const latencyContainer = this.el.querySelector('#latency-chart-container')
 
+      // Only show in overall mode for now (per-provider latency not in backend data)
       if (hasLatency && viewMode === 'overall') {
         latencyContainer.style.display = 'block'
         const latencyDatasets = this.buildLatencyDatasets(chartData)
