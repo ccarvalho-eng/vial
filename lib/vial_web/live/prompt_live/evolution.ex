@@ -36,7 +36,13 @@ defmodule VialWeb.PromptLive.Evolution do
         :by_provider -> :overall
       end
 
-    {:noreply, assign(socket, view_mode: new_mode)}
+    {:noreply,
+     socket
+     |> assign(view_mode: new_mode)
+     |> push_event("update-chart", %{
+       chart_data: socket.assigns.chart_data,
+       view_mode: new_mode
+     })}
   end
 
   @impl Phoenix.LiveView
