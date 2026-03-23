@@ -24,6 +24,7 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/vial"
 import topbar from "../vendor/topbar"
+import {EvolutionChart} from "./hooks/evolution_chart"
 
 // Auto-dismiss flash messages after 5 seconds
 const AutoDismissFlash = {
@@ -93,7 +94,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AutoDismissFlash},
+  hooks: {...colocatedHooks, AutoDismissFlash, EvolutionChart},
 })
 
 // Show progress bar on live navigation and form submits

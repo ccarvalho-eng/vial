@@ -14,10 +14,10 @@ alias Vial.Providers
 alias Vial.Prompts
 alias Vial.Evals
 
-# Create default Ollama provider if it doesn't exist
+# Create default providers if they don't exist
 case Providers.list_providers() do
   [] ->
-    {:ok, _provider} =
+    {:ok, _provider1} =
       Providers.create_provider(%{
         name: "Ollama Llama 2",
         provider: :ollama,
@@ -25,7 +25,15 @@ case Providers.list_providers() do
         config: %{"temperature" => 0.7, "max_tokens" => 1000}
       })
 
-    IO.puts("✓ Created default Ollama provider")
+    {:ok, _provider2} =
+      Providers.create_provider(%{
+        name: "OpenAI GPT-3.5",
+        provider: :openai,
+        model: "gpt-3.5-turbo",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    IO.puts("✓ Created default providers")
 
   _ ->
     IO.puts("→ Providers already exist, skipping")
@@ -77,6 +85,47 @@ case Prompts.list_prompts() do
         1. [First sentence]
         2. [Second sentence]
         3. [Third sentence]
+
+        Question: {{question}}
+        """
+      )
+
+    # Create v4 - adds emphasis on clarity
+    {:ok, instruction_v4} =
+      Prompts.create_prompt_version(
+        instruction_prompt,
+        """
+        Please respond to the following question with EXACTLY three sentences. \
+        No more, no less. Each sentence should start with a number followed by a period.
+
+        Format:
+        1. [First sentence - clear and concise]
+        2. [Second sentence - add detail]
+        3. [Third sentence - summarize or conclude]
+
+        Ensure each sentence is complete and grammatically correct.
+
+        Question: {{question}}
+        """
+      )
+
+    # Create v5 - most comprehensive with all guidance
+    {:ok, instruction_v5} =
+      Prompts.create_prompt_version(
+        instruction_prompt,
+        """
+        Please respond to the following question with EXACTLY three sentences. \
+        No more, no less. Each sentence should start with a number followed by a period.
+
+        Format requirements:
+        1. [First sentence - introduce the topic clearly and concisely]
+        2. [Second sentence - provide supporting detail or explanation]
+        3. [Third sentence - summarize the key point or provide conclusion]
+
+        Guidelines:
+        - Each sentence must be complete and grammatically correct
+        - Use proper punctuation
+        - Stay focused on the question being asked
 
         Question: {{question}}
         """
@@ -180,41 +229,117 @@ case Prompts.list_prompts() do
           ]
         })
 
-        # Create suite runs to demonstrate evolution
-        provider = List.first(Providers.list_providers())
+        # Create suite runs to demonstrate evolution across multiple providers
+        providers = Providers.list_providers()
 
-        if provider do
-          # v1 runs - lower pass rate
+        if length(providers) >= 2 do
+          [provider1, provider2 | _] = providers
+
+          # Provider 1: Demonstrate clear evolution (70% -> 73% -> 76% -> 79% -> 82%)
+          # v1: 70% pass rate (7/10)
           {:ok, _sr1} =
             Evals.create_suite_run(%{
               suite_id: instruction_suite.id,
               prompt_version_id: instruction_v1.id,
-              provider_id: provider.id,
-              passed: 6,
-              failed: 4
+              provider_id: provider1.id,
+              passed: 7,
+              failed: 3
             })
 
-          # v2 runs - improved pass rate
+          # v2: 73% pass rate (8/11 rounded)
           {:ok, _sr2} =
             Evals.create_suite_run(%{
               suite_id: instruction_suite.id,
               prompt_version_id: instruction_v2.id,
-              provider_id: provider.id,
+              provider_id: provider1.id,
               passed: 8,
-              failed: 2
+              failed: 3
             })
 
-          # v3 runs - best pass rate
+          # v3: 76% pass rate (13/17 rounded)
           {:ok, _sr3} =
             Evals.create_suite_run(%{
               suite_id: instruction_suite.id,
               prompt_version_id: instruction_v3.id,
-              provider_id: provider.id,
-              passed: 9,
-              failed: 1
+              provider_id: provider1.id,
+              passed: 13,
+              failed: 4
             })
 
-          IO.puts("✓ Created evolution demo data with improving pass rates")
+          # v4: 79% pass rate (15/19 rounded)
+          {:ok, _sr4} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v4.id,
+              provider_id: provider1.id,
+              passed: 15,
+              failed: 4
+            })
+
+          # v5: 82% pass rate (18/22 rounded)
+          {:ok, _sr5} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v5.id,
+              provider_id: provider1.id,
+              passed: 18,
+              failed: 4
+            })
+
+          # Provider 2: Similar trend with slight variations
+          # v1: 68% pass rate
+          {:ok, _sr6} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v1.id,
+              provider_id: provider2.id,
+              passed: 13,
+              failed: 6
+            })
+
+          # v2: 71% pass rate
+          {:ok, _sr7} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v2.id,
+              provider_id: provider2.id,
+              passed: 15,
+              failed: 6
+            })
+
+          # v3: 75% pass rate
+          {:ok, _sr8} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v3.id,
+              provider_id: provider2.id,
+              passed: 15,
+              failed: 5
+            })
+
+          # v4: 77% pass rate
+          {:ok, _sr9} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v4.id,
+              provider_id: provider2.id,
+              passed: 17,
+              failed: 5
+            })
+
+          # v5: 80% pass rate
+          {:ok, _sr10} =
+            Evals.create_suite_run(%{
+              suite_id: instruction_suite.id,
+              prompt_version_id: instruction_v5.id,
+              provider_id: provider2.id,
+              passed: 16,
+              failed: 4
+            })
+
+          IO.puts("✓ Created evolution demo data with 5 versions across 2 providers")
+          IO.puts("  Provider 1 trend: 70% → 73% → 76% → 79% → 82%")
+          IO.puts("  Provider 2 trend: 68% → 71% → 75% → 77% → 80%")
         end
 
         # Suite 2: Context Retention Suite

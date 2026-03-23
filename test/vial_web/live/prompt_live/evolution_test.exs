@@ -58,4 +58,34 @@ defmodule VialWeb.PromptLive.EvolutionTest do
       assert html =~ "80.0%"
     end
   end
+
+  describe "chart functionality" do
+    test "assigns chart data on mount", %{conn: conn} do
+      prompt = prompt_fixture()
+
+      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+
+      state = :sys.get_state(view.pid)
+      socket = state.socket
+
+      assert socket.assigns.chart_data
+      assert socket.assigns.view_mode == :overall
+    end
+
+    test "toggles view mode", %{conn: conn} do
+      prompt = prompt_fixture()
+
+      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+
+      state = :sys.get_state(view.pid)
+      socket = state.socket
+      assert socket.assigns.view_mode == :overall
+
+      render_click(view, "toggle_view_mode")
+
+      state = :sys.get_state(view.pid)
+      socket = state.socket
+      assert socket.assigns.view_mode == :by_provider
+    end
+  end
 end

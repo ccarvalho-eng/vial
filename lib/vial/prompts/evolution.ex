@@ -137,4 +137,59 @@ defmodule Vial.Prompts.Evolution do
     end)
     |> Enum.sort_by(& &1.provider_name)
   end
+
+  @doc """
+  Prepares metrics data for Chart.js visualization.
+
+  Returns map with structure:
+  - versions: list of version numbers
+  - overall: aggregated metrics across all providers
+  - by_provider: metrics grouped by provider name
+  """
+  @spec prepare_chart_data([map()]) :: map()
+  def prepare_chart_data(metrics) do
+    %{
+      versions: extract_versions(metrics),
+      overall: extract_overall_metrics(metrics),
+      by_provider: extract_provider_metrics(metrics)
+    }
+  end
+
+  defp extract_versions(metrics) do
+    Enum.map(metrics, & &1.version_number)
+  end
+
+  defp extract_overall_metrics(metrics) do
+    %{
+      pass_rates: Enum.map(metrics, & &1.avg_pass_rate),
+      costs: Enum.map(metrics, & &1.avg_cost_usd),
+      latencies: Enum.map(metrics, & &1.avg_latency_ms)
+    }
+  end
+
+  defp extract_provider_metrics(metrics) do
+    metrics
+    |> Enum.flat_map(fn metric ->
+      Enum.map(metric.provider_breakdown, fn breakdown ->
+        {breakdown.provider_name, metric.version_number, breakdown}
+      end)
+    end)
+    |> Enum.group_by(fn {provider_name, _version, _breakdown} ->
+      provider_name
+    end)
+    |> Enum.map(fn {provider_name, entries} ->
+      # Sort by version to maintain order
+      sorted_entries =
+        entries
+        |> Enum.sort_by(fn {_name, version, _breakdown} -> version end)
+
+      pass_rates =
+        Enum.map(sorted_entries, fn {_name, _version, breakdown} ->
+          breakdown.avg_pass_rate
+        end)
+
+      {provider_name, %{pass_rates: pass_rates}}
+    end)
+    |> Map.new()
+  end
 end

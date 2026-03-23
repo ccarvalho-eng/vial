@@ -1,0 +1,8 @@
+{
+  "name": "vial",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "chart.js": "^4.4.0"
+  }
+}

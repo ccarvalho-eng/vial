@@ -47,6 +47,63 @@
         </div>
       </div>
     <% else %>
+      <div class="vial-card" style="margin-bottom: 24px;">
+        <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Evolution Trends</h2>
+          <button
+            type="button"
+            phx-click="toggle_view_mode"
+            class="button-secondary"
+            style="padding: 8px 16px; font-size: 14px;"
+          >
+            <%= if @view_mode == :overall do %>
+              Switch to Per-Provider
+            <% else %>
+              Switch to Overall
+            <% end %>
+          </button>
+        </div>
+        <div
+          id="evolution-charts"
+          phx-hook="EvolutionChart"
+          data-chart-data={Jason.encode!(@chart_data)}
+          data-view-mode={@view_mode}
+          style="padding: 20px;"
+        >
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+            <!-- Pass Rate Chart -->
+            <div>
+              <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+                Pass Rate
+              </h3>
+              <div style="height: 200px;">
+                <canvas id="pass-rate-chart"></canvas>
+              </div>
+            </div>
+            
+<!-- Cost Chart (only if data exists) -->
+            <div id="cost-chart-container" style="display: none;">
+              <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+                Average Cost
+              </h3>
+              <div style="height: 200px;">
+                <canvas id="cost-chart"></canvas>
+              </div>
+            </div>
+            
+<!-- Latency Chart (only if data exists) -->
+            <div id="latency-chart-container" style="display: none;">
+              <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+                Average Latency
+              </h3>
+              <div style="height: 200px;">
+                <canvas id="latency-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="vial-card" style="overflow: hidden;">
         <div style="overflow-x: auto;">
           <table style="width: 100%; border-collapse: collapse;">
