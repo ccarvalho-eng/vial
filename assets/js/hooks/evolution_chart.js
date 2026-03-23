@@ -85,6 +85,8 @@ export const EvolutionChart = {
       const passRateDatasets = this.buildPassRateDatasets(chartData, viewMode)
       this.charts.passRate.data.labels = labels
       this.charts.passRate.data.datasets = passRateDatasets
+      // Only show legend when there are multiple lines (per-provider mode)
+      this.charts.passRate.options.plugins.legend.display = viewMode === 'by_provider'
       this.charts.passRate.update()
     }
 
