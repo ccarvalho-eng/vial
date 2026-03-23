@@ -14,3 +14,10 @@ runs:
       uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: 'assets/package-lock.json'
+
+    - name: Install Node dependencies
+      shell: bash
+      working-directory: assets
+      run: npm ci
