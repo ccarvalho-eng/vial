@@ -464,12 +464,15 @@ defmodule VialWeb.CoreComponents do
         role="dialog"
         aria-modal="true"
         tabindex="0"
+        phx-click={hide_modal(@id)}
       >
-        <div class="flex min-h-full items-center justify-center p-4">
+        <div class="flex min-h-full items-start justify-center p-4" style="padding-top: 120px;">
           <div
             id={"#{@id}-container"}
             class="vial-card"
             style="max-width: 400px; width: 100%;"
+            phx-click={JS.exec("phx-click-away", to: "##{@id}")}
+            onclick="event.stopPropagation();"
           >
             <div id={"#{@id}-content"}>
               <div style="margin-bottom: 20px; font-size: 16px; color: var(--text-primary);">
