@@ -236,6 +236,7 @@ case Prompts.list_prompts() do
           [provider1, provider2 | _] = providers
 
           # Provider 1: Demonstrate clear evolution (70% -> 73% -> 76% -> 79% -> 82%)
+          # Cost and latency improve as prompts become more efficient
           # v1: 70% pass rate (7/10)
           {:ok, _sr1} =
             Evals.create_suite_run(%{
@@ -243,7 +244,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v1.id,
               provider_id: provider1.id,
               passed: 7,
-              failed: 3
+              failed: 3,
+              avg_cost_usd: Decimal.new("0.0045"),
+              avg_latency_ms: 850
             })
 
           # v2: 73% pass rate (8/11 rounded)
@@ -253,7 +256,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v2.id,
               provider_id: provider1.id,
               passed: 8,
-              failed: 3
+              failed: 3,
+              avg_cost_usd: Decimal.new("0.0042"),
+              avg_latency_ms: 820
             })
 
           # v3: 76% pass rate (13/17 rounded)
@@ -263,7 +268,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v3.id,
               provider_id: provider1.id,
               passed: 13,
-              failed: 4
+              failed: 4,
+              avg_cost_usd: Decimal.new("0.0040"),
+              avg_latency_ms: 800
             })
 
           # v4: 79% pass rate (15/19 rounded)
@@ -273,7 +280,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v4.id,
               provider_id: provider1.id,
               passed: 15,
-              failed: 4
+              failed: 4,
+              avg_cost_usd: Decimal.new("0.0038"),
+              avg_latency_ms: 780
             })
 
           # v5: 82% pass rate (18/22 rounded)
@@ -283,10 +292,13 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v5.id,
               provider_id: provider1.id,
               passed: 18,
-              failed: 4
+              failed: 4,
+              avg_cost_usd: Decimal.new("0.0036"),
+              avg_latency_ms: 760
             })
 
           # Provider 2: Similar trend with slight variations
+          # Slightly different cost/latency characteristics than Provider 1
           # v1: 68% pass rate
           {:ok, _sr6} =
             Evals.create_suite_run(%{
@@ -294,7 +306,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v1.id,
               provider_id: provider2.id,
               passed: 13,
-              failed: 6
+              failed: 6,
+              avg_cost_usd: Decimal.new("0.0048"),
+              avg_latency_ms: 920
             })
 
           # v2: 71% pass rate
@@ -304,7 +318,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v2.id,
               provider_id: provider2.id,
               passed: 15,
-              failed: 6
+              failed: 6,
+              avg_cost_usd: Decimal.new("0.0046"),
+              avg_latency_ms: 890
             })
 
           # v3: 75% pass rate
@@ -314,7 +330,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v3.id,
               provider_id: provider2.id,
               passed: 15,
-              failed: 5
+              failed: 5,
+              avg_cost_usd: Decimal.new("0.0044"),
+              avg_latency_ms: 860
             })
 
           # v4: 77% pass rate
@@ -324,7 +342,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v4.id,
               provider_id: provider2.id,
               passed: 17,
-              failed: 5
+              failed: 5,
+              avg_cost_usd: Decimal.new("0.0041"),
+              avg_latency_ms: 830
             })
 
           # v5: 80% pass rate
@@ -334,7 +354,9 @@ case Prompts.list_prompts() do
               prompt_version_id: instruction_v5.id,
               provider_id: provider2.id,
               passed: 16,
-              failed: 4
+              failed: 4,
+              avg_cost_usd: Decimal.new("0.0039"),
+              avg_latency_ms: 810
             })
 
           IO.puts("✓ Created evolution demo data with 5 versions across 2 providers")
