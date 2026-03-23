@@ -175,6 +175,79 @@ defmodule Vial.Prompts.EvolutionTest do
     end
   end
 
+  describe "calculate_avg_cost from suite_runs" do
+    test "returns nil for empty list" do
+      assert Evolution.calculate_avg_cost([]) == nil
+    end
+
+    test "returns nil when all costs are nil" do
+      suite_runs = [
+        %{avg_cost_usd: nil},
+        %{avg_cost_usd: nil}
+      ]
+
+      assert Evolution.calculate_avg_cost(suite_runs) == nil
+    end
+
+    test "averages non-nil costs only" do
+      suite_runs = [
+        %{avg_cost_usd: Decimal.new("0.004")},
+        %{avg_cost_usd: nil},
+        %{avg_cost_usd: Decimal.new("0.006")}
+      ]
+
+      result = Evolution.calculate_avg_cost(suite_runs)
+      assert Decimal.equal?(result, Decimal.new("0.005"))
+    end
+
+    test "calculates average correctly" do
+      suite_runs = [
+        %{avg_cost_usd: Decimal.new("0.004")},
+        %{avg_cost_usd: Decimal.new("0.006")},
+        %{avg_cost_usd: Decimal.new("0.005")}
+      ]
+
+      result = Evolution.calculate_avg_cost(suite_runs)
+      assert Decimal.equal?(result, Decimal.new("0.005"))
+    end
+  end
+
+  describe "calculate_avg_latency from suite_runs" do
+    test "returns nil for empty list" do
+      assert Evolution.calculate_avg_latency([]) == nil
+    end
+
+    test "returns nil when all latencies are nil" do
+      suite_runs = [
+        %{avg_latency_ms: nil},
+        %{avg_latency_ms: nil}
+      ]
+
+      assert Evolution.calculate_avg_latency(suite_runs) == nil
+    end
+
+    test "averages non-nil latencies only" do
+      suite_runs = [
+        %{avg_latency_ms: 400},
+        %{avg_latency_ms: nil},
+        %{avg_latency_ms: 600}
+      ]
+
+      assert Evolution.calculate_avg_latency(suite_runs) == 500
+    end
+
+    test "rounds to nearest integer" do
+      suite_runs = [
+        %{avg_latency_ms: 350},
+        %{avg_latency_ms: 420},
+        %{avg_latency_ms: 390}
+      ]
+
+      # (350 + 420 + 390) / 3 = 386.67 -> 387
+      assert Evolution.calculate_avg_latency(suite_runs) == 387
+    end
+  end
+
   describe "prepare_chart_data/1" do
     test "transforms metrics into chart-ready structure" do
       metrics = [
