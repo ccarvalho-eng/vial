@@ -131,7 +131,9 @@ defmodule Vial.Prompts.Evolution do
         provider_id: provider_id,
         provider_name: provider.name,
         runs: length(runs),
-        avg_pass_rate: avg_pass_rate
+        avg_pass_rate: avg_pass_rate,
+        avg_cost_usd: calculate_avg_cost(runs),
+        avg_latency_ms: calculate_avg_latency(runs)
       }
     end)
     |> Enum.sort_by(& &1.provider_name)
@@ -187,7 +189,22 @@ defmodule Vial.Prompts.Evolution do
           breakdown.avg_pass_rate
         end)
 
-      {provider_name, %{pass_rates: pass_rates}}
+      costs =
+        Enum.map(sorted_entries, fn {_name, _version, breakdown} ->
+          breakdown.avg_cost_usd
+        end)
+
+      latencies =
+        Enum.map(sorted_entries, fn {_name, _version, breakdown} ->
+          breakdown.avg_latency_ms
+        end)
+
+      {provider_name,
+       %{
+         pass_rates: pass_rates,
+         costs: costs,
+         latencies: latencies
+       }}
     end)
     |> Map.new()
   end

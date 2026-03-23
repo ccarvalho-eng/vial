@@ -173,6 +173,48 @@ defmodule Vial.Prompts.EvolutionTest do
       assert [metric] = metrics
       assert metric.avg_pass_rate == nil
     end
+
+    test "provider breakdown includes cost and latency" do
+      prompt = prompt_fixture()
+      {:ok, version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      provider1 = provider_fixture(%{name: "OpenAI"})
+      provider2 = provider_fixture(%{name: "Anthropic"})
+      suite = suite_fixture(%{prompt_id: prompt.id})
+
+      {:ok, _sr1} =
+        Evals.create_suite_run(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider1.id,
+          passed: 5,
+          failed: 0,
+          avg_cost_usd: Decimal.new("0.004"),
+          avg_latency_ms: 350
+        })
+
+      {:ok, _sr2} =
+        Evals.create_suite_run(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider2.id,
+          passed: 5,
+          failed: 0,
+          avg_cost_usd: Decimal.new("0.006"),
+          avg_latency_ms: 420
+        })
+
+      [metrics] = Evolution.get_metrics(prompt.id)
+
+      assert length(metrics.provider_breakdown) == 2
+
+      openai = Enum.find(metrics.provider_breakdown, &(&1.provider_name == "OpenAI"))
+      assert Decimal.equal?(openai.avg_cost_usd, Decimal.new("0.004"))
+      assert openai.avg_latency_ms == 350
+
+      anthropic = Enum.find(metrics.provider_breakdown, &(&1.provider_name == "Anthropic"))
+      assert Decimal.equal?(anthropic.avg_cost_usd, Decimal.new("0.006"))
+      assert anthropic.avg_latency_ms == 420
+    end
   end
 
   describe "calculate_avg_cost from suite_runs" do
@@ -257,8 +299,18 @@ defmodule Vial.Prompts.EvolutionTest do
           avg_cost_usd: 0.021,
           avg_latency_ms: 480,
           provider_breakdown: [
-            %{provider_name: "OpenAI", avg_pass_rate: 80.0},
-            %{provider_name: "Anthropic", avg_pass_rate: 77.0}
+            %{
+              provider_name: "OpenAI",
+              avg_pass_rate: 80.0,
+              avg_cost_usd: 0.020,
+              avg_latency_ms: 450
+            },
+            %{
+              provider_name: "Anthropic",
+              avg_pass_rate: 77.0,
+              avg_cost_usd: 0.022,
+              avg_latency_ms: 510
+            }
           ]
         },
         %{
@@ -267,8 +319,18 @@ defmodule Vial.Prompts.EvolutionTest do
           avg_cost_usd: 0.019,
           avg_latency_ms: 420,
           provider_breakdown: [
-            %{provider_name: "OpenAI", avg_pass_rate: 87.0},
-            %{provider_name: "Anthropic", avg_pass_rate: 83.5}
+            %{
+              provider_name: "OpenAI",
+              avg_pass_rate: 87.0,
+              avg_cost_usd: 0.018,
+              avg_latency_ms: 400
+            },
+            %{
+              provider_name: "Anthropic",
+              avg_pass_rate: 83.5,
+              avg_cost_usd: 0.020,
+              avg_latency_ms: 440
+            }
           ]
         }
       ]
@@ -280,7 +342,11 @@ defmodule Vial.Prompts.EvolutionTest do
       assert result.overall.costs == [0.021, 0.019]
       assert result.overall.latencies == [480, 420]
       assert result.by_provider["OpenAI"].pass_rates == [80.0, 87.0]
+      assert result.by_provider["OpenAI"].costs == [0.020, 0.018]
+      assert result.by_provider["OpenAI"].latencies == [450, 400]
       assert result.by_provider["Anthropic"].pass_rates == [77.0, 83.5]
+      assert result.by_provider["Anthropic"].costs == [0.022, 0.020]
+      assert result.by_provider["Anthropic"].latencies == [510, 440]
     end
 
     test "handles nil values gracefully" do
