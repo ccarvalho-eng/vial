@@ -179,7 +179,7 @@ export const EvolutionChart = {
     return arr && arr.some(v => v !== null && v !== undefined)
   },
 
-  getChartOptions(yAxisLabel, min, max) {
+  getChartOptions(yAxisLabel, min, max, showLegend = false) {
     const options = {
       responsive: true,
       maintainAspectRatio: false,
@@ -189,7 +189,7 @@ export const EvolutionChart = {
       },
       plugins: {
         legend: {
-          display: true,
+          display: showLegend,
           position: 'top'
         },
         tooltip: {
