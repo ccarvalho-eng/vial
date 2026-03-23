@@ -62,19 +62,12 @@
         </.form>
       </div>
     <% else %>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <div>
-          <h1 style="margin: 0;">{@page_title}</h1>
-          <p style="margin: 4px 0 0 0; color: var(--text-secondary);">
-            Changes to the template will create a new version
-          </p>
-        </div>
-        <.link navigate={~p"/prompts/#{@prompt.id}"} class="button-secondary">
-          View All Versions
-        </.link>
-      </div>
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h1>{@page_title}</h1>
+        <p style="margin-bottom: 24px; color: var(--text-secondary);">
+          Changes to the template will create a new version
+        </p>
 
-      <div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px;">
         <.form for={@form} id="prompt-form" phx-change="validate" phx-submit="save">
           <div class="vial-card" style="margin-bottom: 24px;">
             <h2 style="margin-bottom: 16px;">Prompt Details</h2>
@@ -128,43 +121,6 @@
             </.link>
           </div>
         </.form>
-
-        <div>
-          <h2 style="margin-bottom: 12px;">Version History</h2>
-
-          <div :if={@prompt.versions == []} class="empty-state">
-            <div class="empty-state-description" style="font-size: 13px; padding: 20px;">
-              No versions yet
-            </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <div :for={version <- @prompt.versions} class="vial-card" style="padding: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                <div style="font-size: 13px; font-weight: 600;">v{version.version}</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">
-                  {Calendar.strftime(version.inserted_at, "%b %d")}
-                </div>
-              </div>
-
-              <div style="border-radius: 4px; padding: 8px; background-color: var(--bg-tertiary); border: 1px solid var(--border);">
-                <pre style="font-size: 11px; white-space: pre-wrap; font-family: 'SF Mono', Monaco, monospace; margin: 0; max-height: 80px; overflow-y: auto; color: var(--text-secondary);">{String.slice(version.template, 0..150)}<%= if String.length(version.template) > 150, do: "..." %></pre>
-              </div>
-
-              <div :if={version.variables != []} style="margin-top: 8px;">
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                  <span
-                    :for={var <- version.variables}
-                    class="tag"
-                    style="font-size: 10px; padding: 2px 6px;"
-                  >
-                    {var}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     <% end %>
   </div>
