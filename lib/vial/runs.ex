@@ -3,6 +3,9 @@ defmodule Vial.Runs do
   Context for managing runs and run results.
   """
 
+  import Ecto.Query
+
+  alias Vial.Evals.SuiteRun
   alias Vial.LLM
   alias Vial.Providers.Provider
   alias Vial.Repo
@@ -25,8 +28,6 @@ defmodule Vial.Runs do
   """
   @spec list_recent_runs(integer()) :: [Run.t()]
   def list_recent_runs(limit \\ 10) do
-    import Ecto.Query
-
     Run
     |> order_by([r], desc: r.inserted_at)
     |> limit(^limit)
@@ -42,9 +43,6 @@ defmodule Vial.Runs do
   """
   @spec total_cost() :: float()
   def total_cost do
-    import Ecto.Query
-    alias Vial.Evals.SuiteRun
-
     # Individual runs cost
     run_cost =
       from(rr in RunResult,
