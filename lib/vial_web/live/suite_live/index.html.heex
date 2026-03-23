@@ -32,22 +32,6 @@
               </div>
             </div>
             <div style="display: flex; gap: 8px;">
-              <button
-                phx-click="run_suite"
-                phx-value-id={suite.id}
-                class="button-primary"
-                style={"font-size: 13px; padding: 6px 12px; display: flex; align-items: center; gap: 4px; #{if @running_suite_id == suite.id, do: "opacity: 0.6; cursor: not-allowed;", else: ""}"}
-                title="Run suite with latest version and first provider"
-                disabled={@running_suite_id == suite.id}
-              >
-                <%= if @running_suite_id == suite.id do %>
-                  <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite;">
-                  </span>
-                  Running...
-                <% else %>
-                  <.icon name="hero-play" class="w-4 h-4" /> Run
-                <% end %>
-              </button>
               <.link
                 navigate={~p"/suites/#{suite.id}/edit"}
                 class="button-secondary"
