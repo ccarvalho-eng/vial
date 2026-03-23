@@ -226,13 +226,47 @@ defmodule Vial.Evals do
   def execute_suite(%Suite{} = suite, %PromptVersion{} = version, %Provider{} = provider) do
     suite = Repo.preload(suite, :test_cases)
 
-    results =
-      Enum.map(suite.test_cases, fn test_case ->
-        execute_test_case(test_case, version, provider)
-      end)
+    {results, metrics} =
+      Enum.map_reduce(
+        suite.test_cases,
+        %{total_cost: Decimal.new("0"), total_latency: 0, successful: 0},
+        fn test_case, acc ->
+          result = execute_test_case(test_case, version, provider)
+
+          new_acc =
+            case result do
+              %{"cost_usd" => cost, "latency_ms" => latency}
+              when not is_nil(cost) and not is_nil(latency) ->
+                %{
+                  total_cost: Decimal.add(acc.total_cost, Decimal.from_float(cost)),
+                  total_latency: acc.total_latency + latency,
+                  successful: acc.successful + 1
+                }
+
+              _ ->
+                acc
+            end
+
+          {result, new_acc}
+        end
+      )
 
     passed = Enum.count(results, & &1["passed"])
     failed = Enum.count(results, &(!&1["passed"]))
+
+    avg_cost_usd =
+      if metrics.successful > 0 do
+        Decimal.div(metrics.total_cost, metrics.successful)
+      else
+        nil
+      end
+
+    avg_latency_ms =
+      if metrics.successful > 0 do
+        round(metrics.total_latency / metrics.successful)
+      else
+        nil
+      end
 
     create_suite_run(%{
       suite_id: suite.id,
@@ -240,7 +274,9 @@ defmodule Vial.Evals do
       provider_id: provider.id,
       results: results,
       passed: passed,
-      failed: failed
+      failed: failed,
+      avg_cost_usd: avg_cost_usd,
+      avg_latency_ms: avg_latency_ms
     })
   end
 
@@ -254,14 +290,18 @@ defmodule Vial.Evals do
         %{
           "test_case_id" => test_case.id,
           "passed" => passed,
-          "output" => result.output
+          "output" => result.output,
+          "cost_usd" => result.cost_usd,
+          "latency_ms" => result.latency_ms
         }
 
       {:error, _reason} ->
         %{
           "test_case_id" => test_case.id,
           "passed" => false,
-          "output" => nil
+          "output" => nil,
+          "cost_usd" => nil,
+          "latency_ms" => nil
         }
     end
   end
