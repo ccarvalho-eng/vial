@@ -13,7 +13,7 @@ defmodule Vial.Evals.SuiteRun do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(suite_id prompt_version_id provider_id)a
-  @optional_fields ~w(results passed failed)a
+  @optional_fields ~w(results passed failed avg_cost_usd avg_latency_ms)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -22,6 +22,8 @@ defmodule Vial.Evals.SuiteRun do
     field :results, {:array, :map}, default: []
     field :passed, :integer, default: 0
     field :failed, :integer, default: 0
+    field :avg_cost_usd, :decimal
+    field :avg_latency_ms, :integer
 
     belongs_to :suite, Vial.Evals.Suite
     belongs_to :prompt_version, Vial.Prompts.PromptVersion

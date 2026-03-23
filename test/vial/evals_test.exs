@@ -250,6 +250,27 @@ defmodule Vial.EvalsTest do
       assert {:ok, _suite_run} = Evals.delete_suite_run(suite_run)
       assert_raise Ecto.NoResultsError, fn -> Evals.get_suite_run!(suite_run.id) end
     end
+
+    test "changeset accepts avg_cost_usd and avg_latency_ms" do
+      suite = suite_fixture()
+      prompt = prompt_fixture()
+      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      provider = provider_fixture()
+
+      attrs = %{
+        suite_id: suite.id,
+        prompt_version_id: version.id,
+        provider_id: provider.id,
+        avg_cost_usd: Decimal.new("0.0042"),
+        avg_latency_ms: 350
+      }
+
+      changeset = Vial.Evals.SuiteRun.changeset(%Vial.Evals.SuiteRun{}, attrs)
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_change(changeset, :avg_cost_usd) == Decimal.new("0.0042")
+      assert Ecto.Changeset.get_change(changeset, :avg_latency_ms) == 350
+    end
   end
 
   describe "execute_suite/3" do
