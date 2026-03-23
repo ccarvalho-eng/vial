@@ -25,6 +25,41 @@ defmodule Vial.RunsTest do
       {:ok, prompt_version: version}
     end
 
+    test "total_cost/0 includes suite run costs" do
+      import Vial.EvalsFixtures
+
+      # Create a run result with cost
+      prompt = prompt_fixture()
+      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template")
+      provider = provider_fixture()
+
+      {:ok, run} =
+        Runs.create_run(%{
+          prompt_version_id: version.id,
+          variable_values: %{"user" => "Test"}
+        })
+
+      {:ok, _result} =
+        Runs.create_run_result(%{
+          run_id: run.id,
+          provider_id: provider.id,
+          output: "Output",
+          cost_usd: 0.001,
+          status: :completed
+        })
+
+      # Create a suite run with cost
+      _suite_run =
+        suite_run_fixture(%{
+          avg_cost_usd: Decimal.new("0.005")
+        })
+
+      total = Runs.total_cost()
+
+      # Should include both run result cost (0.001) and suite run cost (0.005)
+      assert_in_delta total, 0.006, 0.0001
+    end
+
     test "list_runs/0 returns all runs", %{prompt_version: version} do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
       {:ok, run} = Runs.create_run(attrs)

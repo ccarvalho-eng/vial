@@ -35,19 +35,39 @@ defmodule Vial.Runs do
   end
 
   @doc """
-  Calculates the total cost across all run results.
+  Calculates the total cost across all run results and suite runs.
 
-  Returns the sum of cost_usd from all run_results.
+  Returns the sum of cost_usd from all run_results plus avg_cost_usd
+  from all suite_runs.
   """
   @spec total_cost() :: float()
   def total_cost do
     import Ecto.Query
+    alias Vial.Evals.SuiteRun
 
-    query =
-      from r in RunResult,
-        select: sum(r.cost_usd)
+    # Individual runs cost
+    run_cost =
+      from(rr in RunResult,
+        select: sum(rr.cost_usd)
+      )
+      |> Repo.one() || 0.0
 
-    Repo.one(query) || 0.0
+    # Suite runs cost
+    suite_cost =
+      from(sr in SuiteRun,
+        where: not is_nil(sr.avg_cost_usd),
+        select: sum(sr.avg_cost_usd)
+      )
+      |> Repo.one()
+
+    suite_cost_float =
+      if suite_cost do
+        Decimal.to_float(suite_cost)
+      else
+        0.0
+      end
+
+    run_cost + suite_cost_float
   end
 
   @doc """

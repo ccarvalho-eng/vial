@@ -126,7 +126,7 @@ defmodule Vial.Stats do
     }
   end
 
-  defp normalize_suite_run(suite_run) do
+  def normalize_suite_run(suite_run) do
     %{
       id: suite_run.id,
       type: :suite_run,
@@ -135,7 +135,12 @@ defmodule Vial.Stats do
         suite_run.prompt_version && suite_run.prompt_version.prompt &&
           suite_run.prompt_version.prompt.name,
       providers_count: 1,
-      cost: 0.0,
+      cost:
+        if suite_run.avg_cost_usd do
+          Decimal.to_float(suite_run.avg_cost_usd)
+        else
+          0.0
+        end,
       passed: suite_run.passed,
       failed: suite_run.failed,
       inserted_at: suite_run.inserted_at,
