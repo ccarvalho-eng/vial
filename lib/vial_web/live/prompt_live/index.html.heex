@@ -62,12 +62,10 @@
       <%!-- Prompts list --%>
       <div :for={prompt <- @prompts} class="vial-card">
         <div style="display: flex; justify-content: space-between; align-items: start;">
-          <div style="flex: 1;">
-            <.link navigate={~p"/prompts/#{prompt.id}"}>
-              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
-                {prompt.name}
-              </h3>
-            </.link>
+          <.link navigate={~p"/prompts/#{prompt.id}"} style="flex: 1; text-decoration: none;">
+            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+              {prompt.name}
+            </h3>
             <p
               :if={prompt.description}
               style="color: var(--text-secondary); margin: 0 0 8px 0; font-size: 14px;"
@@ -82,7 +80,7 @@
                 {tag}
               </span>
             </div>
-          </div>
+          </.link>
           <div style="display: flex; gap: 8px;">
             <.link
               navigate={~p"/prompts/#{prompt.id}"}

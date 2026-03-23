@@ -21,16 +21,14 @@
       <%= for suite <- @suites do %>
         <div class="vial-card">
           <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div style="flex: 1;">
-              <.link navigate={~p"/suites/#{suite.id}"}>
-                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
-                  {suite.name}
-                </h3>
-              </.link>
+            <.link navigate={~p"/suites/#{suite.id}"} style="flex: 1; text-decoration: none;">
+              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+                {suite.name}
+              </h3>
               <div style="color: var(--text-secondary); font-size: 14px;">
                 Prompt: {suite.prompt.name}
               </div>
-            </div>
+            </.link>
             <div style="display: flex; gap: 8px;">
               <.link
                 navigate={~p"/suites/#{suite.id}"}
