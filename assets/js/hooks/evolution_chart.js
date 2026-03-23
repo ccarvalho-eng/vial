@@ -35,134 +35,89 @@ export const EvolutionChart = {
       options: this.getChartOptions()
     })
 
-    this.handleEvent('update-chart', ({dates, data, view_mode}) => {
-      this.updateChart(dates, data, view_mode)
+    this.handleEvent('update-chart', ({chart_data, view_mode}) => {
+      this.updateChart(chart_data, view_mode)
     })
 
-    // Notify LiveView that chart is ready
+    // Trigger initial data load
     this.pushEvent('chart-mounted', {})
   },
 
   updated() {
-    const dates = JSON.parse(this.el.dataset.dates || '[]')
-    const data = JSON.parse(this.el.dataset.data || '{}')
+    const chartData = JSON.parse(this.el.dataset.chartData || '{}')
     const viewMode = this.el.dataset.viewMode || 'overall'
 
-    if (dates.length > 0 && this.chart) {
-      this.updateChart(dates, data, viewMode)
+    if (Object.keys(chartData).length > 0 && this.chart) {
+      this.updateChart(chartData, viewMode)
     }
   },
 
-  updateChart(dates, data, viewMode) {
-    if (!this.chart) return
+  updateChart(chartData, viewMode) {
+    if (!this.chart || !chartData.versions) return
 
-    this.chart.data.labels = dates
+    const datasets = viewMode === 'overall'
+      ? this.buildOverallDatasets(chartData)
+      : this.buildPerProviderDatasets(chartData)
 
-    if (viewMode === 'overall') {
-      this.chart.data.datasets = this.buildOverallDatasets(data)
-    } else {
-      this.chart.data.datasets = this.buildPerProviderDatasets(data)
-    }
-
-    this.chart.update()
+    this.chart.data.labels = chartData.versions.map(v => `v${v}`)
+    this.chart.data.datasets = datasets
+    this.chart.update('none') // No animation for updates
   },
 
-  buildOverallDatasets(data) {
+  buildOverallDatasets(chartData) {
     return [
       {
         label: 'Pass Rate',
-        data: data.overall_pass_rates || [],
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        yAxisID: 'y-pass-rate',
-        tension: 0.1
+        data: chartData.overall.pass_rates,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        yAxisID: 'y',
+        tension: 0.3
       },
       {
-        label: 'Executions',
-        data: data.overall_executions || [],
-        borderColor: 'rgb(54, 162, 235)',
-        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        yAxisID: 'y-executions',
-        tension: 0.1
+        label: 'Cost',
+        data: chartData.overall.costs,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        yAxisID: 'y1',
+        tension: 0.3
       },
       {
-        label: 'Failures',
-        data: data.overall_failures || [],
-        borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        yAxisID: 'y-failures',
-        tension: 0.1
+        label: 'Latency',
+        data: chartData.overall.latencies,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        yAxisID: 'y2',
+        tension: 0.3
       }
     ]
   },
 
-  buildPerProviderDatasets(data) {
+  buildPerProviderDatasets(chartData) {
     const datasets = []
-    const providers = data.providers || []
+    const colors = [
+      '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
+      '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+    ]
 
-    providers.forEach((provider, index) => {
-      const colors = this.getProviderColors(index)
+    let colorIndex = 0
 
-      datasets.push(
-        {
-          label: `${provider} - Pass Rate`,
-          data: data[`${provider}_pass_rates`] || [],
-          borderColor: colors.passRate,
-          backgroundColor: colors.passRateBg,
-          yAxisID: 'y-pass-rate',
-          tension: 0.1
-        },
-        {
-          label: `${provider} - Executions`,
-          data: data[`${provider}_executions`] || [],
-          borderColor: colors.executions,
-          backgroundColor: colors.executionsBg,
-          yAxisID: 'y-executions',
-          tension: 0.1
-        },
-        {
-          label: `${provider} - Failures`,
-          data: data[`${provider}_failures`] || [],
-          borderColor: colors.failures,
-          backgroundColor: colors.failuresBg,
-          yAxisID: 'y-failures',
-          tension: 0.1
-        }
-      )
+    Object.entries(chartData.by_provider || {}).forEach(([providerName, data]) => {
+      const color = colors[colorIndex % colors.length]
+
+      datasets.push({
+        label: `${providerName} - Pass Rate`,
+        data: data.pass_rates,
+        borderColor: color,
+        backgroundColor: `${color}33`,
+        yAxisID: 'y',
+        tension: 0.3
+      })
+
+      colorIndex++
     })
 
     return datasets
-  },
-
-  getProviderColors(index) {
-    const colorSets = [
-      {
-        passRate: 'rgb(75, 192, 192)',
-        passRateBg: 'rgba(75, 192, 192, 0.2)',
-        executions: 'rgb(54, 162, 235)',
-        executionsBg: 'rgba(54, 162, 235, 0.2)',
-        failures: 'rgb(255, 99, 132)',
-        failuresBg: 'rgba(255, 99, 132, 0.2)'
-      },
-      {
-        passRate: 'rgb(153, 102, 255)',
-        passRateBg: 'rgba(153, 102, 255, 0.2)',
-        executions: 'rgb(255, 159, 64)',
-        executionsBg: 'rgba(255, 159, 64, 0.2)',
-        failures: 'rgb(255, 205, 86)',
-        failuresBg: 'rgba(255, 205, 86, 0.2)'
-      },
-      {
-        passRate: 'rgb(201, 203, 207)',
-        passRateBg: 'rgba(201, 203, 207, 0.2)',
-        executions: 'rgb(83, 102, 255)',
-        executionsBg: 'rgba(83, 102, 255, 0.2)',
-        failures: 'rgb(255, 102, 196)',
-        failuresBg: 'rgba(255, 102, 196, 0.2)'
-      }
-    ]
-
-    return colorSets[index % colorSets.length]
   },
 
   getChartOptions() {
@@ -177,20 +132,13 @@ export const EvolutionChart = {
         legend: {
           position: 'top'
         },
-        title: {
-          display: true,
-          text: 'Test Execution Trends'
+        tooltip: {
+          mode: 'index',
+          intersect: false
         }
       },
       scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date'
-          }
-        },
-        'y-pass-rate': {
+        y: {
           type: 'linear',
           display: true,
           position: 'left',
@@ -201,25 +149,25 @@ export const EvolutionChart = {
           min: 0,
           max: 100
         },
-        'y-executions': {
+        y1: {
           type: 'linear',
           display: true,
           position: 'right',
           title: {
             display: true,
-            text: 'Executions'
+            text: 'Cost ($)'
           },
           grid: {
             drawOnChartArea: false
           }
         },
-        'y-failures': {
+        y2: {
           type: 'linear',
           display: true,
           position: 'right',
           title: {
             display: true,
-            text: 'Failures'
+            text: 'Latency (ms)'
           },
           grid: {
             drawOnChartArea: false
