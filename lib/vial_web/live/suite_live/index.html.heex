@@ -33,6 +33,13 @@
             </div>
             <div style="display: flex; gap: 8px;">
               <.link
+                navigate={~p"/suites/#{suite.id}"}
+                class="button-primary"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                View & Run
+              </.link>
+              <.link
                 navigate={~p"/suites/#{suite.id}/edit"}
                 class="button-secondary"
                 style="font-size: 13px; padding: 6px 12px;"

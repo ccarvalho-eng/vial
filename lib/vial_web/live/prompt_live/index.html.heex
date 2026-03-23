@@ -85,6 +85,13 @@
           </div>
           <div style="display: flex; gap: 8px;">
             <.link
+              navigate={~p"/prompts/#{prompt.id}"}
+              class="button-primary"
+              style="font-size: 13px; padding: 6px 12px;"
+            >
+              View
+            </.link>
+            <.link
               navigate={~p"/prompts/#{prompt.id}/edit"}
               class="button-secondary"
               style="font-size: 13px; padding: 6px 12px;"
