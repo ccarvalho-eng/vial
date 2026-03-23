@@ -2,6 +2,7 @@ defmodule Vial.EvalsTest do
   use Vial.DataCase, async: true
 
   alias Vial.Evals
+  alias Vial.Evals.SuiteRun
 
   describe "suites" do
     test "create_suite/1 creates a suite with valid attributes" do
@@ -265,7 +266,7 @@ defmodule Vial.EvalsTest do
         avg_latency_ms: 350
       }
 
-      changeset = Vial.Evals.SuiteRun.changeset(%Vial.Evals.SuiteRun{}, attrs)
+      changeset = SuiteRun.changeset(%SuiteRun{}, attrs)
 
       assert changeset.valid?
       assert Ecto.Changeset.get_change(changeset, :avg_cost_usd) == Decimal.new("0.0042")
