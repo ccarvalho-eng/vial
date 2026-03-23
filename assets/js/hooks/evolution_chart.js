@@ -23,20 +23,11 @@ Chart.register(
 
 export const EvolutionChart = {
   mounted() {
-    const canvas = this.el.querySelector('canvas')
-    if (!canvas) return
-
-    this.chart = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: []
-      },
-      options: this.getChartOptions()
-    })
+    this.charts = {}
+    this.createCharts()
 
     this.handleEvent('update-chart', ({chart_data, view_mode}) => {
-      this.updateChart(chart_data, view_mode)
+      this.updateCharts(chart_data, view_mode)
     })
 
     // Trigger initial data load
@@ -47,101 +38,145 @@ export const EvolutionChart = {
     const chartData = JSON.parse(this.el.dataset.chartData || '{}')
     const viewMode = this.el.dataset.viewMode || 'overall'
 
-    if (Object.keys(chartData).length > 0 && this.chart) {
-      this.updateChart(chartData, viewMode)
+    if (Object.keys(chartData).length > 0) {
+      this.updateCharts(chartData, viewMode)
     }
   },
 
-  updateChart(chartData, viewMode) {
-    if (!this.chart || !chartData.versions) return
+  createCharts() {
+    // Pass Rate Chart
+    const passRateCanvas = this.el.querySelector('#pass-rate-chart')
+    if (passRateCanvas) {
+      this.charts.passRate = new Chart(passRateCanvas, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: this.getChartOptions('Pass Rate (%)', 0, 100)
+      })
+    }
 
-    const datasets = viewMode === 'overall'
-      ? this.buildOverallDatasets(chartData)
-      : this.buildPerProviderDatasets(chartData)
+    // Cost Chart
+    const costCanvas = this.el.querySelector('#cost-chart')
+    if (costCanvas) {
+      this.charts.cost = new Chart(costCanvas, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: this.getCostChartOptions()
+      })
+    }
 
-    this.chart.data.labels = chartData.versions.map(v => `v${v}`)
-    this.chart.data.datasets = datasets
-
-    // Update scale visibility based on data
-    this.updateScales(chartData, viewMode)
-
-    this.chart.update() // Full update with recalculation
+    // Latency Chart
+    const latencyCanvas = this.el.querySelector('#latency-chart')
+    if (latencyCanvas) {
+      this.charts.latency = new Chart(latencyCanvas, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: this.getChartOptions('Latency (ms)', 0, null)
+      })
+    }
   },
 
-  updateScales(chartData, viewMode) {
+  updateCharts(chartData, viewMode) {
+    if (!chartData.versions) return
+
+    const labels = chartData.versions.map(v => `v${v}`)
+
+    // Update Pass Rate Chart
+    if (this.charts.passRate) {
+      const passRateDatasets = this.buildPassRateDatasets(chartData, viewMode)
+      this.charts.passRate.data.labels = labels
+      this.charts.passRate.data.datasets = passRateDatasets
+      this.charts.passRate.update()
+    }
+
+    // Update Cost Chart
+    if (this.charts.cost) {
+      const hasCost = this.hasData(chartData.overall.costs)
+      const costContainer = this.el.querySelector('#cost-chart-container')
+
+      if (hasCost && viewMode === 'overall') {
+        costContainer.style.display = 'block'
+        const costDatasets = this.buildCostDatasets(chartData)
+        this.charts.cost.data.labels = labels
+        this.charts.cost.data.datasets = costDatasets
+        this.charts.cost.update()
+      } else {
+        costContainer.style.display = 'none'
+      }
+    }
+
+    // Update Latency Chart
+    if (this.charts.latency) {
+      const hasLatency = this.hasData(chartData.overall.latencies)
+      const latencyContainer = this.el.querySelector('#latency-chart-container')
+
+      if (hasLatency && viewMode === 'overall') {
+        latencyContainer.style.display = 'block'
+        const latencyDatasets = this.buildLatencyDatasets(chartData)
+        this.charts.latency.data.labels = labels
+        this.charts.latency.data.datasets = latencyDatasets
+        this.charts.latency.update()
+      } else {
+        latencyContainer.style.display = 'none'
+      }
+    }
+  },
+
+  buildPassRateDatasets(chartData, viewMode) {
     if (viewMode === 'overall') {
-      const hasCost = chartData.overall.costs && chartData.overall.costs.some(c => c !== null)
-      const hasLatency = chartData.overall.latencies && chartData.overall.latencies.some(l => l !== null)
-
-      this.chart.options.scales.y.display = true
-      this.chart.options.scales.y1.display = hasCost
-      this.chart.options.scales.y2.display = hasLatency
-    } else {
-      // Per-provider only shows pass rate
-      this.chart.options.scales.y.display = true
-      this.chart.options.scales.y1.display = false
-      this.chart.options.scales.y2.display = false
-    }
-  },
-
-  buildOverallDatasets(chartData) {
-    return [
-      {
+      return [{
         label: 'Pass Rate',
         data: chartData.overall.pass_rates,
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        yAxisID: 'y',
-        tension: 0.3
-      },
-      {
-        label: 'Cost',
-        data: chartData.overall.costs,
-        borderColor: '#f59e0b',
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        yAxisID: 'y1',
-        tension: 0.3
-      },
-      {
-        label: 'Latency',
-        data: chartData.overall.latencies,
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        yAxisID: 'y2',
-        tension: 0.3
-      }
-    ]
-  },
+        tension: 0.3,
+        fill: true
+      }]
+    } else {
+      // Per-provider mode
+      const colors = [
+        '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
+        '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+      ]
 
-  buildPerProviderDatasets(chartData) {
-    const datasets = []
-    const colors = [
-      '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
-      '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
-    ]
-
-    let colorIndex = 0
-
-    Object.entries(chartData.by_provider || {}).forEach(([providerName, data]) => {
-      const color = colors[colorIndex % colors.length]
-
-      datasets.push({
-        label: `${providerName} - Pass Rate`,
+      return Object.entries(chartData.by_provider || {}).map(([providerName, data], index) => ({
+        label: providerName,
         data: data.pass_rates,
-        borderColor: color,
-        backgroundColor: `${color}33`,
-        yAxisID: 'y',
-        tension: 0.3
-      })
-
-      colorIndex++
-    })
-
-    return datasets
+        borderColor: colors[index % colors.length],
+        backgroundColor: `${colors[index % colors.length]}33`,
+        tension: 0.3,
+        fill: false
+      }))
+    }
   },
 
-  getChartOptions() {
-    return {
+  buildCostDatasets(chartData) {
+    return [{
+      label: 'Average Cost',
+      data: chartData.overall.costs,
+      borderColor: '#f59e0b',
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      tension: 0.3,
+      fill: true
+    }]
+  },
+
+  buildLatencyDatasets(chartData) {
+    return [{
+      label: 'Average Latency',
+      data: chartData.overall.latencies,
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      tension: 0.3,
+      fill: true
+    }]
+  },
+
+  hasData(arr) {
+    return arr && arr.some(v => v !== null && v !== undefined)
+  },
+
+  getChartOptions(yAxisLabel, min, max) {
+    const options = {
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
@@ -150,6 +185,7 @@ export const EvolutionChart = {
       },
       plugins: {
         legend: {
+          display: true,
           position: 'top'
         },
         tooltip: {
@@ -161,24 +197,54 @@ export const EvolutionChart = {
         y: {
           type: 'linear',
           display: true,
-          position: 'left',
           title: {
             display: true,
-            text: 'Pass Rate (%)'
+            text: yAxisLabel
           },
-          min: 0,
-          max: 100
+          beginAtZero: true
+        }
+      }
+    }
+
+    if (min !== null && min !== undefined) {
+      options.scales.y.min = min
+    }
+    if (max !== null && max !== undefined) {
+      options.scales.y.max = max
+    }
+
+    return options
+  },
+
+  getCostChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: false
         },
-        y1: {
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: function(context) {
+              return `Cost: $${context.parsed.y.toFixed(4)}`
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
           type: 'linear',
           display: true,
-          position: 'right',
           title: {
             display: true,
             text: 'Cost ($)'
-          },
-          grid: {
-            drawOnChartArea: false
           },
           beginAtZero: true,
           ticks: {
@@ -186,27 +252,15 @@ export const EvolutionChart = {
               return '$' + value.toFixed(4)
             }
           }
-        },
-        y2: {
-          type: 'linear',
-          display: true,
-          position: 'right',
-          title: {
-            display: true,
-            text: 'Latency (ms)'
-          },
-          grid: {
-            drawOnChartArea: false
-          }
         }
       }
     }
   },
 
   destroyed() {
-    if (this.chart) {
-      this.chart.destroy()
-      this.chart = null
-    }
+    Object.values(this.charts).forEach(chart => {
+      if (chart) chart.destroy()
+    })
+    this.charts = {}
   }
 }

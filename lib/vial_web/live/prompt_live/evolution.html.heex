@@ -63,14 +63,41 @@
             <% end %>
           </button>
         </div>
-        <div style="padding: 20px;">
-          <div
-            id="evolution-chart"
-            phx-hook="EvolutionChart"
-            data-chart-data={Jason.encode!(@chart_data)}
-            data-view-mode={@view_mode}
-          >
-            <canvas></canvas>
+        <div
+          id="evolution-charts"
+          phx-hook="EvolutionChart"
+          data-chart-data={Jason.encode!(@chart_data)}
+          data-view-mode={@view_mode}
+          style="padding: 20px;"
+        >
+          <!-- Pass Rate Chart -->
+          <div style="margin-bottom: 32px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+              Pass Rate
+            </h3>
+            <div style="height: 300px;">
+              <canvas id="pass-rate-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Cost Chart (only if data exists) -->
+          <div id="cost-chart-container" style="margin-bottom: 32px; display: none;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+              Average Cost
+            </h3>
+            <div style="height: 250px;">
+              <canvas id="cost-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Latency Chart (only if data exists) -->
+          <div id="latency-chart-container" style="margin-bottom: 0; display: none;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+              Average Latency
+            </h3>
+            <div style="height: 250px;">
+              <canvas id="latency-chart"></canvas>
+            </div>
           </div>
         </div>
       </div>
