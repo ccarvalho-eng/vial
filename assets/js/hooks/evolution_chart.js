@@ -179,6 +179,12 @@ export const EvolutionChart = {
           },
           grid: {
             drawOnChartArea: false
+          },
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toFixed(4)
+            }
           }
         },
         y2: {
