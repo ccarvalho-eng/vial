@@ -24,7 +24,9 @@ defmodule Vial.MixProject do
       dialyzer: [
         plt_add_apps: [:mix, :ex_unit],
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
-      ]
+      ],
+      package: package(),
+      description: "LLM prompt evaluation workbench for Phoenix applications"
     ]
   end
 
@@ -34,7 +36,7 @@ defmodule Vial.MixProject do
   def application do
     [
       mod: {Vial.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger]
     ]
   end
 
@@ -48,6 +50,18 @@ defmodule Vial.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
+  defp package do
+    [
+      name: "vial",
+      maintainers: ["Your Name"],
+      licenses: ["Apache-2.0"],
+      files: ~w(lib priv/static* .formatter.exs mix.exs README* CHANGELOG* LICENSE*),
+      links: %{
+        "GitHub" => "https://github.com/ccarvalho-eng/vial"
+      }
+    ]
+  end
+
   # Specifies your project dependencies.
   #
   # Type `mix help deps` for examples and options.
@@ -58,10 +72,8 @@ defmodule Vial.MixProject do
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 4.1"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.1.0"},
       {:lazy_html, ">= 0.1.0", only: :test},
-      {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
       {:heroicons,
@@ -71,14 +83,10 @@ defmodule Vial.MixProject do
        app: false,
        compile: false,
        depth: 1},
-      {:swoosh, "~> 1.16"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"},
       {:ecto_enum, "~> 1.4"},
 
       # Code quality and testing
