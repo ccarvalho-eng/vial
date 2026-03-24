@@ -55,7 +55,7 @@ defmodule VialWeb.ProviderLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Provider created successfully")
-         |> push_navigate(to: ~p"/providers")}
+         |> push_navigate(to: vial_path(socket, "/providers"))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -72,7 +72,7 @@ defmodule VialWeb.ProviderLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Provider updated successfully")
-         |> push_navigate(to: ~p"/providers")}
+         |> push_navigate(to: vial_path(socket, "/providers"))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}

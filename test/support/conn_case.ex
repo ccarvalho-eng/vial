@@ -24,6 +24,8 @@ defmodule VialWeb.ConnCase do
 
       use VialWeb, :verified_routes
 
+      alias Vial.Repo
+
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest

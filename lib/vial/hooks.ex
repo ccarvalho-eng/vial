@@ -11,32 +11,20 @@ defmodule Vial.Hooks do
   This hook is automatically mounted by the vial_dashboard macro
   and provides the repo and other configuration to all LiveViews.
   """
-  def on_mount(:inject_config, _params, _session, socket) do
-    # Get config from the process dictionary where the macro stored it
-    config = Process.get(:vial_config) || []
+  def on_mount(:inject_config, _params, session, socket) do
+    # Get config from the session where the macro stored it
+    config = Map.get(session, "vial_config", [])
+    base_path = Map.get(session, "vial_base_path", "")
 
     socket =
       socket
       |> assign(:vial_repo, config[:repo])
+      |> assign(:vial_task_supervisor, config[:task_supervisor])
       |> assign(:vial_openai_api_key, resolve_api_key(config[:openai_api_key]))
       |> assign(:vial_prefix, config[:prefix] || "public")
       |> assign(:vial_resolver, config[:resolver])
       |> assign(:vial_csp_nonce, config[:csp_nonce_assign_key])
-
-    {:cont, socket}
-  end
-
-  def on_mount(:inject_config, opts, _params, _session, socket) when is_list(opts) do
-    # Store config in process dictionary for child LiveViews
-    Process.put(:vial_config, opts)
-
-    socket =
-      socket
-      |> assign(:vial_repo, opts[:repo])
-      |> assign(:vial_openai_api_key, resolve_api_key(opts[:openai_api_key]))
-      |> assign(:vial_prefix, opts[:prefix] || "public")
-      |> assign(:vial_resolver, opts[:resolver])
-      |> assign(:vial_csp_nonce, opts[:csp_nonce_assign_key])
+      |> assign(:base_path, base_path)
 
     {:cont, socket}
   end
@@ -71,6 +59,14 @@ defmodule Vial.Hooks do
   """
   def get_prefix(socket) do
     socket.assigns[:vial_prefix] || "public"
+  end
+
+  @doc """
+  Helper to get the configured TaskSupervisor from socket assigns.
+  Falls back to Vial.TaskSupervisor if not in embedded mode.
+  """
+  def get_task_supervisor(socket) do
+    socket.assigns[:vial_task_supervisor] || Vial.TaskSupervisor
   end
 
   @doc """

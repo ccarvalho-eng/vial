@@ -27,9 +27,9 @@ defmodule VialWeb.PromptLive.ShowTest do
       prompt = prompt_fixture(%{name: "Versioned Prompt"})
 
       # Create versions
-      {:ok, v1} = Prompts.create_prompt_version(prompt, "Version 1 template")
-      {:ok, v2} = Prompts.create_prompt_version(prompt, "Version 2 template")
-      {:ok, v3} = Prompts.create_prompt_version(prompt, "Version 3 template")
+      {:ok, v1} = Prompts.create_prompt_version(Repo, prompt, "Version 1 template")
+      {:ok, v2} = Prompts.create_prompt_version(Repo, prompt, "Version 2 template")
+      {:ok, v3} = Prompts.create_prompt_version(Repo, prompt, "Version 3 template")
 
       {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}")
 
@@ -49,6 +49,7 @@ defmodule VialWeb.PromptLive.ShowTest do
 
       {:ok, _version} =
         Prompts.create_prompt_version(
+          Repo,
           prompt,
           "Hello {{name}}, welcome to {{topic}}"
         )
@@ -93,7 +94,7 @@ defmodule VialWeb.PromptLive.ShowTest do
 
     test "can navigate to create run", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Test Prompt"})
-      {:ok, version} = Prompts.create_prompt_version(prompt, "Hello {{name}}")
+      {:ok, version} = Prompts.create_prompt_version(Repo, prompt, "Hello {{name}}")
 
       {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}")
 

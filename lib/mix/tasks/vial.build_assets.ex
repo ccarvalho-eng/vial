@@ -57,49 +57,69 @@ defmodule Mix.Tasks.Vial.BuildAssets do
   end
 
   defp build_javascript(target_dir) do
-    # Build the main app.js bundle
-    System.cmd(
-      "npx",
-      [
-        "esbuild",
-        "assets/js/app.js",
-        "--bundle",
-        "--minify",
-        "--target=es2022",
-        "--outfile=#{target_dir}/js/app.js",
-        "--external:/fonts/*",
-        "--external:/images/*"
-      ], cd: ".", into: IO.stream(:stdio, :line))
+    # Use Mix.Task to run esbuild
+    args = [
+      "assets/js/app.js",
+      "--bundle",
+      "--minify",
+      "--target=es2022",
+      "--outfile=#{target_dir}/js/app.js",
+      "--external:/fonts/*",
+      "--external:/images/*"
+    ]
+
+    # esbuild executable is in _build/ directory
+    build_path = Mix.Project.build_path() |> Path.dirname()
+    esbuild_path = Path.join(build_path, "esbuild-#{esbuild_target()}")
+
+    System.cmd(esbuild_path, args, cd: File.cwd!(), into: IO.stream(:stdio, :line))
 
     # Also copy any hooks or vendor scripts
     copy_if_exists("assets/vendor/topbar.js", "#{target_dir}/js/topbar.js")
   end
 
   defp build_css(target_dir) do
-    # First, generate the Tailwind CSS with Vial-specific prefix to avoid conflicts
-    content = """
-    @config "../../assets/tailwind.config.js";
-    @import "../../assets/css/app.css";
-    """
+    # Use Mix.Task to run tailwind
+    args = [
+      "--input=assets/css/app.css",
+      "--output=#{target_dir}/css/app.css"
+      # Don't minify - minification removes custom CSS
+    ]
 
-    # Create a temporary file with the prefixed config
-    tmp_file = "tmp_vial_tailwind.css"
-    File.write!(tmp_file, content)
+    # tailwind executable is in _build/ directory
+    build_path = Mix.Project.build_path() |> Path.dirname()
+    tailwind_path = Path.join(build_path, "tailwind-#{tailwind_target()}")
 
-    # Run Tailwind with custom config
-    System.cmd(
-      "npx",
-      [
-        "tailwindcss",
-        "-i",
-        tmp_file,
-        "-o",
-        "#{target_dir}/css/app.css",
-        "--minify"
-      ], cd: ".", into: IO.stream(:stdio, :line))
+    System.cmd(tailwind_path, args, cd: File.cwd!(), into: IO.stream(:stdio, :line))
+  end
 
-    # Clean up temp file
-    File.rm!(tmp_file)
+  defp esbuild_target do
+    case :os.type() do
+      {:win32, _} -> "windows-x64.exe"
+      {:unix, :darwin} -> if mac_arm64?(), do: "darwin-arm64", else: "darwin-x64"
+      {:unix, :linux} -> if linux_arm64?(), do: "linux-arm64", else: "linux-x64"
+    end
+  end
+
+  defp tailwind_target do
+    # Note: tailwind executable is named differently than esbuild
+    case :os.type() do
+      {:win32, _} -> "windows-x64.exe"
+      {:unix, :darwin} -> if mac_arm64?(), do: "macos-arm64", else: "macos-x64"
+      {:unix, :linux} -> if linux_arm64?(), do: "linux-arm64", else: "linux-x64"
+    end
+  end
+
+  defp mac_arm64? do
+    :erlang.system_info(:system_architecture)
+    |> to_string()
+    |> String.contains?("aarch64")
+  end
+
+  defp linux_arm64? do
+    :erlang.system_info(:system_architecture)
+    |> to_string()
+    |> String.contains?("aarch64")
   end
 
   defp copy_static_assets(target_dir) do

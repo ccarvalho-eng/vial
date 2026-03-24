@@ -13,7 +13,7 @@ defmodule Vial.EvalsTest do
         prompt_id: prompt.id
       }
 
-      assert {:ok, suite} = Evals.create_suite(attrs)
+      assert {:ok, suite} = Evals.create_suite(Repo, attrs)
       assert suite.name == "Test Suite"
       assert suite.prompt_id == prompt.id
     end
@@ -23,20 +23,20 @@ defmodule Vial.EvalsTest do
 
       attrs = %{prompt_id: prompt.id}
 
-      assert {:error, changeset} = Evals.create_suite(attrs)
+      assert {:error, changeset} = Evals.create_suite(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).name
     end
 
     test "create_suite/1 requires prompt_id" do
       attrs = %{name: "Test Suite"}
 
-      assert {:error, changeset} = Evals.create_suite(attrs)
+      assert {:error, changeset} = Evals.create_suite(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).prompt_id
     end
 
     test "list_suites/0 returns all suites" do
       suite = suite_fixture()
-      suites = Evals.list_suites()
+      suites = Evals.list_suites(Repo)
 
       assert length(suites) == 1
       assert hd(suites).id == suite.id
@@ -44,7 +44,7 @@ defmodule Vial.EvalsTest do
 
     test "get_suite!/1 returns the suite with given id" do
       suite = suite_fixture()
-      fetched_suite = Evals.get_suite!(suite.id)
+      fetched_suite = Evals.get_suite!(Repo, suite.id)
 
       assert fetched_suite.id == suite.id
       assert fetched_suite.name == suite.name
@@ -54,7 +54,7 @@ defmodule Vial.EvalsTest do
       suite = suite_fixture()
       _test_case = test_case_fixture(%{suite_id: suite.id})
 
-      fetched_suite = Evals.get_suite_with_test_cases!(suite.id)
+      fetched_suite = Evals.get_suite_with_test_cases!(Repo, suite.id)
 
       assert fetched_suite.id == suite.id
       refute match?(%Ecto.Association.NotLoaded{}, fetched_suite.test_cases)
@@ -64,15 +64,15 @@ defmodule Vial.EvalsTest do
     test "update_suite/2 updates the suite" do
       suite = suite_fixture()
 
-      assert {:ok, updated_suite} = Evals.update_suite(suite, %{name: "Updated"})
+      assert {:ok, updated_suite} = Evals.update_suite(Repo, suite, %{name: "Updated"})
       assert updated_suite.name == "Updated"
     end
 
     test "delete_suite/1 deletes the suite" do
       suite = suite_fixture()
 
-      assert {:ok, _suite} = Evals.delete_suite(suite)
-      assert_raise Ecto.NoResultsError, fn -> Evals.get_suite!(suite.id) end
+      assert {:ok, _suite} = Evals.delete_suite(Repo, suite)
+      assert_raise Ecto.NoResultsError, fn -> Evals.get_suite!(Repo, suite.id) end
     end
 
     test "change_suite/1 returns a suite changeset" do
@@ -93,7 +93,7 @@ defmodule Vial.EvalsTest do
         assertions: [%{"type" => "contains", "value" => "Hello"}]
       }
 
-      assert {:ok, test_case} = Evals.create_test_case(attrs)
+      assert {:ok, test_case} = Evals.create_test_case(Repo, attrs)
       assert test_case.suite_id == suite.id
       assert test_case.variable_values == %{"name" => "John"}
       assert test_case.assertions == [%{"type" => "contains", "value" => "Hello"}]
@@ -105,7 +105,7 @@ defmodule Vial.EvalsTest do
         assertions: []
       }
 
-      assert {:error, changeset} = Evals.create_test_case(attrs)
+      assert {:error, changeset} = Evals.create_test_case(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).suite_id
     end
 
@@ -117,7 +117,7 @@ defmodule Vial.EvalsTest do
         assertions: []
       }
 
-      assert {:error, changeset} = Evals.create_test_case(attrs)
+      assert {:error, changeset} = Evals.create_test_case(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).variable_values
     end
 
@@ -129,13 +129,13 @@ defmodule Vial.EvalsTest do
         variable_values: %{}
       }
 
-      assert {:error, changeset} = Evals.create_test_case(attrs)
+      assert {:error, changeset} = Evals.create_test_case(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).assertions
     end
 
     test "list_test_cases/0 returns all test cases" do
       test_case = test_case_fixture()
-      test_cases = Evals.list_test_cases()
+      test_cases = Evals.list_test_cases(Repo)
 
       assert length(test_cases) == 1
       assert hd(test_cases).id == test_case.id
@@ -143,7 +143,7 @@ defmodule Vial.EvalsTest do
 
     test "get_test_case!/1 returns the test case with given id" do
       test_case = test_case_fixture()
-      fetched = Evals.get_test_case!(test_case.id)
+      fetched = Evals.get_test_case!(Repo, test_case.id)
 
       assert fetched.id == test_case.id
     end
@@ -152,7 +152,7 @@ defmodule Vial.EvalsTest do
       test_case = test_case_fixture()
 
       assert {:ok, updated} =
-               Evals.update_test_case(test_case, %{variable_values: %{"new" => "value"}})
+               Evals.update_test_case(Repo, test_case, %{variable_values: %{"new" => "value"}})
 
       assert updated.variable_values == %{"new" => "value"}
     end
@@ -160,8 +160,8 @@ defmodule Vial.EvalsTest do
     test "delete_test_case/1 deletes the test case" do
       test_case = test_case_fixture()
 
-      assert {:ok, _test_case} = Evals.delete_test_case(test_case)
-      assert_raise Ecto.NoResultsError, fn -> Evals.get_test_case!(test_case.id) end
+      assert {:ok, _test_case} = Evals.delete_test_case(Repo, test_case)
+      assert_raise Ecto.NoResultsError, fn -> Evals.get_test_case!(Repo, test_case.id) end
     end
 
     test "change_test_case/1 returns a test case changeset" do
@@ -176,7 +176,7 @@ defmodule Vial.EvalsTest do
     test "create_suite_run/1 creates a suite run with valid attributes" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
       provider = provider_fixture()
 
       attrs = %{
@@ -188,7 +188,7 @@ defmodule Vial.EvalsTest do
         failed: 0
       }
 
-      assert {:ok, suite_run} = Evals.create_suite_run(attrs)
+      assert {:ok, suite_run} = Evals.create_suite_run(Repo, attrs)
       assert suite_run.suite_id == suite.id
       assert suite_run.prompt_version_id == version.id
       assert suite_run.provider_id == provider.id
@@ -200,7 +200,7 @@ defmodule Vial.EvalsTest do
     test "create_suite_run/1 requires suite_id" do
       attrs = %{results: [], passed: 0, failed: 0}
 
-      assert {:error, changeset} = Evals.create_suite_run(attrs)
+      assert {:error, changeset} = Evals.create_suite_run(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).suite_id
     end
 
@@ -209,14 +209,14 @@ defmodule Vial.EvalsTest do
 
       attrs = %{suite_id: suite.id, results: [], passed: 0, failed: 0}
 
-      assert {:error, changeset} = Evals.create_suite_run(attrs)
+      assert {:error, changeset} = Evals.create_suite_run(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).prompt_version_id
     end
 
     test "create_suite_run/1 requires provider_id" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
 
       attrs = %{
         suite_id: suite.id,
@@ -226,13 +226,13 @@ defmodule Vial.EvalsTest do
         failed: 0
       }
 
-      assert {:error, changeset} = Evals.create_suite_run(attrs)
+      assert {:error, changeset} = Evals.create_suite_run(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).provider_id
     end
 
     test "list_suite_runs/0 returns all suite runs" do
       suite_run = suite_run_fixture()
-      suite_runs = Evals.list_suite_runs()
+      suite_runs = Evals.list_suite_runs(Repo)
 
       assert length(suite_runs) == 1
       assert hd(suite_runs).id == suite_run.id
@@ -240,7 +240,7 @@ defmodule Vial.EvalsTest do
 
     test "get_suite_run!/1 returns the suite run with given id" do
       suite_run = suite_run_fixture()
-      fetched = Evals.get_suite_run!(suite_run.id)
+      fetched = Evals.get_suite_run!(Repo, suite_run.id)
 
       assert fetched.id == suite_run.id
     end
@@ -248,14 +248,14 @@ defmodule Vial.EvalsTest do
     test "delete_suite_run/1 deletes the suite run" do
       suite_run = suite_run_fixture()
 
-      assert {:ok, _suite_run} = Evals.delete_suite_run(suite_run)
-      assert_raise Ecto.NoResultsError, fn -> Evals.get_suite_run!(suite_run.id) end
+      assert {:ok, _suite_run} = Evals.delete_suite_run(Repo, suite_run)
+      assert_raise Ecto.NoResultsError, fn -> Evals.get_suite_run!(Repo, suite_run.id) end
     end
 
     test "changeset accepts avg_cost_usd and avg_latency_ms" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
       provider = provider_fixture()
 
       attrs = %{
@@ -279,7 +279,7 @@ defmodule Vial.EvalsTest do
     test "execute_suite captures avg_cost_usd and avg_latency_ms" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       # Create test cases that will succeed
@@ -297,7 +297,7 @@ defmodule Vial.EvalsTest do
           assertions: [%{"type" => "contains", "value" => "response"}]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
 
       assert suite_run.avg_cost_usd != nil
       assert suite_run.avg_latency_ms != nil
@@ -309,7 +309,7 @@ defmodule Vial.EvalsTest do
     test "execute_suite handles partial failures in metrics" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       # Create one passing and one failing test case
@@ -327,7 +327,7 @@ defmodule Vial.EvalsTest do
           assertions: [%{"type" => "contains", "value" => "NOTFOUND"}]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
 
       # Should still have metrics from successful tests
       assert is_nil(suite_run.avg_cost_usd) or
@@ -340,7 +340,7 @@ defmodule Vial.EvalsTest do
     test "executes suite with passing test cases" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Hello {{name}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Hello {{name}}")
       provider = provider_fixture()
 
       _tc1 =
@@ -357,7 +357,7 @@ defmodule Vial.EvalsTest do
           assertions: [%{"type" => "contains", "value" => "Mock"}]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.suite_id == suite.id
       assert suite_run.prompt_version_id == version.id
       assert suite_run.provider_id == provider.id
@@ -371,7 +371,7 @@ defmodule Vial.EvalsTest do
     test "executes suite with failing test cases" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Say {{word}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Say {{word}}")
       provider = provider_fixture()
 
       _tc1 =
@@ -381,7 +381,7 @@ defmodule Vial.EvalsTest do
           assertions: [%{"type" => "contains", "value" => "NOTFOUND"}]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.passed == 0
       assert suite_run.failed == 1
     end
@@ -390,7 +390,7 @@ defmodule Vial.EvalsTest do
     test "evaluates contains assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       _tc =
@@ -400,7 +400,7 @@ defmodule Vial.EvalsTest do
           assertions: [%{"type" => "contains", "value" => "Mock"}]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.passed == 1
       assert suite_run.failed == 0
     end
@@ -409,7 +409,7 @@ defmodule Vial.EvalsTest do
     test "evaluates not_contains assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       _tc =
@@ -419,7 +419,7 @@ defmodule Vial.EvalsTest do
           assertions: [%{"type" => "not_contains", "value" => "NOTFOUND"}]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.passed == 1
     end
 
@@ -427,7 +427,7 @@ defmodule Vial.EvalsTest do
     test "evaluates regex assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       _tc =
@@ -437,7 +437,7 @@ defmodule Vial.EvalsTest do
           assertions: [%{"type" => "regex", "value" => "Mock.*response"}]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.passed == 1
     end
 
@@ -445,7 +445,7 @@ defmodule Vial.EvalsTest do
     test "evaluates exact_match assertion" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       _tc =
@@ -457,7 +457,7 @@ defmodule Vial.EvalsTest do
           ]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.passed == 1
     end
 
@@ -465,7 +465,7 @@ defmodule Vial.EvalsTest do
     test "evaluates multiple assertions per test case" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       _tc =
@@ -479,14 +479,14 @@ defmodule Vial.EvalsTest do
           ]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.passed == 1
     end
 
     test "fails if any assertion fails" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Test {{input}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Test {{input}}")
       provider = provider_fixture()
 
       _tc =
@@ -499,7 +499,7 @@ defmodule Vial.EvalsTest do
           ]
         })
 
-      assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
+      assert {:ok, suite_run} = Evals.execute_suite(Repo, suite, version, provider)
       assert suite_run.failed == 1
     end
   end

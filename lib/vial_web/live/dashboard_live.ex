@@ -19,8 +19,12 @@ defmodule VialWeb.DashboardLive do
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
     repo = Hooks.get_repo(socket)
+    base_path = socket.assigns[:base_path] || ""
 
-    recent_activity = Stats.list_recent_activity(repo, 10)
+    recent_activity =
+      Stats.list_recent_activity(repo, 10)
+      |> Enum.map(fn activity -> Map.update!(activity, :path, &(base_path <> &1)) end)
+
     pass_rates = Evals.pass_rates_by_prompt(repo) |> sort_by_pass_rate()
 
     # Calculate key metrics

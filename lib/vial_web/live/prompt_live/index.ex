@@ -6,6 +6,7 @@ defmodule VialWeb.PromptLive.Index do
   use VialWeb, :live_view
 
   alias Vial.Prompts
+  alias Vial.Hooks
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -14,7 +15,8 @@ defmodule VialWeb.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(params, _uri, socket) do
-    all_prompts = Prompts.list_prompts()
+    repo = Hooks.get_repo(socket)
+    all_prompts = Prompts.list_prompts(repo)
     all_tags = extract_all_tags(all_prompts)
     search_query = params["search"] || ""
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
@@ -34,10 +36,11 @@ defmodule VialWeb.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("delete", %{"id" => id}, socket) do
-    prompt = Prompts.get_prompt!(id)
-    {:ok, _} = Prompts.delete_prompt(prompt)
+    repo = Hooks.get_repo(socket)
+    prompt = Prompts.get_prompt!(repo, id)
+    {:ok, _} = Prompts.delete_prompt(repo, prompt)
 
-    all_prompts = Prompts.list_prompts()
+    all_prompts = Prompts.list_prompts(repo)
 
     filtered =
       filter_prompts(all_prompts, socket.assigns.search_query, socket.assigns.selected_tags)
@@ -51,10 +54,12 @@ defmodule VialWeb.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("search", %{"search" => %{"query" => query}}, socket) do
-    {:noreply,
-     push_patch(socket,
-       to: ~p"/prompts?#{build_query_params(query, socket.assigns.selected_tags)}"
-     )}
+    query_params = build_query_params(query, socket.assigns.selected_tags)
+
+    path =
+      if query_params == %{}, do: "/prompts", else: "/prompts?#{URI.encode_query(query_params)}"
+
+    {:noreply, push_patch(socket, to: vial_path(socket, path))}
   end
 
   @impl Phoenix.LiveView
@@ -66,15 +71,17 @@ defmodule VialWeb.PromptLive.Index do
         [tag | socket.assigns.selected_tags]
       end
 
-    {:noreply,
-     push_patch(socket,
-       to: ~p"/prompts?#{build_query_params(socket.assigns.search_query, selected_tags)}"
-     )}
+    query_params = build_query_params(socket.assigns.search_query, selected_tags)
+
+    path =
+      if query_params == %{}, do: "/prompts", else: "/prompts?#{URI.encode_query(query_params)}"
+
+    {:noreply, push_patch(socket, to: vial_path(socket, path))}
   end
 
   @impl Phoenix.LiveView
   def handle_event("clear_filters", _params, socket) do
-    {:noreply, push_patch(socket, to: ~p"/prompts")}
+    {:noreply, push_patch(socket, to: vial_path(socket, "/prompts"))}
   end
 
   defp filter_prompts(prompts, search_query, selected_tags) do

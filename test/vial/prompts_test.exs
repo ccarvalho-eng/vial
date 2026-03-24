@@ -11,7 +11,7 @@ defmodule Vial.PromptsTest do
         tags: ["test", "sample"]
       }
 
-      assert {:ok, prompt} = Prompts.create_prompt(attrs)
+      assert {:ok, prompt} = Prompts.create_prompt(Repo, attrs)
       assert prompt.name == "Test Prompt"
       assert prompt.description == "A test prompt"
       assert prompt.tags == ["test", "sample"]
@@ -20,13 +20,13 @@ defmodule Vial.PromptsTest do
     test "create_prompt/1 requires name" do
       attrs = %{description: "Test"}
 
-      assert {:error, changeset} = Prompts.create_prompt(attrs)
+      assert {:error, changeset} = Prompts.create_prompt(Repo, attrs)
       assert "can't be blank" in errors_on(changeset).name
     end
 
     test "list_prompts/0 returns all prompts" do
       prompt = prompt_fixture()
-      assert Prompts.list_prompts() == [prompt]
+      assert Prompts.list_prompts(Repo) == [prompt]
     end
   end
 
@@ -35,7 +35,7 @@ defmodule Vial.PromptsTest do
       prompt = prompt_fixture()
       template = "Hello {{name}}, how are you?"
 
-      assert {:ok, version} = Prompts.create_prompt_version(prompt, template)
+      assert {:ok, version} = Prompts.create_prompt_version(Repo, prompt, template)
       assert version.version == 1
       assert version.template == template
       assert version.variables == ["name"]
@@ -44,8 +44,8 @@ defmodule Vial.PromptsTest do
 
     test "create_prompt_version/2 auto-increments version number" do
       prompt = prompt_fixture()
-      {:ok, v1} = Prompts.create_prompt_version(prompt, "Template 1 {{var}}")
-      {:ok, v2} = Prompts.create_prompt_version(prompt, "Template 2 {{var}}")
+      {:ok, v1} = Prompts.create_prompt_version(Repo, prompt, "Template 1 {{var}}")
+      {:ok, v2} = Prompts.create_prompt_version(Repo, prompt, "Template 2 {{var}}")
 
       assert v1.version == 1
       assert v2.version == 2
@@ -70,9 +70,9 @@ defmodule Vial.PromptsTest do
   describe "evolution" do
     test "get_evolution_metrics/1 returns metrics for prompt" do
       prompt = prompt_fixture()
-      {:ok, _version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      {:ok, _version} = Prompts.create_prompt_version(Repo, prompt, "Test {{var}}")
 
-      metrics = Prompts.get_evolution_metrics(prompt.id)
+      metrics = Prompts.get_evolution_metrics(Repo, prompt.id)
 
       assert is_list(metrics)
       assert length(metrics) == 1

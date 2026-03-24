@@ -11,7 +11,7 @@ defmodule Vial.PromptsFixtures do
         description: "A sample prompt",
         tags: ["sample"]
       })
-      |> Vial.Prompts.create_prompt()
+      |> then(&Vial.Prompts.create_prompt(Vial.Repo, &1))
 
     prompt
   end

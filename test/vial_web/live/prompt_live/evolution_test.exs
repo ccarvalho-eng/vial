@@ -28,8 +28,8 @@ defmodule VialWeb.PromptLive.EvolutionTest do
 
     test "displays version metrics", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Metrics Test"})
-      {:ok, _v1} = Prompts.create_prompt_version(prompt, "Version 1 {{var}}")
-      {:ok, _v2} = Prompts.create_prompt_version(prompt, "Version 2 {{var}}")
+      {:ok, _v1} = Prompts.create_prompt_version(Repo, prompt, "Version 1 {{var}}")
+      {:ok, _v2} = Prompts.create_prompt_version(Repo, prompt, "Version 2 {{var}}")
 
       {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
 
@@ -40,11 +40,11 @@ defmodule VialWeb.PromptLive.EvolutionTest do
     test "displays provider breakdown when available", %{conn: conn} do
       prompt = prompt_fixture()
       provider = provider_fixture(%{name: "Test Provider"})
-      {:ok, version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      {:ok, version} = Prompts.create_prompt_version(Repo, prompt, "Test {{var}}")
       suite = suite_fixture(%{prompt_id: prompt.id})
 
       {:ok, _sr} =
-        Vial.Evals.create_suite_run(%{
+        Vial.Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: provider.id,

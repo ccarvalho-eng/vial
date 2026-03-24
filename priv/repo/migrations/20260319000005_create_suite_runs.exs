@@ -2,15 +2,17 @@ defmodule Vial.Repo.Migrations.CreateSuiteRuns do
   use Ecto.Migration
 
   def change do
-    create table(:suite_runs, primary_key: false) do
+    create table(:vial_suite_runs, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :suite_id, references(:suites, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :suite_id, references(:vial_suites, type: :binary_id, on_delete: :delete_all),
+        null: false
 
       add :prompt_version_id,
-          references(:prompt_versions, type: :binary_id, on_delete: :delete_all),
+          references(:vial_prompt_versions, type: :binary_id, on_delete: :delete_all),
           null: false
 
-      add :provider_id, references(:providers, type: :binary_id, on_delete: :delete_all),
+      add :provider_id, references(:vial_providers, type: :binary_id, on_delete: :delete_all),
         null: false
 
       add :results, :jsonb, null: false, default: "[]"
@@ -20,8 +22,8 @@ defmodule Vial.Repo.Migrations.CreateSuiteRuns do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:suite_runs, [:suite_id])
-    create index(:suite_runs, [:prompt_version_id])
-    create index(:suite_runs, [:provider_id])
+    create index(:vial_suite_runs, [:suite_id])
+    create index(:vial_suite_runs, [:prompt_version_id])
+    create index(:vial_suite_runs, [:provider_id])
   end
 end

@@ -21,7 +21,7 @@ defmodule Vial.RunsTest do
 
     setup do
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Hello {{user}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Hello {{user}}")
       {:ok, prompt_version: version}
     end
 
@@ -30,17 +30,17 @@ defmodule Vial.RunsTest do
 
       # Create a run result with cost
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template")
       provider = provider_fixture()
 
       {:ok, run} =
-        Runs.create_run(%{
+        Runs.create_run(Repo, %{
           prompt_version_id: version.id,
           variable_values: %{"user" => "Test"}
         })
 
       {:ok, _result} =
-        Runs.create_run_result(%{
+        Runs.create_run_result(Repo, %{
           run_id: run.id,
           provider_id: provider.id,
           output: "Output",
@@ -54,7 +54,7 @@ defmodule Vial.RunsTest do
           avg_cost_usd: Decimal.new("0.005")
         })
 
-      total = Runs.total_cost()
+      total = Runs.total_cost(Repo)
 
       # Should include both run result cost (0.001) and suite run cost (0.005)
       assert_in_delta total, 0.006, 0.0001
@@ -62,25 +62,25 @@ defmodule Vial.RunsTest do
 
     test "list_runs/0 returns all runs", %{prompt_version: version} do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
-      assert Runs.list_runs() == [run]
+      {:ok, run} = Runs.create_run(Repo, attrs)
+      assert Runs.list_runs(Repo) == [run]
     end
 
     test "get_run!/1 returns the run with given id", %{prompt_version: version} do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
-      assert Runs.get_run!(run.id).id == run.id
+      {:ok, run} = Runs.create_run(Repo, attrs)
+      assert Runs.get_run!(Repo, run.id).id == run.id
     end
 
     test "get_run!/1 preloads run_results and providers", %{
       prompt_version: version
     } do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
+      {:ok, run} = Runs.create_run(Repo, attrs)
       provider = provider_fixture()
 
       {:ok, _result} =
-        Runs.create_run_result(%{
+        Runs.create_run_result(Repo, %{
           run_id: run.id,
           provider_id: provider.id,
           output: "Hello Alice",
@@ -91,7 +91,7 @@ defmodule Vial.RunsTest do
           status: :completed
         })
 
-      loaded_run = Runs.get_run!(run.id)
+      loaded_run = Runs.get_run!(Repo, run.id)
       assert Ecto.assoc_loaded?(loaded_run.run_results)
       assert length(loaded_run.run_results) == 1
       assert Ecto.assoc_loaded?(hd(loaded_run.run_results).provider)
@@ -101,22 +101,22 @@ defmodule Vial.RunsTest do
       prompt_version: version
     } do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      assert {:ok, %Run{} = run} = Runs.create_run(attrs)
+      assert {:ok, %Run{} = run} = Runs.create_run(Repo, attrs)
       assert run.name == "Test Run"
       assert run.variable_values == %{"user" => "Alice", "topic" => "AI"}
       assert run.prompt_version_id == version.id
     end
 
     test "create_run/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Runs.create_run(@invalid_attrs)
+      assert {:error, %Ecto.Changeset{}} = Runs.create_run(Repo, @invalid_attrs)
     end
 
     test "update_run/2 with valid data updates the run", %{
       prompt_version: version
     } do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
-      assert {:ok, %Run{} = run} = Runs.update_run(run, @update_attrs)
+      {:ok, run} = Runs.create_run(Repo, attrs)
+      assert {:ok, %Run{} = run} = Runs.update_run(Repo, run, @update_attrs)
       assert run.name == "Updated Run"
       assert run.variable_values == %{"user" => "Bob", "topic" => "ML"}
     end
@@ -125,24 +125,24 @@ defmodule Vial.RunsTest do
       prompt_version: version
     } do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
+      {:ok, run} = Runs.create_run(Repo, attrs)
 
       assert {:error, %Ecto.Changeset{}} =
-               Runs.update_run(run, @invalid_attrs)
+               Runs.update_run(Repo, run, @invalid_attrs)
 
-      assert run.id == Runs.get_run!(run.id).id
+      assert run.id == Runs.get_run!(Repo, run.id).id
     end
 
     test "delete_run/1 deletes the run", %{prompt_version: version} do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
-      assert {:ok, %Run{}} = Runs.delete_run(run)
-      assert_raise Ecto.NoResultsError, fn -> Runs.get_run!(run.id) end
+      {:ok, run} = Runs.create_run(Repo, attrs)
+      assert {:ok, %Run{}} = Runs.delete_run(Repo, run)
+      assert_raise Ecto.NoResultsError, fn -> Runs.get_run!(Repo, run.id) end
     end
 
     test "change_run/1 returns a run changeset", %{prompt_version: version} do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
+      {:ok, run} = Runs.create_run(Repo, attrs)
       assert %Ecto.Changeset{} = Runs.change_run(run)
     end
 
@@ -150,7 +150,7 @@ defmodule Vial.RunsTest do
       prompt_version: version
     } do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
-      {:ok, run} = Runs.create_run(attrs)
+      {:ok, run} = Runs.create_run(Repo, attrs)
       changeset = Runs.change_run(run, @update_attrs)
       assert %Ecto.Changeset{} = changeset
       assert changeset.changes.name == "Updated Run"
@@ -181,10 +181,10 @@ defmodule Vial.RunsTest do
 
     setup do
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Hello {{user}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Hello {{user}}")
 
       {:ok, run} =
-        Runs.create_run(%{
+        Runs.create_run(Repo, %{
           prompt_version_id: version.id,
           variable_values: %{"user" => "Test"}
         })
@@ -202,7 +202,7 @@ defmodule Vial.RunsTest do
         |> Map.put(:run_id, run.id)
         |> Map.put(:provider_id, provider.id)
 
-      assert {:ok, %RunResult{} = result} = Runs.create_run_result(attrs)
+      assert {:ok, %RunResult{} = result} = Runs.create_run_result(Repo, attrs)
       assert result.output == "Hello world"
       assert result.input_tokens == 10
       assert result.output_tokens == 5
@@ -213,7 +213,7 @@ defmodule Vial.RunsTest do
 
     test "create_run_result/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} =
-               Runs.create_run_result(@invalid_result_attrs)
+               Runs.create_run_result(Repo, @invalid_result_attrs)
     end
 
     test "update_run_result/2 with valid data updates the run_result", %{
@@ -225,10 +225,10 @@ defmodule Vial.RunsTest do
         |> Map.put(:run_id, run.id)
         |> Map.put(:provider_id, provider.id)
 
-      {:ok, result} = Runs.create_run_result(attrs)
+      {:ok, result} = Runs.create_run_result(Repo, attrs)
 
       assert {:ok, %RunResult{} = result} =
-               Runs.update_run_result(result, @update_result_attrs)
+               Runs.update_run_result(Repo, result, @update_result_attrs)
 
       assert result.output == "Updated output"
       assert result.input_tokens == 15
@@ -245,10 +245,10 @@ defmodule Vial.RunsTest do
         |> Map.put(:run_id, run.id)
         |> Map.put(:provider_id, provider.id)
 
-      {:ok, result} = Runs.create_run_result(attrs)
+      {:ok, result} = Runs.create_run_result(Repo, attrs)
 
       assert {:error, %Ecto.Changeset{}} =
-               Runs.update_run_result(result, @invalid_result_attrs)
+               Runs.update_run_result(Repo, result, @invalid_result_attrs)
     end
   end
 
@@ -257,10 +257,10 @@ defmodule Vial.RunsTest do
       prompt = prompt_fixture()
 
       {:ok, version} =
-        Vial.Prompts.create_prompt_version(prompt, "Hello {{user}}")
+        Vial.Prompts.create_prompt_version(Repo, prompt, "Hello {{user}}")
 
       {:ok, run} =
-        Runs.create_run(%{
+        Runs.create_run(Repo, %{
           prompt_version_id: version.id,
           variable_values: %{"user" => "Alice"}
         })
@@ -275,7 +275,7 @@ defmodule Vial.RunsTest do
       provider: provider
     } do
       run = Vial.Repo.preload(run, :prompt_version)
-      assert {:ok, result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, result_run} = Runs.execute_run(Repo, run, [provider])
 
       assert Ecto.assoc_loaded?(result_run.run_results)
       assert length(result_run.run_results) == 1
@@ -300,7 +300,7 @@ defmodule Vial.RunsTest do
       run = Vial.Repo.preload(run, :prompt_version)
 
       assert {:ok, result_run} =
-               Runs.execute_run(run, [provider1, provider2, provider3])
+               Runs.execute_run(Repo, run, [provider1, provider2, provider3])
 
       assert Ecto.assoc_loaded?(result_run.run_results)
       assert length(result_run.run_results) == 3
@@ -325,7 +325,7 @@ defmodule Vial.RunsTest do
       Phoenix.PubSub.subscribe(Vial.PubSub, "run:#{run.id}")
 
       run = Vial.Repo.preload(run, :prompt_version)
-      assert {:ok, _result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, _result_run} = Runs.execute_run(Repo, run, [provider])
 
       # Should receive at least one update message
       assert_receive {:run_result_update, _result_id, :completed, _output},
@@ -338,7 +338,7 @@ defmodule Vial.RunsTest do
       provider: provider
     } do
       run = Vial.Repo.preload(run, :prompt_version)
-      assert {:ok, result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, result_run} = Runs.execute_run(Repo, run, [provider])
 
       result = hd(result_run.run_results)
       # The rendered prompt should contain "Hello Alice"
@@ -351,7 +351,7 @@ defmodule Vial.RunsTest do
       provider = provider_fixture(%{name: "Error Provider"})
 
       {:ok, run} =
-        Runs.create_run(%{
+        Runs.create_run(Repo, %{
           prompt_version_id: version.id,
           variable_values: %{"user" => "Test"}
         })
@@ -359,7 +359,7 @@ defmodule Vial.RunsTest do
       run = Vial.Repo.preload(run, :prompt_version)
 
       # For now, this should still succeed but handle errors per-provider
-      assert {:ok, _result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, _result_run} = Runs.execute_run(Repo, run, [provider])
     end
   end
 end

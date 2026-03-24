@@ -10,7 +10,7 @@ defmodule Vial.Runs.RunTest do
       prompt = prompt_fixture()
 
       {:ok, version} =
-        Vial.Prompts.create_prompt_version(prompt, "Hello {{user}}")
+        Vial.Prompts.create_prompt_version(Repo, prompt, "Hello {{user}}")
 
       {:ok, prompt_version: version}
     end

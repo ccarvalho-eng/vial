@@ -19,6 +19,7 @@ defmodule Vial.Router do
   ## Options
 
     * `:repo` (required) - The Ecto repo module to use for database operations
+    * `:task_supervisor` (required) - The Task.Supervisor module for running async operations
     * `:openai_api_key` - OpenAI API key for LLM operations. Can be a string,
       a function `{Module, :function, args}`, or `nil` to disable LLM features
     * `:on_mount` - Additional LiveView on_mount hooks for authentication/authorization
@@ -65,6 +66,7 @@ defmodule Vial.Router do
     opts =
       Keyword.validate!(opts, [
         :repo,
+        :task_supervisor,
         :openai_api_key,
         :on_mount,
         :prefix,
@@ -83,43 +85,44 @@ defmodule Vial.Router do
 
     quote bind_quoted: [path: path, opts: opts] do
       scope path, alias: false, as: false do
-        import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
-
-        # Static assets route for Vial's pre-compiled CSS/JS
-        get "/vial-assets/*path", Vial.Static, :serve
-
         # Configure on_mount hooks
         on_mount_hooks = [
-          {Vial.Hooks, :inject_config, [opts]}
+          {Vial.Hooks, :inject_config}
           | Keyword.get(opts, :on_mount, [])
         ]
 
-        live_session :vial_dashboard,
+        Phoenix.LiveView.Router.live_session :vial_dashboard,
           on_mount: on_mount_hooks,
-          root_layout: {VialWeb.Layouts, :root} do
-          live "/", VialWeb.DashboardLive, :index
+          root_layout: {VialWeb.Layouts, :root},
+          session: %{"vial_config" => opts, "vial_base_path" => path} do
+          Phoenix.LiveView.Router.live("/", VialWeb.DashboardLive, :index)
 
           # Prompts
-          live "/prompts", VialWeb.PromptLive.Index, :index
-          live "/prompts/new", VialWeb.PromptLive.New, :new
-          live "/prompts/:id", VialWeb.PromptLive.Show, :show
-          live "/prompts/:id/edit", VialWeb.PromptLive.New, :edit
-          live "/prompts/:id/evolution", VialWeb.PromptLive.Evolution, :show
+          Phoenix.LiveView.Router.live("/prompts", VialWeb.PromptLive.Index, :index)
+          Phoenix.LiveView.Router.live("/prompts/new", VialWeb.PromptLive.New, :new)
+          Phoenix.LiveView.Router.live("/prompts/:id", VialWeb.PromptLive.Show, :show)
+          Phoenix.LiveView.Router.live("/prompts/:id/edit", VialWeb.PromptLive.New, :edit)
+
+          Phoenix.LiveView.Router.live(
+            "/prompts/:id/evolution",
+            VialWeb.PromptLive.Evolution,
+            :show
+          )
 
           # Runs
-          live "/runs/new", VialWeb.RunLive.New, :new
-          live "/runs/:id", VialWeb.RunLive.Show, :show
+          Phoenix.LiveView.Router.live("/runs/new", VialWeb.RunLive.New, :new)
+          Phoenix.LiveView.Router.live("/runs/:id", VialWeb.RunLive.Show, :show)
 
           # Test Suites
-          live "/suites", VialWeb.SuiteLive.Index, :index
-          live "/suites/new", VialWeb.SuiteLive.New, :new
-          live "/suites/:id", VialWeb.SuiteLive.Show, :show
-          live "/suites/:id/edit", VialWeb.SuiteLive.New, :edit
+          Phoenix.LiveView.Router.live("/suites", VialWeb.SuiteLive.Index, :index)
+          Phoenix.LiveView.Router.live("/suites/new", VialWeb.SuiteLive.New, :new)
+          Phoenix.LiveView.Router.live("/suites/:id", VialWeb.SuiteLive.Show, :show)
+          Phoenix.LiveView.Router.live("/suites/:id/edit", VialWeb.SuiteLive.New, :edit)
 
           # Providers
-          live "/providers", VialWeb.ProviderLive.Index, :index
-          live "/providers/new", VialWeb.ProviderLive.New, :new
-          live "/providers/:id/edit", VialWeb.ProviderLive.New, :edit
+          Phoenix.LiveView.Router.live("/providers", VialWeb.ProviderLive.Index, :index)
+          Phoenix.LiveView.Router.live("/providers/new", VialWeb.ProviderLive.New, :new)
+          Phoenix.LiveView.Router.live("/providers/:id/edit", VialWeb.ProviderLive.New, :edit)
         end
       end
     end

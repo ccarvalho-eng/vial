@@ -13,6 +13,7 @@ defmodule VialWeb.RunLive.NewTest do
 
       {:ok, version} =
         Prompts.create_prompt_version(
+          Repo,
           prompt,
           "Hello {{user}}, welcome to {{topic}}"
         )

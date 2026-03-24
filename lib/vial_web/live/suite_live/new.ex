@@ -138,7 +138,7 @@ defmodule VialWeb.SuiteLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Suite created successfully")
-         |> push_navigate(to: ~p"/suites/#{suite.id}")}
+         |> push_navigate(to: vial_path(socket, "/suites/#{suite.id}"))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -158,7 +158,7 @@ defmodule VialWeb.SuiteLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Suite updated successfully")
-         |> push_navigate(to: ~p"/suites/#{updated_suite.id}")}
+         |> push_navigate(to: vial_path(socket, "/suites/#{updated_suite.id}"))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}

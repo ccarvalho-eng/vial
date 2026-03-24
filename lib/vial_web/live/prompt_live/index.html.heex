@@ -1,11 +1,11 @@
-<Layouts.app flash={@flash} current_path={@current_path}>
+<Layouts.app flash={@flash} current_path={@current_path} base_path={@base_path}>
   <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
       <div style="display: flex; align-items: center; gap: 12px;">
         <.icon name="hero-document-text" class="size-7 text-muted" />
         <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Prompts</h1>
       </div>
-      <.link navigate={~p"/prompts/new"} class="button-primary">
+      <.link navigate={@base_path <> "/prompts/new"} class="button-primary">
         <.icon name="hero-plus" class="size-4" /> New Prompt
       </.link>
     </div>
@@ -62,7 +62,10 @@
       <%!-- Prompts list --%>
       <div :for={prompt <- @prompts} class="vial-card">
         <div style="display: flex; justify-content: space-between; align-items: start;">
-          <.link navigate={~p"/prompts/#{prompt.id}"} style="flex: 1; text-decoration: none;">
+          <.link
+            navigate={@base_path <> "/prompts/#{prompt.id}"}
+            style="flex: 1; text-decoration: none;"
+          >
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
               {prompt.name}
             </h3>
@@ -83,14 +86,14 @@
           </.link>
           <div style="display: flex; gap: 8px;">
             <.link
-              navigate={~p"/prompts/#{prompt.id}"}
+              navigate={@base_path <> "/prompts/#{prompt.id}"}
               class="button-primary"
               style="font-size: 13px; padding: 6px 12px;"
             >
               View
             </.link>
             <.link
-              navigate={~p"/prompts/#{prompt.id}/edit"}
+              navigate={@base_path <> "/prompts/#{prompt.id}/edit"}
               class="button-secondary"
               style="font-size: 13px; padding: 6px 12px;"
             >

@@ -102,15 +102,17 @@ defmodule VialWeb.RunLive.New do
           end)
 
         run_with_version = %{run | prompt_version: socket.assigns.prompt_version}
+        pubsub = socket.endpoint.config(:pubsub_server)
+        task_supervisor = Hooks.get_task_supervisor(socket)
 
         Task.start(fn ->
-          Runs.execute_run(repo, run_with_version, providers)
+          Runs.execute_run(repo, run_with_version, providers, pubsub, task_supervisor)
         end)
 
         {:noreply,
          socket
          |> put_flash(:info, "Run launched successfully")
-         |> push_navigate(to: ~p"/runs/#{run.id}")}
+         |> push_navigate(to: vial_path(socket, "/runs/#{run.id}"))}
 
       {:error, changeset} ->
         {:noreply,

@@ -92,7 +92,7 @@ defmodule VialWeb.RunLive.ShowTest do
         })
 
       {:ok, _updated_result} =
-        Vial.Runs.update_run_result(result3, %{
+        Vial.Runs.update_run_result(Repo, result3, %{
           output: "Streaming update from Cohere",
           status: :completed
         })
@@ -124,7 +124,7 @@ defmodule VialWeb.RunLive.ShowTest do
         })
 
       {:ok, _updated_result} =
-        Vial.Runs.update_run_result(result3, %{
+        Vial.Runs.update_run_result(Repo, result3, %{
           output: "Partial",
           status: :streaming
         })

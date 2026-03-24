@@ -2,12 +2,12 @@ defmodule Vial.Repo.Migrations.CreateRunResults do
   use Ecto.Migration
 
   def change do
-    create table(:run_results, primary_key: false) do
+    create table(:vial_run_results, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :run_id, references(:runs, type: :binary_id, on_delete: :delete_all), null: false
+      add :run_id, references(:vial_runs, type: :binary_id, on_delete: :delete_all), null: false
 
       add :provider_id,
-          references(:providers, type: :binary_id, on_delete: :delete_all),
+          references(:vial_providers, type: :binary_id, on_delete: :delete_all),
           null: false
 
       add :output, :text
@@ -21,7 +21,7 @@ defmodule Vial.Repo.Migrations.CreateRunResults do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:run_results, [:run_id])
-    create index(:run_results, [:provider_id])
+    create index(:vial_run_results, [:run_id])
+    create index(:vial_run_results, [:provider_id])
   end
 end

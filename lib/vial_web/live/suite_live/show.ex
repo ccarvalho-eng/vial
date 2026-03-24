@@ -11,6 +11,7 @@ defmodule VialWeb.SuiteLive.Show do
   alias Vial.Evals
   alias Vial.Prompts
   alias Vial.Providers
+  alias Vial.Hooks
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -19,12 +20,13 @@ defmodule VialWeb.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_params(%{"id" => id}, _uri, socket) do
-    suite = Evals.get_suite_with_test_cases_and_prompt!(id)
-    prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
-    providers = Providers.list_providers()
+    repo = Hooks.get_repo(socket)
+    suite = Evals.get_suite_with_test_cases_and_prompt!(repo, id)
+    prompt = Prompts.get_prompt_with_versions!(repo, suite.prompt_id)
+    providers = Providers.list_providers(repo)
 
     # Load existing suite runs
-    suite_runs = Evals.list_suite_runs_for_suite_with_associations(id)
+    suite_runs = Evals.list_suite_runs_for_suite_with_associations(repo, id)
 
     # Set default selections to first version and first provider
     default_version_id = List.first(prompt.versions) |> then(&if &1, do: &1.id, else: nil)
@@ -63,13 +65,15 @@ defmodule VialWeb.SuiteLive.Show do
     # Start async execution
     pid = self()
     suite_id = socket.assigns.suite.id
+    repo = Hooks.get_repo(socket)
+    task_supervisor = Hooks.get_task_supervisor(socket)
 
-    Task.Supervisor.start_child(Vial.TaskSupervisor, fn ->
-      version = Prompts.get_prompt_version!(version_id)
-      provider = Providers.get_provider!(provider_id)
-      suite = Evals.get_suite_with_test_cases!(suite_id)
+    Task.Supervisor.start_child(task_supervisor, fn ->
+      version = Prompts.get_prompt_version!(repo, version_id)
+      provider = Providers.get_provider!(repo, provider_id)
+      suite = Evals.get_suite_with_test_cases!(repo, suite_id)
 
-      result = Evals.execute_suite(suite, version, provider)
+      result = Evals.execute_suite(repo, suite, version, provider)
       send(pid, {:suite_completed, result})
     end)
 
@@ -80,7 +84,8 @@ defmodule VialWeb.SuiteLive.Show do
   def handle_info({:suite_completed, {:ok, suite_run}}, socket) do
     # Suite run comes from execute_suite which returns it after insert,
     # so we need to preload associations here since it's not from a context query
-    suite_run = Vial.Repo.preload(suite_run, [:prompt_version, :provider])
+    repo = Hooks.get_repo(socket)
+    suite_run = repo.preload(suite_run, [:prompt_version, :provider])
 
     {:noreply,
      socket

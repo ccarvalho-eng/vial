@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash} current_path={@current_path}>
+<Layouts.app flash={@flash} current_path={@current_path} base_path={@base_path}>
   <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
     <div style="margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
       <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
@@ -11,7 +11,7 @@
             {@prompt.description}
           </p>
         </div>
-        <.link navigate={~p"/prompts/#{@prompt.id}/edit"} class="button-primary">
+        <.link navigate={@base_path <> "/prompts/#{@prompt.id}/edit"} class="button-primary">
           <.icon name="hero-pencil" class="size-4" /> Edit Prompt
         </.link>
       </div>
@@ -25,13 +25,13 @@
     <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
       <nav style="display: flex; gap: 32px; margin-bottom: -1px;">
         <.link
-          navigate={~p"/prompts/#{@prompt.id}"}
+          navigate={@base_path <> "/prompts/#{@prompt.id}"}
           style="border-bottom: 2px solid transparent; padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none;"
         >
           Details
         </.link>
         <.link
-          navigate={~p"/prompts/#{@prompt.id}/evolution"}
+          navigate={@base_path <> "/prompts/#{@prompt.id}/evolution"}
           style="border-bottom: 2px solid var(--accent); padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 6px;"
         >
           <.icon name="hero-beaker" class="size-4" /> Evolution
@@ -237,7 +237,7 @@
 
     <div style="margin-top: 24px;">
       <.link
-        navigate={~p"/prompts"}
+        navigate={@base_path <> "/prompts"}
         style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
       >
         &larr; Back to prompts

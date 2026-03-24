@@ -6,6 +6,7 @@ defmodule VialWeb.ProviderLive.Index do
   use VialWeb, :live_view
 
   alias Vial.Providers
+  alias Vial.Hooks
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -14,7 +15,8 @@ defmodule VialWeb.ProviderLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
-    providers = Providers.list_providers()
+    repo = Hooks.get_repo(socket)
+    providers = Providers.list_providers(repo)
 
     socket =
       socket
@@ -26,12 +28,13 @@ defmodule VialWeb.ProviderLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("delete", %{"id" => id}, socket) do
-    provider = Providers.get_provider!(id)
-    {:ok, _} = Providers.delete_provider(provider)
+    repo = Hooks.get_repo(socket)
+    provider = Providers.get_provider!(repo, id)
+    {:ok, _} = Providers.delete_provider(repo, provider)
 
     {:noreply,
      socket
-     |> assign(:providers, Providers.list_providers())
+     |> assign(:providers, Providers.list_providers(repo))
      |> put_flash(:info, "Provider deleted successfully")}
   end
 end

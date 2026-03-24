@@ -99,7 +99,7 @@ defmodule VialWeb.PromptLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Prompt created successfully")
-         |> push_navigate(to: ~p"/prompts/#{prompt.id}")}
+         |> push_navigate(to: vial_path(socket, "/prompts/#{prompt.id}"))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -125,7 +125,7 @@ defmodule VialWeb.PromptLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Prompt updated successfully")
-         |> push_navigate(to: ~p"/prompts/#{updated_prompt.id}")}
+         |> push_navigate(to: vial_path(socket, "/prompts/#{updated_prompt.id}"))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}

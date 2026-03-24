@@ -12,7 +12,7 @@ defmodule Vial.ProvidersFixtures do
         model: "gpt-4o",
         config: %{"temperature" => 0.7, "max_tokens" => 1000}
       })
-      |> Vial.Providers.create_provider()
+      |> then(&Vial.Providers.create_provider(Vial.Repo, &1))
 
     provider
   end

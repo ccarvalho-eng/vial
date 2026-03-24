@@ -7,7 +7,7 @@ defmodule Vial.Evals.SuiteRunTest do
     test "valid changeset with all fields" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
       provider = provider_fixture()
 
       changeset =
@@ -53,7 +53,7 @@ defmodule Vial.Evals.SuiteRunTest do
     test "requires provider_id" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
 
       changeset =
         SuiteRun.changeset(%SuiteRun{}, %{
@@ -71,7 +71,7 @@ defmodule Vial.Evals.SuiteRunTest do
     test "defaults results to empty list" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
       provider = provider_fixture()
 
       changeset =
@@ -90,7 +90,7 @@ defmodule Vial.Evals.SuiteRunTest do
     test "defaults passed to 0" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
       provider = provider_fixture()
 
       changeset =
@@ -109,7 +109,7 @@ defmodule Vial.Evals.SuiteRunTest do
     test "defaults failed to 0" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template {{var}}")
       provider = provider_fixture()
 
       changeset =

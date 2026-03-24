@@ -2,7 +2,7 @@ defmodule Vial.Repo.Migrations.CreatePrompts do
   use Ecto.Migration
 
   def change do
-    create table(:prompts, primary_key: false) do
+    create table(:vial_prompts, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :description, :text
@@ -11,6 +11,6 @@ defmodule Vial.Repo.Migrations.CreatePrompts do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:prompts, [:tags], using: :gin)
+    create index(:vial_prompts, [:tags], using: :gin)
   end
 end

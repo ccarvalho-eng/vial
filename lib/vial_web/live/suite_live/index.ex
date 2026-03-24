@@ -8,6 +8,7 @@ defmodule VialWeb.SuiteLive.Index do
   use VialWeb, :live_view
 
   alias Vial.Evals
+  alias Vial.Hooks
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -16,7 +17,8 @@ defmodule VialWeb.SuiteLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
-    suites = Evals.list_suites_with_prompt()
+    repo = Hooks.get_repo(socket)
+    suites = Evals.list_suites_with_prompt(repo)
 
     socket =
       socket
@@ -28,12 +30,13 @@ defmodule VialWeb.SuiteLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("delete", %{"id" => id}, socket) do
-    suite = Evals.get_suite!(id)
-    {:ok, _} = Evals.delete_suite(suite)
+    repo = Hooks.get_repo(socket)
+    suite = Evals.get_suite!(repo, id)
+    {:ok, _} = Evals.delete_suite(repo, suite)
 
     {:noreply,
      socket
-     |> assign(:suites, Evals.list_suites_with_prompt())
+     |> assign(:suites, Evals.list_suites_with_prompt(repo))
      |> put_flash(:info, "Suite deleted successfully")}
   end
 end

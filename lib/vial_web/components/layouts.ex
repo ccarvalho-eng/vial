@@ -32,27 +32,43 @@ defmodule VialWeb.Layouts do
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
   attr :current_path, :string, default: "", doc: "the current path for active link detection"
+  attr :base_path, :string, default: "", doc: "the base path for embedded mode"
 
   slot :inner_block, required: true
 
   def app(assigns) do
+    # Ensure base_path is set
+    assigns = assign_new(assigns, :base_path, fn -> "" end)
+
     ~H"""
     <header class="vial-header">
       <div class="vial-header-inner">
         <nav class="vial-nav">
-          <.nav_link href={~p"/"} current_path={@current_path}>
+          <.nav_link href={@base_path <> "/"} current_path={@current_path} base_path={@base_path}>
             <div style="display: flex; align-items: center; gap: 6px;">
               <.icon name="hero-beaker" class="size-4" />
               <span>Vial</span>
             </div>
           </.nav_link>
-          <.nav_link href={~p"/prompts"} current_path={@current_path}>
+          <.nav_link
+            href={@base_path <> "/prompts"}
+            current_path={@current_path}
+            base_path={@base_path}
+          >
             Prompts
           </.nav_link>
-          <.nav_link href={~p"/suites"} current_path={@current_path}>
+          <.nav_link
+            href={@base_path <> "/suites"}
+            current_path={@current_path}
+            base_path={@base_path}
+          >
             Suites
           </.nav_link>
-          <.nav_link href={~p"/providers"} current_path={@current_path}>
+          <.nav_link
+            href={@base_path <> "/providers"}
+            current_path={@current_path}
+            base_path={@base_path}
+          >
             Providers
           </.nav_link>
         </nav>
@@ -75,12 +91,31 @@ defmodule VialWeb.Layouts do
   # Renders a navigation link with active state detection
   attr :href, :string, required: true
   attr :current_path, :string, default: ""
+  attr :base_path, :string, default: ""
   slot :inner_block, required: true
 
   defp nav_link(assigns) do
+    # For active state detection, we need to handle the base path correctly
+    base_path = assigns.base_path || ""
+
+    # Only try to replace if base_path is not empty
+    href_path =
+      if base_path != "" do
+        String.replace_leading(assigns.href, base_path, "")
+      else
+        assigns.href
+      end
+
+    current_path =
+      if base_path != "" do
+        String.replace_leading(assigns.current_path, base_path, "")
+      else
+        assigns.current_path
+      end
+
     active =
-      if assigns.current_path == assigns.href or
-           String.starts_with?(assigns.current_path, assigns.href <> "/") do
+      if current_path == href_path or
+           (href_path != "/" and String.starts_with?(current_path, href_path <> "/")) do
         "active"
       else
         ""
@@ -89,9 +124,9 @@ defmodule VialWeb.Layouts do
     assigns = assign(assigns, :active, active)
 
     ~H"""
-    <a href={@href} class={"vial-nav-link #{@active}"}>
+    <.link navigate={@href} class={"vial-nav-link #{@active}"}>
       {render_slot(@inner_block)}
-    </a>
+    </.link>
     """
   end
 
@@ -114,24 +149,24 @@ defmodule VialWeb.Layouts do
       <.flash
         id="client-error"
         kind={:error}
-        title={gettext("We can't find the internet")}
+        title="We can't find the internet"
         phx-disconnected={show(".phx-client-error #client-error") |> JS.remove_attribute("hidden")}
         phx-connected={hide("#client-error") |> JS.set_attribute({"hidden", ""})}
         hidden
       >
-        {gettext("Attempting to reconnect")}
+        Attempting to reconnect
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
 
       <.flash
         id="server-error"
         kind={:error}
-        title={gettext("Something went wrong!")}
+        title="Something went wrong!"
         phx-disconnected={show(".phx-server-error #server-error") |> JS.remove_attribute("hidden")}
         phx-connected={hide("#server-error") |> JS.set_attribute({"hidden", ""})}
         hidden
       >
-        {gettext("Attempting to reconnect")}
+        Attempting to reconnect
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
     </div>

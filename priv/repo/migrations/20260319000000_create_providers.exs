@@ -2,7 +2,7 @@ defmodule Vial.Repo.Migrations.CreateProviders do
   use Ecto.Migration
 
   def change do
-    create table(:providers, primary_key: false) do
+    create table(:vial_providers, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :provider, :string, null: false

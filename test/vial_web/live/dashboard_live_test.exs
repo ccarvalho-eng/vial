@@ -34,7 +34,7 @@ defmodule VialWeb.DashboardLiveTest do
 
   test "shows pass rates per prompt", %{conn: conn} do
     prompt = prompt_fixture(%{name: "Test Prompt"})
-    {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template")
+    {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template")
 
     _suite_run =
       suite_run_fixture(%{

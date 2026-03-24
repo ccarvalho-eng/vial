@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash} current_path={@current_path}>
+<Layouts.app flash={@flash} current_path={@current_path} base_path={@base_path}>
   <div style="max-width: 800px; margin: 0 auto;">
     <h1>{if @live_action == :new, do: "New Evaluation Suite", else: "Edit Evaluation Suite"}</h1>
 
@@ -111,7 +111,7 @@
         <button type="submit" class="button-primary">
           {if @live_action == :new, do: "Create Suite", else: "Update Suite"}
         </button>
-        <.link navigate={~p"/suites"} class="button-secondary">
+        <.link navigate={@base_path <> "/suites"} class="button-secondary">
           Cancel
         </.link>
       </div>

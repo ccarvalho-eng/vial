@@ -17,7 +17,7 @@ defmodule Vial.RunsFixtures do
         nil
       else
         prompt = prompt_fixture()
-        {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Hello {{user}}")
+        {:ok, version} = Vial.Prompts.create_prompt_version(Vial.Repo, prompt, "Hello {{user}}")
         version
       end
 
@@ -36,7 +36,7 @@ defmodule Vial.RunsFixtures do
     {:ok, run} =
       attrs
       |> Enum.into(base_attrs)
-      |> Vial.Runs.create_run()
+      |> then(&Vial.Runs.create_run(Vial.Repo, &1))
 
     run
   end
@@ -82,7 +82,7 @@ defmodule Vial.RunsFixtures do
     {:ok, run_result} =
       attrs
       |> Enum.into(base_attrs)
-      |> Vial.Runs.create_run_result()
+      |> then(&Vial.Runs.create_run_result(Vial.Repo, &1))
 
     run_result
   end

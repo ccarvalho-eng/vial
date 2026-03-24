@@ -11,7 +11,7 @@ defmodule Vial.StatsTest do
     test "includes avg_cost_usd" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template")
       provider = provider_fixture()
 
       suite_run =
@@ -38,7 +38,7 @@ defmodule Vial.StatsTest do
     test "handles nil cost" do
       suite = suite_fixture()
       prompt = prompt_fixture()
-      {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template")
+      {:ok, version} = Vial.Prompts.create_prompt_version(Repo, prompt, "Template")
       provider = provider_fixture()
 
       suite_run =

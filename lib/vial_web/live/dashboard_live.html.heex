@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash} current_path={@current_path}>
+<Layouts.app flash={@flash} current_path={@current_path} base_path={@base_path}>
   <div id="dashboard" class="page-container-wide">
     <div class="page-header flex-between">
       <div>
@@ -61,7 +61,7 @@
         <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Quick Actions</h2>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-        <.link navigate={~p"/prompts/new"} style="text-decoration: none;">
+        <.link navigate={@base_path <> "/prompts/new"} style="text-decoration: none;">
           <div
             class="vial-card"
             style="padding: 20px; transition: all 0.2s; cursor: pointer; border: 2px solid var(--accent); display: flex; align-items: center; gap: 16px;"
@@ -80,7 +80,7 @@
             <.icon name="hero-arrow-right" class="size-5 text-muted" />
           </div>
         </.link>
-        <.link navigate={~p"/prompts"} style="text-decoration: none;">
+        <.link navigate={@base_path <> "/prompts"} style="text-decoration: none;">
           <div
             class="vial-card"
             style="padding: 20px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 16px;"
@@ -97,7 +97,7 @@
             <.icon name="hero-arrow-right" class="size-5 text-muted" />
           </div>
         </.link>
-        <.link navigate={~p"/suites"} style="text-decoration: none;">
+        <.link navigate={@base_path <> "/suites"} style="text-decoration: none;">
           <div
             class="vial-card"
             style="padding: 20px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 16px;"
@@ -240,7 +240,7 @@
                     </td>
                     <td style="padding: 16px;">
                       <.link
-                        navigate={activity.path}
+                        patch={activity.path}
                         style="color: var(--text-primary); font-weight: 500; text-decoration: none;"
                       >
                         {activity.name}

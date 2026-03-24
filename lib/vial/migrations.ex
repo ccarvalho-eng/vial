@@ -91,11 +91,9 @@ defmodule Vial.Migrations do
     create table(:vial_providers, primary_key: false, prefix: prefix) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
-      add :type, :string, null: false
-      add :base_url, :string
-      add :api_version, :string
-      add :default_model, :string
-      add :is_active, :boolean, default: true
+      add :provider, :string, null: false
+      add :model, :string, null: false
+      add :config, :map, default: %{}
 
       timestamps(type: :utc_datetime)
     end
@@ -123,16 +121,14 @@ defmodule Vial.Migrations do
       add :prompt_id, references(:vial_prompts, on_delete: :delete_all, type: :binary_id),
         null: false
 
-      add :version_number, :integer, null: false
-      add :content, :text, null: false
+      add :version, :integer, null: false
+      add :template, :text, null: false
       add :variables, {:array, :string}, default: []
-      add :changelog, :text
-      add :is_active, :boolean, default: false
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime, updated_at: false)
     end
 
-    create unique_index(:vial_prompt_versions, [:prompt_id, :version_number], prefix: prefix)
+    create unique_index(:vial_prompt_versions, [:prompt_id, :version], prefix: prefix)
     create index(:vial_prompt_versions, [:prompt_id], prefix: prefix)
   end
 
@@ -140,13 +136,15 @@ defmodule Vial.Migrations do
     create table(:vial_suites, primary_key: false, prefix: prefix) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
-      add :description, :text
-      add :tags, {:array, :string}, default: []
+
+      add :prompt_id, references(:vial_prompts, on_delete: :delete_all, type: :binary_id),
+        null: false
 
       timestamps(type: :utc_datetime)
     end
 
     create index(:vial_suites, [:name], prefix: prefix)
+    create index(:vial_suites, [:prompt_id], prefix: prefix)
   end
 
   defp create_test_cases_table(prefix) do
@@ -156,12 +154,8 @@ defmodule Vial.Migrations do
       add :suite_id, references(:vial_suites, on_delete: :delete_all, type: :binary_id),
         null: false
 
-      add :name, :string, null: false
-      add :description, :text
-      add :input, :map, null: false
-      add :expected_output, :text
-      add :evaluation_criteria, :text
-      add :tags, {:array, :string}, default: []
+      add :variable_values, :map, null: false
+      add :assertions, {:array, :map}, null: false
 
       timestamps(type: :utc_datetime)
     end
@@ -172,6 +166,11 @@ defmodule Vial.Migrations do
   defp create_suite_runs_table(prefix) do
     create table(:vial_suite_runs, primary_key: false, prefix: prefix) do
       add :id, :binary_id, primary_key: true
+      add :results, {:array, :map}, default: []
+      add :passed, :integer, default: 0
+      add :failed, :integer, default: 0
+      add :avg_cost_usd, :decimal
+      add :avg_latency_ms, :integer
 
       add :suite_id, references(:vial_suites, on_delete: :delete_all, type: :binary_id),
         null: false
@@ -180,16 +179,6 @@ defmodule Vial.Migrations do
           references(:vial_prompt_versions, on_delete: :nilify_all, type: :binary_id)
 
       add :provider_id, references(:vial_providers, on_delete: :nilify_all, type: :binary_id)
-      add :status, :string, null: false, default: "pending"
-      add :passed_count, :integer, default: 0
-      add :failed_count, :integer, default: 0
-      add :model, :string
-      add :config, :map, default: %{}
-      add :started_at, :utc_datetime
-      add :completed_at, :utc_datetime
-      add :error, :text
-      add :total_cost, :decimal, precision: 10, scale: 6
-      add :total_latency_ms, :integer
 
       timestamps(type: :utc_datetime)
     end
@@ -202,64 +191,50 @@ defmodule Vial.Migrations do
   defp create_runs_table(prefix) do
     create table(:vial_runs, primary_key: false, prefix: prefix) do
       add :id, :binary_id, primary_key: true
+      add :name, :string
+      add :variable_values, :map, null: false
 
       add :prompt_version_id,
-          references(:vial_prompt_versions, on_delete: :nilify_all, type: :binary_id)
-
-      add :provider_id, references(:vial_providers, on_delete: :nilify_all, type: :binary_id)
-      add :status, :string, null: false, default: "pending"
-      add :model, :string
-      add :config, :map, default: %{}
-      add :variables, :map, default: %{}
-      add :prompt_text, :text
-      add :response, :text
-      add :latency_ms, :integer
-      add :input_tokens, :integer
-      add :output_tokens, :integer
-      add :cost, :decimal, precision: 10, scale: 6
-      add :error, :text
-      add :metadata, :map, default: %{}
+          references(:vial_prompt_versions, on_delete: :nilify_all, type: :binary_id),
+          null: false
 
       timestamps(type: :utc_datetime)
     end
 
     create index(:vial_runs, [:prompt_version_id], prefix: prefix)
-    create index(:vial_runs, [:provider_id], prefix: prefix)
-    create index(:vial_runs, [:status], prefix: prefix)
   end
 
   defp create_run_results_table(prefix) do
     create table(:vial_run_results, primary_key: false, prefix: prefix) do
       add :id, :binary_id, primary_key: true
 
-      add :suite_run_id, references(:vial_suite_runs, on_delete: :delete_all, type: :binary_id),
-        null: false
-
-      add :test_case_id, references(:vial_test_cases, on_delete: :delete_all, type: :binary_id),
-        null: false
-
       add :run_id, references(:vial_runs, on_delete: :delete_all, type: :binary_id), null: false
-      add :passed, :boolean, null: false
-      add :evaluation_result, :text
+
+      add :provider_id, references(:vial_providers, on_delete: :nilify_all, type: :binary_id),
+        null: false
+
+      add :output, :text
+      add :input_tokens, :integer
+      add :output_tokens, :integer
+      add :latency_ms, :integer
+      add :cost_usd, :float
+      add :status, :string, null: false
       add :error, :text
 
       timestamps(type: :utc_datetime)
     end
 
-    create index(:vial_run_results, [:suite_run_id], prefix: prefix)
-    create index(:vial_run_results, [:test_case_id], prefix: prefix)
     create index(:vial_run_results, [:run_id], prefix: prefix)
+    create index(:vial_run_results, [:provider_id], prefix: prefix)
   end
 
   defp create_indexes(prefix) do
     # Evolution indexes
     create index(:vial_runs, [:inserted_at], prefix: prefix)
-    create index(:vial_runs, [:prompt_version_id, :status, :inserted_at], prefix: prefix)
 
     # Performance indexes
-    create index(:vial_suite_runs, [:status], prefix: prefix)
     create index(:vial_suite_runs, [:inserted_at], prefix: prefix)
-    create index(:vial_run_results, [:passed], prefix: prefix)
+    create index(:vial_run_results, [:status], prefix: prefix)
   end
 
   @doc """

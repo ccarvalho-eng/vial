@@ -6,6 +6,7 @@ defmodule VialWeb.PromptLive.Show do
   use VialWeb, :live_view
 
   alias Vial.Prompts
+  alias Vial.Hooks
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -14,7 +15,8 @@ defmodule VialWeb.PromptLive.Show do
 
   @impl Phoenix.LiveView
   def handle_params(%{"id" => id}, _uri, socket) do
-    prompt = Prompts.get_prompt_with_versions!(id)
+    repo = Hooks.get_repo(socket)
+    prompt = Prompts.get_prompt_with_versions!(repo, id)
 
     {:noreply,
      socket

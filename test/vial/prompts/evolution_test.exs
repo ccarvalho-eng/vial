@@ -12,14 +12,14 @@ defmodule Vial.Prompts.EvolutionTest do
   describe "get_metrics/1" do
     test "returns empty list when prompt has no versions" do
       prompt = prompt_fixture()
-      assert Evolution.get_metrics(prompt.id) == []
+      assert Evolution.get_metrics(Repo, prompt.id) == []
     end
 
     test "returns metrics for version with no suite runs" do
       prompt = prompt_fixture()
-      {:ok, version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      {:ok, version} = Prompts.create_prompt_version(Repo, prompt, "Test {{var}}")
 
-      metrics = Evolution.get_metrics(prompt.id)
+      metrics = Evolution.get_metrics(Repo, prompt.id)
 
       assert length(metrics) == 1
       assert [metric] = metrics
@@ -35,12 +35,12 @@ defmodule Vial.Prompts.EvolutionTest do
     test "calculates metrics for single version with suite runs" do
       prompt = prompt_fixture()
       provider = provider_fixture()
-      {:ok, version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      {:ok, version} = Prompts.create_prompt_version(Repo, prompt, "Test {{var}}")
       suite = suite_fixture(%{prompt_id: prompt.id})
 
       # Create suite runs with varying pass rates
       {:ok, _sr1} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: provider.id,
@@ -49,7 +49,7 @@ defmodule Vial.Prompts.EvolutionTest do
         })
 
       {:ok, _sr2} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: provider.id,
@@ -57,7 +57,7 @@ defmodule Vial.Prompts.EvolutionTest do
           failed: 1
         })
 
-      metrics = Evolution.get_metrics(prompt.id)
+      metrics = Evolution.get_metrics(Repo, prompt.id)
 
       assert length(metrics) == 1
       assert [metric] = metrics
@@ -76,13 +76,13 @@ defmodule Vial.Prompts.EvolutionTest do
     test "tracks metrics across multiple versions" do
       prompt = prompt_fixture()
       provider = provider_fixture()
-      {:ok, v1} = Prompts.create_prompt_version(prompt, "Version 1 {{var}}")
-      {:ok, v2} = Prompts.create_prompt_version(prompt, "Version 2 {{var}}")
+      {:ok, v1} = Prompts.create_prompt_version(Repo, prompt, "Version 1 {{var}}")
+      {:ok, v2} = Prompts.create_prompt_version(Repo, prompt, "Version 2 {{var}}")
       suite = suite_fixture(%{prompt_id: prompt.id})
 
       # V1 with lower pass rate
       {:ok, _sr1} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: v1.id,
           provider_id: provider.id,
@@ -92,7 +92,7 @@ defmodule Vial.Prompts.EvolutionTest do
 
       # V2 with higher pass rate
       {:ok, _sr2} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: v2.id,
           provider_id: provider.id,
@@ -100,7 +100,7 @@ defmodule Vial.Prompts.EvolutionTest do
           failed: 1
         })
 
-      metrics = Evolution.get_metrics(prompt.id)
+      metrics = Evolution.get_metrics(Repo, prompt.id)
 
       assert length(metrics) == 2
       assert [m1, m2] = metrics
@@ -118,12 +118,12 @@ defmodule Vial.Prompts.EvolutionTest do
       prompt = prompt_fixture()
       p1 = provider_fixture(%{name: "Provider A"})
       p2 = provider_fixture(%{name: "Provider B"})
-      {:ok, version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      {:ok, version} = Prompts.create_prompt_version(Repo, prompt, "Test {{var}}")
       suite = suite_fixture(%{prompt_id: prompt.id})
 
       # Provider A: 80% pass rate
       {:ok, _sr1} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: p1.id,
@@ -133,7 +133,7 @@ defmodule Vial.Prompts.EvolutionTest do
 
       # Provider B: 90% pass rate
       {:ok, _sr2} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: p2.id,
@@ -141,7 +141,7 @@ defmodule Vial.Prompts.EvolutionTest do
           failed: 1
         })
 
-      metrics = Evolution.get_metrics(prompt.id)
+      metrics = Evolution.get_metrics(Repo, prompt.id)
       assert [metric] = metrics
 
       assert length(metric.provider_breakdown) == 2
@@ -157,11 +157,11 @@ defmodule Vial.Prompts.EvolutionTest do
     test "handles suite runs with zero tests" do
       prompt = prompt_fixture()
       provider = provider_fixture()
-      {:ok, version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      {:ok, version} = Prompts.create_prompt_version(Repo, prompt, "Test {{var}}")
       suite = suite_fixture(%{prompt_id: prompt.id})
 
       {:ok, _sr} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: provider.id,
@@ -169,20 +169,20 @@ defmodule Vial.Prompts.EvolutionTest do
           failed: 0
         })
 
-      metrics = Evolution.get_metrics(prompt.id)
+      metrics = Evolution.get_metrics(Repo, prompt.id)
       assert [metric] = metrics
       assert metric.avg_pass_rate == nil
     end
 
     test "provider breakdown includes cost and latency" do
       prompt = prompt_fixture()
-      {:ok, version} = Prompts.create_prompt_version(prompt, "Test {{var}}")
+      {:ok, version} = Prompts.create_prompt_version(Repo, prompt, "Test {{var}}")
       provider1 = provider_fixture(%{name: "OpenAI"})
       provider2 = provider_fixture(%{name: "Anthropic"})
       suite = suite_fixture(%{prompt_id: prompt.id})
 
       {:ok, _sr1} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: provider1.id,
@@ -193,7 +193,7 @@ defmodule Vial.Prompts.EvolutionTest do
         })
 
       {:ok, _sr2} =
-        Evals.create_suite_run(%{
+        Evals.create_suite_run(Repo, %{
           suite_id: suite.id,
           prompt_version_id: version.id,
           provider_id: provider2.id,
@@ -203,7 +203,7 @@ defmodule Vial.Prompts.EvolutionTest do
           avg_latency_ms: 420
         })
 
-      [metrics] = Evolution.get_metrics(prompt.id)
+      [metrics] = Evolution.get_metrics(Repo, prompt.id)
 
       assert length(metrics.provider_breakdown) == 2
 
