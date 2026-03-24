@@ -23,6 +23,6 @@ defmodule Vial.Web.Layouts do
     """
   end
 
-  defp asset_hash(:css), do: "TODO"
-  defp asset_hash(:js), do: "TODO"
+  defp asset_hash(:css), do: "9561d988"
+  defp asset_hash(:js), do: "4a88baa4"
 end
