@@ -8,7 +8,7 @@ defmodule Vial.Web.CacheTest do
     :ok
   end
 
-  describe "get/2 and put/3" do
+  describe "get/1 and put/3" do
     test "stores and retrieves values" do
       key = :test_key
       value = %{data: "test"}
