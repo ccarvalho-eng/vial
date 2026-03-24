@@ -49,7 +49,7 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
     %Igniter.Mix.Task.Info{
       group: :igniter,
       # Dependencies that must be installed before this task can run
-      adds_deps: [],
+      adds_deps: [vial: "~> 0.1.0"],
       # An example invocation
       example: "mix igniter.install vial --path /admin/vial",
       # A list of environments that this should be installed in

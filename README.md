@@ -37,13 +37,12 @@ end
 
 ### Quick Start with Igniter (Recommended)
 
-For automated setup, first add both Vial and Igniter to your dependencies:
+For automated setup, add Igniter to your dependencies:
 
 ```elixir
 # mix.exs
 def deps do
   [
-    {:vial, "~> 0.1.0"},
     {:igniter, "~> 0.5"}
   ]
 end
@@ -58,6 +57,7 @@ mix ecto.migrate
 ```
 
 The Igniter installer automatically:
+- ✅ Adds Vial dependency to your mix.exs
 - ✅ Adds TaskSupervisor to your application supervision tree
 - ✅ Imports and mounts `vial_dashboard` in your router
 - ✅ Adds `Vial.Static` plug to your endpoint
@@ -168,12 +168,11 @@ Now visit `/dev/vial` in your browser!
 
 #### Option 1: Using Igniter (Recommended)
 
-Add both dependencies:
+Add Igniter to your dependencies:
 
 ```elixir
 def deps do
   [
-    {:vial, "~> 0.1.0"},
     {:igniter, "~> 0.5"}
   ]
 end
@@ -187,7 +186,7 @@ mix igniter.install vial --path /admin/vial
 mix ecto.migrate
 ```
 
-Then add authentication to your router's `:browser` pipeline before mounting.
+The installer will automatically add Vial to your dependencies. Then add authentication to your router's `:browser` pipeline before mounting.
 
 #### Option 2: Manual Setup
 
