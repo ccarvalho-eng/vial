@@ -78,9 +78,6 @@ defmodule Vial.MixProject do
       # JSON encoding/decoding
       {:jason, "~> 1.2"},
 
-      # Code generation
-      {:igniter, "~> 0.5", optional: true},
-
       # Assets (only at build time)
       {:esbuild, "~> 0.10", runtime: false},
       {:tailwind, "~> 0.3", runtime: false},

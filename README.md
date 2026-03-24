@@ -35,55 +35,7 @@ end
 
 ## Setup
 
-### Quick Start with Igniter (Recommended)
-
-For automated setup, add Igniter to your dependencies:
-
-```elixir
-# mix.exs
-def deps do
-  [
-    {:igniter, "~> 0.5"}
-  ]
-end
-```
-
-Then run:
-
-```bash
-mix deps.get
-mix igniter.install vial
-mix ecto.migrate
-```
-
-The Igniter installer automatically:
-- ✅ Adds Vial dependency to your mix.exs
-- ✅ Adds TaskSupervisor to your application supervision tree
-- ✅ Imports and mounts `vial_dashboard` in your router
-- ✅ Adds `Vial.Static` plug to your endpoint
-- ✅ Generates the database migration
-
-Now visit `/dev/vial` in your browser!
-
-#### Igniter Options
-
-```bash
-# Install with example data
-mix igniter.install vial --seed
-
-# Install only in development environment
-mix igniter.install vial --dev-only
-
-# Custom mount path
-mix igniter.install vial --path /internal/prompts
-
-# Multi-tenant with database prefix
-mix igniter.install vial --prefix tenant_schema
-```
-
-### Manual Setup (Without Igniter)
-
-If you prefer manual control or don't want to use Igniter, add only Vial to your dependencies:
+Add Vial to your dependencies:
 
 ```elixir
 # mix.exs
@@ -94,9 +46,7 @@ def deps do
 end
 ```
 
-Then follow these steps:
-
-#### 1. Add TaskSupervisor to your application
+### 1. Add TaskSupervisor to your application
 
 ```elixir
 # lib/my_app/application.ex
@@ -116,7 +66,7 @@ defmodule MyApp.Application do
 end
 ```
 
-#### 2. Add Vial.Static plug to your endpoint
+### 2. Add Vial.Static plug to your endpoint
 
 ```elixir
 # lib/my_app_web/endpoint.ex
@@ -132,7 +82,7 @@ defmodule MyAppWeb.Endpoint do
 end
 ```
 
-#### 3. Mount the dashboard
+### 3. Mount the dashboard
 
 ```elixir
 # lib/my_app_web/router.ex
@@ -154,7 +104,7 @@ defmodule MyAppWeb.Router do
 end
 ```
 
-#### 4. Run migrations and seed data
+### 4. Run migrations and seed data
 
 ```bash
 mix vial.install
@@ -164,33 +114,11 @@ mix vial.seed  # Optional: adds example prompts and suites
 
 Now visit `/dev/vial` in your browser!
 
-### Production Setup
+## Production Setup
 
-#### Option 1: Using Igniter (Recommended)
+For production, follow the same setup steps but mount at a secured path with authentication.
 
-Add Igniter to your dependencies:
-
-```elixir
-def deps do
-  [
-    {:igniter, "~> 0.5"}
-  ]
-end
-```
-
-Then run:
-
-```bash
-mix deps.get
-mix igniter.install vial --path /admin/vial
-mix ecto.migrate
-```
-
-The installer will automatically add Vial to your dependencies. Then add authentication to your router's `:browser` pipeline before mounting.
-
-#### Option 2: Manual Setup
-
-#### 1. Add TaskSupervisor to your application
+### 1. Add TaskSupervisor to your application
 
 ```elixir
 # lib/my_app/application.ex
@@ -211,7 +139,7 @@ defmodule MyApp.Application do
 end
 ```
 
-#### 2. Run Migrations
+### 2. Run Migrations
 
 Generate and run the migration:
 
@@ -225,7 +153,7 @@ mix vial.install --prefix my_schema
 mix ecto.migrate
 ```
 
-#### 3. Mount the Dashboard
+### 3. Mount the Dashboard
 
 Add Vial to your router using the `vial_dashboard` macro:
 
@@ -249,7 +177,7 @@ defmodule MyAppWeb.Router do
 end
 ```
 
-#### 4. Configure Assets
+### 4. Configure Assets
 
 Add Vial's assets to your endpoint configuration:
 
