@@ -1,17 +1,19 @@
 defmodule Vial.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @source_url "https://github.com/yourusername/vial"
+
   def project do
     [
       app: :vial,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.19",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader],
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
@@ -24,7 +26,13 @@ defmodule Vial.MixProject do
       dialyzer: [
         plt_add_apps: [:mix, :ex_unit],
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
-      ]
+      ],
+
+      # Hex package configuration
+      description: description(),
+      package: package(),
+      docs: docs(),
+      source_url: @source_url
     ]
   end
 
@@ -33,8 +41,8 @@ defmodule Vial.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {Vial.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      # No mod - we're a library, not an application
+      extra_applications: [:logger, :runtime_tools, :crypto]
     ]
   end
 
@@ -116,6 +124,51 @@ defmodule Vial.MixProject do
         "credo --strict",
         "sobelow --config .sobelow-conf",
         "test"
+      ],
+      "build.assets": ["vial.build_assets"]
+    ]
+  end
+
+  defp description do
+    """
+    An embeddable Phoenix LiveView component for LLM prompt testing and evaluation.
+    Provides a comprehensive dashboard for managing prompts, test suites, and provider comparisons.
+    """
+  end
+
+  defp package do
+    [
+      maintainers: ["Your Name"],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => @source_url
+      },
+      files: ~w(
+        lib
+        priv/static/vial
+        priv/repo/migrations
+        CHANGELOG.md
+        README.md
+        LICENSE
+        mix.exs
+        .formatter.exs
+      )
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: [
+        "README.md",
+        "CHANGELOG.md",
+        "example_host/README.md": [title: "Example Host Application"]
+      ],
+      groups_for_modules: [
+        "Web Components": [~r/^VialWeb/],
+        Contexts: [~r/^Vial\.(Prompts|Evals|Runs|Providers|Stats)/],
+        Schemas: [~r/^Vial\.(Prompts|Evals|Runs|Providers)\./],
+        "Migration Helpers": [Vial.Migrations]
       ]
     ]
   end
