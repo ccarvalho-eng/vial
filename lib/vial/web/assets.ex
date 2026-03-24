@@ -3,8 +3,35 @@ defmodule Vial.Web.Assets do
   Serves pre-compiled static assets for Vial dashboard.
   """
 
+  @behaviour Plug
+
   import Plug.Conn
 
+  @impl Plug
+  def init(asset), do: asset
+
+  @impl Plug
+  def call(conn, :css) do
+    %{"md5" => md5} = conn.params
+    serve_asset(conn, "css", md5, "text/css; charset=utf-8")
+  end
+
+  def call(conn, :js) do
+    %{"md5" => md5} = conn.params
+    serve_asset(conn, "js", md5, "application/javascript; charset=utf-8")
+  end
+
+  def call(conn, :font) do
+    %{"path" => path} = conn.params
+    serve_static(conn, Path.join("fonts", path), "font/woff2")
+  end
+
+  def call(conn, :icon) do
+    %{"path" => path} = conn.params
+    serve_static(conn, Path.join("icons", path), "image/svg+xml")
+  end
+
+  # Legacy function-based endpoints (for backwards compatibility)
   def css(conn, %{"md5" => md5}) do
     serve_asset(conn, "css", md5, "text/css; charset=utf-8")
   end
