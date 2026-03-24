@@ -35,7 +35,43 @@ end
 
 ## Setup
 
-### Quick Start (Development)
+### Quick Start (Recommended)
+
+Use Igniter for automated one-command installation:
+
+```bash
+mix deps.get
+mix igniter.install vial
+mix ecto.migrate
+```
+
+The Igniter installer automatically:
+- ✅ Adds TaskSupervisor to your application supervision tree
+- ✅ Imports and mounts `vial_dashboard` in your router
+- ✅ Adds `Vial.Static` plug to your endpoint
+- ✅ Generates the database migration
+
+Now visit `/dev/vial` in your browser!
+
+#### Igniter Options
+
+```bash
+# Install with example data
+mix igniter.install vial --seed
+
+# Install only in development environment
+mix igniter.install vial --dev-only
+
+# Custom mount path
+mix igniter.install vial --path /internal/prompts
+
+# Multi-tenant with database prefix
+mix igniter.install vial --prefix tenant_schema
+```
+
+### Manual Setup (Alternative)
+
+If you prefer manual setup or don't want to use Igniter:
 
 #### 1. Add TaskSupervisor to your application
 
@@ -57,7 +93,23 @@ defmodule MyApp.Application do
 end
 ```
 
-#### 2. Mount the dashboard
+#### 2. Add Vial.Static plug to your endpoint
+
+```elixir
+# lib/my_app_web/endpoint.ex
+defmodule MyAppWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :my_app
+
+  # Add this before your app's static plug
+  plug Vial.Static
+
+  # Your existing static configuration
+  plug Plug.Static, at: "/", from: :my_app
+  # ...
+end
+```
+
+#### 3. Mount the dashboard
 
 ```elixir
 # lib/my_app_web/router.ex
@@ -79,7 +131,7 @@ defmodule MyAppWeb.Router do
 end
 ```
 
-#### 3. Run migrations and seed data
+#### 4. Run migrations and seed data
 
 ```bash
 mix vial.install
@@ -90,6 +142,18 @@ mix vial.seed  # Optional: adds example prompts and suites
 Now visit `/dev/vial` in your browser!
 
 ### Production Setup
+
+#### Option 1: Using Igniter (Recommended)
+
+```bash
+mix deps.get
+mix igniter.install vial --path /admin/vial
+mix ecto.migrate
+```
+
+Then add authentication to your router's `:browser` pipeline before mounting.
+
+#### Option 2: Manual Setup
 
 #### 1. Add TaskSupervisor to your application
 
