@@ -1,6 +1,9 @@
 defmodule Vial.Prompts do
   @moduledoc """
   Context for managing prompts and their versions.
+
+  In embedded mode, all functions accept a repo as the first parameter.
+  For standalone mode, you can pass Vial.Repo directly.
   """
 
   import Ecto.Query
@@ -8,14 +11,13 @@ defmodule Vial.Prompts do
   alias Vial.Prompts.Evolution
   alias Vial.Prompts.Prompt
   alias Vial.Prompts.PromptVersion
-  alias Vial.Repo
 
   @doc """
   Lists all prompts in the system.
   """
-  @spec list_prompts() :: [Prompt.t()]
-  def list_prompts do
-    Repo.all(Prompt)
+  @spec list_prompts(module()) :: [Prompt.t()]
+  def list_prompts(repo) do
+    repo.all(Prompt)
   end
 
   @doc """
@@ -23,35 +25,35 @@ defmodule Vial.Prompts do
 
   Versions are ordered by version number descending.
   """
-  @spec list_prompts_with_versions() :: [Prompt.t()]
-  def list_prompts_with_versions do
+  @spec list_prompts_with_versions(module()) :: [Prompt.t()]
+  def list_prompts_with_versions(repo) do
     query =
       from p in Prompt,
         preload: [versions: ^from(v in PromptVersion, order_by: [desc: v.version])]
 
-    Repo.all(query)
+    repo.all(query)
   end
 
   @doc """
   Gets a prompt by ID, raising if not found.
   """
-  @spec get_prompt!(binary()) :: Prompt.t()
-  def get_prompt!(id) do
-    Repo.get!(Prompt, id)
+  @spec get_prompt!(module(), binary()) :: Prompt.t()
+  def get_prompt!(repo, id) do
+    repo.get!(Prompt, id)
   end
 
   @doc """
   Gets a prompt with all versions preloaded, ordered by version
   descending.
   """
-  @spec get_prompt_with_versions!(binary()) :: Prompt.t()
-  def get_prompt_with_versions!(id) do
+  @spec get_prompt_with_versions!(module(), binary()) :: Prompt.t()
+  def get_prompt_with_versions!(repo, id) do
     query =
       from p in Prompt,
         where: p.id == ^id,
         preload: [versions: ^from(v in PromptVersion, order_by: [desc: v.version])]
 
-    Repo.one!(query)
+    repo.one!(query)
   end
 
   @doc """
@@ -59,11 +61,11 @@ defmodule Vial.Prompts do
 
   Preloads the associated prompt.
   """
-  @spec get_prompt_version!(binary()) :: PromptVersion.t()
-  def get_prompt_version!(id) do
+  @spec get_prompt_version!(module(), binary()) :: PromptVersion.t()
+  def get_prompt_version!(repo, id) do
     PromptVersion
-    |> Repo.get!(id)
-    |> Repo.preload(:prompt)
+    |> repo.get!(id)
+    |> repo.preload(:prompt)
   end
 
   @doc """
@@ -77,32 +79,32 @@ defmodule Vial.Prompts do
   @doc """
   Creates a new prompt.
   """
-  @spec create_prompt(map()) ::
+  @spec create_prompt(module(), map()) ::
           {:ok, Prompt.t()} | {:error, Ecto.Changeset.t()}
-  def create_prompt(attrs \\ %{}) do
+  def create_prompt(repo, attrs \\ %{}) do
     %Prompt{}
     |> Prompt.changeset(attrs)
-    |> Repo.insert()
+    |> repo.insert()
   end
 
   @doc """
   Updates an existing prompt.
   """
-  @spec update_prompt(Prompt.t(), map()) ::
+  @spec update_prompt(module(), Prompt.t(), map()) ::
           {:ok, Prompt.t()} | {:error, Ecto.Changeset.t()}
-  def update_prompt(%Prompt{} = prompt, attrs) do
+  def update_prompt(repo, %Prompt{} = prompt, attrs) do
     prompt
     |> Prompt.changeset(attrs)
-    |> Repo.update()
+    |> repo.update()
   end
 
   @doc """
   Deletes a prompt.
   """
-  @spec delete_prompt(Prompt.t()) ::
+  @spec delete_prompt(module(), Prompt.t()) ::
           {:ok, Prompt.t()} | {:error, Ecto.Changeset.t()}
-  def delete_prompt(%Prompt{} = prompt) do
-    Repo.delete(prompt)
+  def delete_prompt(repo, %Prompt{} = prompt) do
+    repo.delete(prompt)
   end
 
   @doc """
@@ -111,11 +113,11 @@ defmodule Vial.Prompts do
   Auto-increments the version number and extracts variables from
   the template.
   """
-  @spec create_prompt_version(Prompt.t(), String.t()) ::
+  @spec create_prompt_version(module(), Prompt.t(), String.t()) ::
           {:ok, PromptVersion.t()} | {:error, Ecto.Changeset.t()}
-  def create_prompt_version(%Prompt{} = prompt, template) do
+  def create_prompt_version(repo, %Prompt{} = prompt, template) do
     variables = extract_variables(template)
-    version_number = get_next_version_number(prompt.id)
+    version_number = get_next_version_number(repo, prompt.id)
 
     %PromptVersion{}
     |> PromptVersion.changeset(%{
@@ -124,7 +126,7 @@ defmodule Vial.Prompts do
       template: template,
       variables: variables
     })
-    |> Repo.insert()
+    |> repo.insert()
   end
 
   @doc """
@@ -146,18 +148,18 @@ defmodule Vial.Prompts do
 
   Includes pass rates, cost, latency, and per-provider breakdown.
   """
-  @spec get_evolution_metrics(binary()) :: [map()]
-  def get_evolution_metrics(prompt_id) do
-    Evolution.get_metrics(prompt_id)
+  @spec get_evolution_metrics(module(), binary()) :: [map()]
+  def get_evolution_metrics(repo, prompt_id) do
+    Evolution.get_metrics(repo, prompt_id)
   end
 
-  defp get_next_version_number(prompt_id) do
+  defp get_next_version_number(repo, prompt_id) do
     query =
       from v in PromptVersion,
         where: v.prompt_id == ^prompt_id,
         select: max(v.version)
 
-    case Repo.one(query) do
+    case repo.one(query) do
       nil -> 1
       max_version -> max_version + 1
     end

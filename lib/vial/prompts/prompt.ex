@@ -16,7 +16,7 @@ defmodule Vial.Prompts.Prompt do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "prompts" do
+  schema "vial_prompts" do
     field :name, :string
     field :description, :string
     field :tags, {:array, :string}, default: []

@@ -17,7 +17,7 @@ defmodule Vial.Runs.RunResult do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "run_results" do
+  schema "vial_run_results" do
     field :output, :string
     field :input_tokens, :integer
     field :output_tokens, :integer

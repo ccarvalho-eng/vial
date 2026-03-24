@@ -23,7 +23,7 @@ defmodule Vial.Evals.TestCase do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "test_cases" do
+  schema "vial_test_cases" do
     field :variable_values, :map
     field :assertions, {:array, :map}
 

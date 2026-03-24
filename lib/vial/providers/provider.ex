@@ -14,7 +14,7 @@ defmodule Vial.Providers.Provider do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "providers" do
+  schema "vial_providers" do
     field :name, :string
     field :provider, Ecto.Enum, values: [:openai, :anthropic, :ollama]
     field :model, :string

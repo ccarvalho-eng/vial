@@ -17,7 +17,7 @@ defmodule Vial.Evals.Suite do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "suites" do
+  schema "vial_suites" do
     field :name, :string
 
     belongs_to :prompt, Vial.Prompts.Prompt

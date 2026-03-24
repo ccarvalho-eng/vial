@@ -17,7 +17,7 @@ defmodule Vial.Prompts.PromptVersion do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "prompt_versions" do
+  schema "vial_prompt_versions" do
     field :version, :integer
     field :template, :string
     field :variables, {:array, :string}, default: []

@@ -18,7 +18,7 @@ defmodule Vial.Evals.SuiteRun do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "suite_runs" do
+  schema "vial_suite_runs" do
     field :results, {:array, :map}, default: []
     field :passed, :integer, default: 0
     field :failed, :integer, default: 0
