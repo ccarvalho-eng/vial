@@ -8,6 +8,7 @@ defmodule VialWeb.PromptLive.New do
 
   use VialWeb, :live_view
 
+  alias Vial.Hooks
   alias Vial.Prompts
   alias Vial.Prompts.Prompt
 
@@ -56,7 +57,8 @@ defmodule VialWeb.PromptLive.New do
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    prompt = Prompts.get_prompt_with_versions!(id)
+    repo = Hooks.get_repo(socket)
+    prompt = Prompts.get_prompt_with_versions!(repo, id)
 
     # Get the latest version's template to pre-populate the form
     latest_version = List.first(prompt.versions)
@@ -83,13 +85,15 @@ defmodule VialWeb.PromptLive.New do
   end
 
   defp save_prompt(socket, :new, prompt_params) do
-    case Prompts.create_prompt(prompt_params) do
+    repo = Hooks.get_repo(socket)
+
+    case Prompts.create_prompt(repo, prompt_params) do
       {:ok, prompt} ->
         # Create initial version if template provided
         template = Map.get(prompt_params, "template", "")
 
         if template != "" do
-          Prompts.create_prompt_version(prompt, template)
+          Prompts.create_prompt_version(repo, prompt, template)
         end
 
         {:noreply,
@@ -103,6 +107,7 @@ defmodule VialWeb.PromptLive.New do
   end
 
   defp save_prompt(socket, :edit, prompt_params) do
+    repo = Hooks.get_repo(socket)
     prompt = socket.assigns.prompt
     new_template = Map.get(prompt_params, "template", "")
 
@@ -110,11 +115,11 @@ defmodule VialWeb.PromptLive.New do
     latest_version = List.first(prompt.versions)
     latest_template = if latest_version, do: latest_version.template, else: ""
 
-    case Prompts.update_prompt(prompt, prompt_params) do
+    case Prompts.update_prompt(repo, prompt, prompt_params) do
       {:ok, updated_prompt} ->
         # Only create new version if template changed and is not empty
         if new_template != "" and new_template != latest_template do
-          Prompts.create_prompt_version(updated_prompt, new_template)
+          Prompts.create_prompt_version(repo, updated_prompt, new_template)
         end
 
         {:noreply,

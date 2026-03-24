@@ -7,6 +7,7 @@ defmodule VialWeb.DashboardLive do
   use VialWeb, :live_view
 
   alias Vial.Evals
+  alias Vial.Hooks
   alias Vial.Runs
   alias Vial.Stats
 
@@ -17,15 +18,17 @@ defmodule VialWeb.DashboardLive do
 
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
-    recent_activity = Stats.list_recent_activity(10)
-    pass_rates = Evals.pass_rates_by_prompt() |> sort_by_pass_rate()
+    repo = Hooks.get_repo(socket)
+
+    recent_activity = Stats.list_recent_activity(repo, 10)
+    pass_rates = Evals.pass_rates_by_prompt(repo) |> sort_by_pass_rate()
 
     # Calculate key metrics
-    total_runs = Stats.total_runs()
-    {total_passed, total_failed} = Stats.test_totals()
+    total_runs = Stats.total_runs(repo)
+    {total_passed, total_failed} = Stats.test_totals(repo)
     success_rate = Stats.success_rate(total_passed, total_failed)
-    avg_latency = Stats.avg_latency()
-    total_cost = Runs.total_cost()
+    avg_latency = Stats.avg_latency(repo)
+    total_cost = Runs.total_cost(repo)
 
     # Get last run time
     last_run_at = if recent_activity != [], do: List.first(recent_activity).inserted_at, else: nil

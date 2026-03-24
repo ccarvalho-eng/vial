@@ -6,6 +6,7 @@ defmodule VialWeb.PromptLive.Evolution do
 
   use VialWeb, :live_view
 
+  alias Vial.Hooks
   alias Vial.Prompts
   alias Vial.Prompts.Evolution
 
@@ -16,8 +17,10 @@ defmodule VialWeb.PromptLive.Evolution do
 
   @impl Phoenix.LiveView
   def handle_params(%{"id" => id}, _uri, socket) do
-    prompt = Prompts.get_prompt!(id)
-    metrics = Prompts.get_evolution_metrics(id)
+    repo = Hooks.get_repo(socket)
+
+    prompt = Prompts.get_prompt!(repo, id)
+    metrics = Prompts.get_evolution_metrics(repo, id)
     chart_data = Evolution.prepare_chart_data(metrics)
 
     {:noreply,
