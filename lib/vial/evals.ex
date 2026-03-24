@@ -3,6 +3,17 @@ defmodule Vial.Evals do
   Context for managing evaluation suites, test cases, and runs.
   """
 
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
+  end
+
   import Ecto.Query
 
   alias Vial.Evals.Suite
@@ -11,7 +22,6 @@ defmodule Vial.Evals do
   alias Vial.LLM
   alias Vial.Prompts.PromptVersion
   alias Vial.Providers.Provider
-  alias Vial.Repo
 
   # Suite functions
 
@@ -20,7 +30,7 @@ defmodule Vial.Evals do
   """
   @spec list_suites() :: [Suite.t()]
   def list_suites do
-    Repo.all(Suite)
+    repo().all(Suite)
   end
 
   @doc """
@@ -30,7 +40,7 @@ defmodule Vial.Evals do
   def list_suites_with_prompt do
     Suite
     |> preload(:prompt)
-    |> Repo.all()
+    |> repo().all()
   end
 
   @doc """
@@ -38,7 +48,7 @@ defmodule Vial.Evals do
   """
   @spec get_suite!(binary()) :: Suite.t()
   def get_suite!(id) do
-    Repo.get!(Suite, id)
+    repo().get!(Suite, id)
   end
 
   @doc """
@@ -47,8 +57,8 @@ defmodule Vial.Evals do
   @spec get_suite_with_prompt!(binary()) :: Suite.t()
   def get_suite_with_prompt!(id) do
     Suite
-    |> Repo.get!(id)
-    |> Repo.preload(:prompt)
+    |> repo().get!(id)
+    |> repo().preload(:prompt)
   end
 
   @doc """
@@ -57,8 +67,8 @@ defmodule Vial.Evals do
   @spec get_suite_with_test_cases!(binary()) :: Suite.t()
   def get_suite_with_test_cases!(id) do
     Suite
-    |> Repo.get!(id)
-    |> Repo.preload(:test_cases)
+    |> repo().get!(id)
+    |> repo().preload(:test_cases)
   end
 
   @doc """
@@ -67,8 +77,8 @@ defmodule Vial.Evals do
   @spec get_suite_with_test_cases_and_prompt!(binary()) :: Suite.t()
   def get_suite_with_test_cases_and_prompt!(id) do
     Suite
-    |> Repo.get!(id)
-    |> Repo.preload([:test_cases, :prompt])
+    |> repo().get!(id)
+    |> repo().preload([:test_cases, :prompt])
   end
 
   @doc """
@@ -86,7 +96,7 @@ defmodule Vial.Evals do
   def create_suite(attrs \\ %{}) do
     %Suite{}
     |> Suite.changeset(attrs)
-    |> Repo.insert()
+    |> repo().insert()
   end
 
   @doc """
@@ -97,7 +107,7 @@ defmodule Vial.Evals do
   def update_suite(%Suite{} = suite, attrs) do
     suite
     |> Suite.changeset(attrs)
-    |> Repo.update()
+    |> repo().update()
   end
 
   @doc """
@@ -106,7 +116,7 @@ defmodule Vial.Evals do
   @spec delete_suite(Suite.t()) ::
           {:ok, Suite.t()} | {:error, Ecto.Changeset.t()}
   def delete_suite(%Suite{} = suite) do
-    Repo.delete(suite)
+    repo().delete(suite)
   end
 
   # TestCase functions
@@ -116,7 +126,7 @@ defmodule Vial.Evals do
   """
   @spec list_test_cases() :: [TestCase.t()]
   def list_test_cases do
-    Repo.all(TestCase)
+    repo().all(TestCase)
   end
 
   @doc """
@@ -124,7 +134,7 @@ defmodule Vial.Evals do
   """
   @spec get_test_case!(binary()) :: TestCase.t()
   def get_test_case!(id) do
-    Repo.get!(TestCase, id)
+    repo().get!(TestCase, id)
   end
 
   @doc """
@@ -143,7 +153,7 @@ defmodule Vial.Evals do
   def create_test_case(attrs \\ %{}) do
     %TestCase{}
     |> TestCase.changeset(attrs)
-    |> Repo.insert()
+    |> repo().insert()
   end
 
   @doc """
@@ -154,7 +164,7 @@ defmodule Vial.Evals do
   def update_test_case(%TestCase{} = test_case, attrs) do
     test_case
     |> TestCase.changeset(attrs)
-    |> Repo.update()
+    |> repo().update()
   end
 
   @doc """
@@ -163,7 +173,7 @@ defmodule Vial.Evals do
   @spec delete_test_case(TestCase.t()) ::
           {:ok, TestCase.t()} | {:error, Ecto.Changeset.t()}
   def delete_test_case(%TestCase{} = test_case) do
-    Repo.delete(test_case)
+    repo().delete(test_case)
   end
 
   # SuiteRun functions
@@ -173,7 +183,7 @@ defmodule Vial.Evals do
   """
   @spec list_suite_runs() :: [SuiteRun.t()]
   def list_suite_runs do
-    Repo.all(SuiteRun)
+    repo().all(SuiteRun)
   end
 
   @doc """
@@ -183,7 +193,7 @@ defmodule Vial.Evals do
     SuiteRun
     |> where([sr], sr.suite_id == ^suite_id)
     |> order_by([sr], desc: sr.inserted_at)
-    |> Repo.all()
+    |> repo().all()
   end
 
   @doc """
@@ -195,7 +205,7 @@ defmodule Vial.Evals do
     |> where([sr], sr.suite_id == ^suite_id)
     |> order_by([sr], desc: sr.inserted_at)
     |> preload([:prompt_version, :provider])
-    |> Repo.all()
+    |> repo().all()
   end
 
   @doc """
@@ -217,7 +227,7 @@ defmodule Vial.Evals do
           total_failed: sum(sr.failed)
         }
 
-    Repo.all(query)
+    repo().all(query)
   end
 
   @doc """
@@ -225,7 +235,7 @@ defmodule Vial.Evals do
   """
   @spec get_suite_run!(binary()) :: SuiteRun.t()
   def get_suite_run!(id) do
-    Repo.get!(SuiteRun, id)
+    repo().get!(SuiteRun, id)
   end
 
   @doc """
@@ -236,7 +246,7 @@ defmodule Vial.Evals do
   def create_suite_run(attrs \\ %{}) do
     %SuiteRun{}
     |> SuiteRun.changeset(attrs)
-    |> Repo.insert()
+    |> repo().insert()
   end
 
   @doc """
@@ -245,7 +255,7 @@ defmodule Vial.Evals do
   @spec delete_suite_run(SuiteRun.t()) ::
           {:ok, SuiteRun.t()} | {:error, Ecto.Changeset.t()}
   def delete_suite_run(%SuiteRun{} = suite_run) do
-    Repo.delete(suite_run)
+    repo().delete(suite_run)
   end
 
   @doc """
@@ -266,7 +276,7 @@ defmodule Vial.Evals do
   @spec execute_suite(Suite.t(), PromptVersion.t(), Provider.t()) ::
           {:ok, SuiteRun.t()} | {:error, term()}
   def execute_suite(%Suite{} = suite, %PromptVersion{} = version, %Provider{} = provider) do
-    suite = Repo.preload(suite, :test_cases)
+    suite = repo().preload(suite, :test_cases)
 
     {results, metrics} =
       Enum.map_reduce(

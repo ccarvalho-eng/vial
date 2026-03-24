@@ -3,19 +3,29 @@ defmodule Vial.Prompts do
   Context for managing prompts and their versions.
   """
 
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
+  end
+
   import Ecto.Query
 
   alias Vial.Prompts.Evolution
   alias Vial.Prompts.Prompt
   alias Vial.Prompts.PromptVersion
-  alias Vial.Repo
 
   @doc """
   Lists all prompts in the system.
   """
   @spec list_prompts() :: [Prompt.t()]
   def list_prompts do
-    Repo.all(Prompt)
+    repo().all(Prompt)
   end
 
   @doc """
@@ -29,7 +39,7 @@ defmodule Vial.Prompts do
       from p in Prompt,
         preload: [versions: ^from(v in PromptVersion, order_by: [desc: v.version])]
 
-    Repo.all(query)
+    repo().all(query)
   end
 
   @doc """
@@ -37,7 +47,7 @@ defmodule Vial.Prompts do
   """
   @spec get_prompt!(binary()) :: Prompt.t()
   def get_prompt!(id) do
-    Repo.get!(Prompt, id)
+    repo().get!(Prompt, id)
   end
 
   @doc """
@@ -51,7 +61,7 @@ defmodule Vial.Prompts do
         where: p.id == ^id,
         preload: [versions: ^from(v in PromptVersion, order_by: [desc: v.version])]
 
-    Repo.one!(query)
+    repo().one!(query)
   end
 
   @doc """
@@ -62,8 +72,8 @@ defmodule Vial.Prompts do
   @spec get_prompt_version!(binary()) :: PromptVersion.t()
   def get_prompt_version!(id) do
     PromptVersion
-    |> Repo.get!(id)
-    |> Repo.preload(:prompt)
+    |> repo().get!(id)
+    |> repo().preload(:prompt)
   end
 
   @doc """
@@ -82,7 +92,7 @@ defmodule Vial.Prompts do
   def create_prompt(attrs \\ %{}) do
     %Prompt{}
     |> Prompt.changeset(attrs)
-    |> Repo.insert()
+    |> repo().insert()
   end
 
   @doc """
@@ -93,7 +103,7 @@ defmodule Vial.Prompts do
   def update_prompt(%Prompt{} = prompt, attrs) do
     prompt
     |> Prompt.changeset(attrs)
-    |> Repo.update()
+    |> repo().update()
   end
 
   @doc """
@@ -102,7 +112,7 @@ defmodule Vial.Prompts do
   @spec delete_prompt(Prompt.t()) ::
           {:ok, Prompt.t()} | {:error, Ecto.Changeset.t()}
   def delete_prompt(%Prompt{} = prompt) do
-    Repo.delete(prompt)
+    repo().delete(prompt)
   end
 
   @doc """
@@ -124,7 +134,7 @@ defmodule Vial.Prompts do
       template: template,
       variables: variables
     })
-    |> Repo.insert()
+    |> repo().insert()
   end
 
   @doc """
@@ -157,7 +167,7 @@ defmodule Vial.Prompts do
         where: v.prompt_id == ^prompt_id,
         select: max(v.version)
 
-    case Repo.one(query) do
+    case repo().one(query) do
       nil -> 1
       max_version -> max_version + 1
     end
