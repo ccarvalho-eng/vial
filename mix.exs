@@ -111,7 +111,7 @@ defmodule Vial.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind vial", "esbuild vial"],
+      "assets.build": ["cmd echo 'TODO: Asset compilation not yet implemented'"],
       "assets.deploy": [
         "tailwind vial --minify",
         "esbuild vial --minify",
