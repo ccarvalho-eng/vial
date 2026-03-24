@@ -35,9 +35,21 @@ end
 
 ## Setup
 
-### Quick Start (Recommended)
+### Quick Start with Igniter (Recommended)
 
-Use Igniter for automated one-command installation:
+For automated setup, first add both Vial and Igniter to your dependencies:
+
+```elixir
+# mix.exs
+def deps do
+  [
+    {:vial, "~> 0.1.0"},
+    {:igniter, "~> 0.5"}
+  ]
+end
+```
+
+Then run:
 
 ```bash
 mix deps.get
@@ -69,9 +81,20 @@ mix igniter.install vial --path /internal/prompts
 mix igniter.install vial --prefix tenant_schema
 ```
 
-### Manual Setup (Alternative)
+### Manual Setup (Without Igniter)
 
-If you prefer manual setup or don't want to use Igniter:
+If you prefer manual control or don't want to use Igniter, add only Vial to your dependencies:
+
+```elixir
+# mix.exs
+def deps do
+  [
+    {:vial, "~> 0.1.0"}
+  ]
+end
+```
+
+Then follow these steps:
 
 #### 1. Add TaskSupervisor to your application
 
@@ -144,6 +167,19 @@ Now visit `/dev/vial` in your browser!
 ### Production Setup
 
 #### Option 1: Using Igniter (Recommended)
+
+Add both dependencies:
+
+```elixir
+def deps do
+  [
+    {:vial, "~> 0.1.0"},
+    {:igniter, "~> 0.5"}
+  ]
+end
+```
+
+Then run:
 
 ```bash
 mix deps.get
