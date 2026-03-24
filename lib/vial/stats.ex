@@ -1,21 +1,23 @@
 defmodule Vial.Stats do
   @moduledoc """
   Context module for dashboard statistics and metrics.
+
+  In embedded mode, all functions accept a repo as the first parameter.
+  For standalone mode, you can pass Vial.Repo directly.
   """
 
   import Ecto.Query
 
   alias Vial.Evals.SuiteRun
-  alias Vial.Repo
   alias Vial.Runs.{Run, RunResult}
 
   @doc """
   Returns total number of test runs (suite runs + prompt runs).
   """
-  @spec total_runs() :: integer()
-  def total_runs do
-    suite_runs = from(sr in SuiteRun, select: count(sr.id)) |> Repo.one()
-    prompt_runs = from(r in Run, select: count(r.id)) |> Repo.one()
+  @spec total_runs(module()) :: integer()
+  def total_runs(repo) do
+    suite_runs = from(sr in SuiteRun, select: count(sr.id)) |> repo.one()
+    prompt_runs = from(r in Run, select: count(r.id)) |> repo.one()
 
     suite_runs + prompt_runs
   end
@@ -23,8 +25,8 @@ defmodule Vial.Stats do
   @doc """
   Returns tuple of {total_passed, total_failed} test counts.
   """
-  @spec test_totals() :: {integer(), integer()}
-  def test_totals do
+  @spec test_totals(module()) :: {integer(), integer()}
+  def test_totals(repo) do
     query =
       from sr in SuiteRun,
         select: %{
@@ -32,7 +34,7 @@ defmodule Vial.Stats do
           total_failed: sum(sr.failed)
         }
 
-    result = Repo.one(query)
+    result = repo.one(query)
 
     passed = to_integer(result.total_passed)
     failed = to_integer(result.total_failed)
@@ -56,14 +58,14 @@ defmodule Vial.Stats do
   @doc """
   Returns average latency in milliseconds across all run results.
   """
-  @spec avg_latency() :: number()
-  def avg_latency do
+  @spec avg_latency(module()) :: number()
+  def avg_latency(repo) do
     query =
       from rr in RunResult,
         where: not is_nil(rr.latency_ms),
         select: avg(rr.latency_ms)
 
-    case Repo.one(query) do
+    case repo.one(query) do
       nil ->
         0
 
@@ -84,8 +86,8 @@ defmodule Vial.Stats do
   Fetches and normalizes both types of runs into a common format,
   sorted by insertion time descending.
   """
-  @spec list_recent_activity(integer()) :: [map()]
-  def list_recent_activity(limit \\ 10) do
+  @spec list_recent_activity(module(), integer()) :: [map()]
+  def list_recent_activity(repo, limit \\ 10) do
     # Fetch recent prompt runs
     prompt_runs =
       from(r in Run,
@@ -93,7 +95,7 @@ defmodule Vial.Stats do
         limit: ^limit,
         preload: [prompt_version: :prompt, run_results: :provider]
       )
-      |> Repo.all()
+      |> repo.all()
       |> Enum.map(&normalize_run/1)
 
     # Fetch recent suite runs
@@ -103,7 +105,7 @@ defmodule Vial.Stats do
         limit: ^limit,
         preload: [suite: :prompt, prompt_version: :prompt, provider: []]
       )
-      |> Repo.all()
+      |> repo.all()
       |> Enum.map(&normalize_suite_run/1)
 
     # Combine and sort by inserted_at

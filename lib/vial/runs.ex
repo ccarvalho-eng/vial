@@ -1,6 +1,9 @@
 defmodule Vial.Runs do
   @moduledoc """
   Context for managing runs and run results.
+
+  In embedded mode, all functions accept a repo as the first parameter.
+  For standalone mode, you can pass Vial.Repo directly.
   """
 
   import Ecto.Query
@@ -8,16 +11,15 @@ defmodule Vial.Runs do
   alias Vial.Evals.SuiteRun
   alias Vial.LLM
   alias Vial.Providers.Provider
-  alias Vial.Repo
   alias Vial.Runs.Run
   alias Vial.Runs.RunResult
 
   @doc """
   Lists all runs in the system.
   """
-  @spec list_runs() :: [Run.t()]
-  def list_runs do
-    Repo.all(Run)
+  @spec list_runs(module()) :: [Run.t()]
+  def list_runs(repo) do
+    repo.all(Run)
   end
 
   @doc """
@@ -26,13 +28,13 @@ defmodule Vial.Runs do
   Returns up to the specified limit of runs, ordered by insertion
   time descending.
   """
-  @spec list_recent_runs(integer()) :: [Run.t()]
-  def list_recent_runs(limit \\ 10) do
+  @spec list_recent_runs(module(), integer()) :: [Run.t()]
+  def list_recent_runs(repo, limit \\ 10) do
     Run
     |> order_by([r], desc: r.inserted_at)
     |> limit(^limit)
     |> preload(prompt_version: :prompt, run_results: :provider)
-    |> Repo.all()
+    |> repo.all()
   end
 
   @doc """
@@ -41,14 +43,14 @@ defmodule Vial.Runs do
   Returns the sum of cost_usd from all run_results plus avg_cost_usd
   from all suite_runs.
   """
-  @spec total_cost() :: float()
-  def total_cost do
+  @spec total_cost(module()) :: float()
+  def total_cost(repo) do
     # Individual runs cost
     run_cost =
       from(rr in RunResult,
         select: sum(rr.cost_usd)
       )
-      |> Repo.one() || 0.0
+      |> repo.one() || 0.0
 
     # Suite runs cost
     suite_cost =
@@ -56,7 +58,7 @@ defmodule Vial.Runs do
         where: not is_nil(sr.avg_cost_usd),
         select: sum(sr.avg_cost_usd)
       )
-      |> Repo.one()
+      |> repo.one()
 
     suite_cost_float =
       if suite_cost do
@@ -74,40 +76,40 @@ defmodule Vial.Runs do
   Preloads run_results and their associated providers, as well as
   the prompt through the prompt_version.
   """
-  @spec get_run!(binary()) :: Run.t()
-  def get_run!(id) do
+  @spec get_run!(module(), binary()) :: Run.t()
+  def get_run!(repo, id) do
     Run
-    |> Repo.get!(id)
-    |> Repo.preload(prompt_version: :prompt, run_results: :provider)
+    |> repo.get!(id)
+    |> repo.preload(prompt_version: :prompt, run_results: :provider)
   end
 
   @doc """
   Creates a new run.
   """
-  @spec create_run(map()) :: {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
-  def create_run(attrs \\ %{}) do
+  @spec create_run(module(), map()) :: {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
+  def create_run(repo, attrs \\ %{}) do
     %Run{}
     |> Run.changeset(attrs)
-    |> Repo.insert()
+    |> repo.insert()
   end
 
   @doc """
   Updates an existing run.
   """
-  @spec update_run(Run.t(), map()) ::
+  @spec update_run(module(), Run.t(), map()) ::
           {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
-  def update_run(%Run{} = run, attrs) do
+  def update_run(repo, %Run{} = run, attrs) do
     run
     |> Run.changeset(attrs)
-    |> Repo.update()
+    |> repo.update()
   end
 
   @doc """
   Deletes a run.
   """
-  @spec delete_run(Run.t()) :: {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
-  def delete_run(%Run{} = run) do
-    Repo.delete(run)
+  @spec delete_run(module(), Run.t()) :: {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
+  def delete_run(repo, %Run{} = run) do
+    repo.delete(run)
   end
 
   @doc """
@@ -121,23 +123,23 @@ defmodule Vial.Runs do
   @doc """
   Creates a new run result.
   """
-  @spec create_run_result(map()) ::
+  @spec create_run_result(module(), map()) ::
           {:ok, RunResult.t()} | {:error, Ecto.Changeset.t()}
-  def create_run_result(attrs \\ %{}) do
+  def create_run_result(repo, attrs \\ %{}) do
     %RunResult{}
     |> RunResult.changeset(attrs)
-    |> Repo.insert()
+    |> repo.insert()
   end
 
   @doc """
   Updates an existing run result.
   """
-  @spec update_run_result(RunResult.t(), map()) ::
+  @spec update_run_result(module(), RunResult.t(), map()) ::
           {:ok, RunResult.t()} | {:error, Ecto.Changeset.t()}
-  def update_run_result(%RunResult{} = run_result, attrs) do
+  def update_run_result(repo, %RunResult{} = run_result, attrs) do
     run_result
     |> RunResult.changeset(attrs)
-    |> Repo.update()
+    |> repo.update()
   end
 
   @doc """
@@ -148,6 +150,7 @@ defmodule Vial.Runs do
   creates run_results for each provider.
 
   ## Parameters
+    - repo: The repo to use for database operations
     - run: Run struct with preloaded prompt_version
     - providers: List of provider structs to execute against
 
@@ -157,14 +160,14 @@ defmodule Vial.Runs do
 
   ## Examples
 
-      iex> run = Repo.preload(run, :prompt_version)
-      iex> {:ok, executed_run} = execute_run(run, [provider1, provider2])
+      iex> run = repo.preload(run, :prompt_version)
+      iex> {:ok, executed_run} = execute_run(repo, run, [provider1, provider2])
       iex> length(executed_run.run_results)
       2
   """
-  @spec execute_run(Run.t(), list(Provider.t())) ::
+  @spec execute_run(module(), Run.t(), list(Provider.t())) ::
           {:ok, Run.t()} | {:error, term()}
-  def execute_run(%Run{} = run, providers) when is_list(providers) do
+  def execute_run(repo, %Run{} = run, providers) when is_list(providers) do
     rendered_prompt =
       render_template(
         run.prompt_version.template,
@@ -176,16 +179,16 @@ defmodule Vial.Runs do
         Vial.TaskSupervisor,
         providers,
         fn provider ->
-          execute_provider(run, provider, rendered_prompt)
+          execute_provider(repo, run, provider, rendered_prompt)
         end,
         max_concurrency: 3,
         timeout: 120_000
       )
       |> Enum.to_list()
 
-    case Repo.get(Run, run.id) do
+    case repo.get(Run, run.id) do
       nil -> {:error, :run_not_found}
-      updated_run -> {:ok, Repo.preload(updated_run, :run_results)}
+      updated_run -> {:ok, repo.preload(updated_run, :run_results)}
     end
   end
 
@@ -197,10 +200,10 @@ defmodule Vial.Runs do
     end)
   end
 
-  defp execute_provider(run, provider, rendered_prompt) do
+  defp execute_provider(repo, run, provider, rendered_prompt) do
     case LLM.call(provider, rendered_prompt) do
       {:ok, result} ->
-        case create_run_result(%{
+        case create_run_result(repo, %{
                run_id: run.id,
                provider_id: provider.id,
                output: result.output,
@@ -220,7 +223,7 @@ defmodule Vial.Runs do
         end
 
       {:error, reason} ->
-        case create_run_result(%{
+        case create_run_result(repo, %{
                run_id: run.id,
                provider_id: provider.id,
                status: :error,
