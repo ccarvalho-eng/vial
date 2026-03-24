@@ -3,7 +3,6 @@ defmodule Vial.Hooks do
   LiveView hooks for configuration injection in embedded mode.
   """
 
-  import Phoenix.LiveView
   import Phoenix.Component
 
   @doc """

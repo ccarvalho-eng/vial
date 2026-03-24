@@ -9,7 +9,6 @@ defmodule Vial.Prompts.Evolution do
   alias Vial.Evals.SuiteRun
   alias Vial.Prompts.PromptVersion
   alias Vial.Providers.Provider
-  alias Vial.Repo
 
   @doc """
   Returns aggregated metrics for all versions of a prompt.
