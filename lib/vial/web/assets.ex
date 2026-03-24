@@ -5,8 +5,6 @@ defmodule Vial.Web.Assets do
 
   import Plug.Conn
 
-  @priv_dir :code.priv_dir(:vial)
-
   def css(conn, %{"md5" => md5}) do
     serve_asset(conn, "css", md5, "text/css; charset=utf-8")
   end
@@ -24,7 +22,8 @@ defmodule Vial.Web.Assets do
   end
 
   defp serve_asset(conn, type, md5, content_type) do
-    path = Path.join([@priv_dir, "static", "#{type}-#{md5}.#{type}"])
+    priv_dir = :code.priv_dir(:vial)
+    path = Path.join([priv_dir, "static", "#{type}-#{md5}.#{type}"])
 
     case File.read(path) do
       {:ok, content} ->
@@ -39,7 +38,8 @@ defmodule Vial.Web.Assets do
   end
 
   defp serve_static(conn, path, content_type) do
-    full_path = Path.join([@priv_dir, "static", path])
+    priv_dir = :code.priv_dir(:vial)
+    full_path = Path.join([priv_dir, "static", path])
 
     case File.read(full_path) do
       {:ok, content} ->
