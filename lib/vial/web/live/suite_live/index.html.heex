@@ -1,0 +1,84 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <.icon name="hero-beaker" class="size-7 text-muted" />
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Evaluation Suites</h1>
+      </div>
+      <.link id="new-suite-btn" navigate={vial_path("suites/new")} class="button-primary">
+        <.icon name="hero-plus" class="size-4" /> New Suite
+      </.link>
+    </div>
+
+    <div id="suites" style="display: flex; flex-direction: column; gap: 16px;">
+      <div :if={@suites == []} class="vial-card" style="padding: 60px 20px; text-align: center;">
+        <.icon name="hero-beaker" class="size-12 text-muted empty-state-icon" />
+        <div class="empty-state-description">
+          No suites yet. Create your first evaluation suite to get started.
+        </div>
+      </div>
+
+      <%= for suite <- @suites do %>
+        <div class="vial-card">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <.link navigate={vial_path("suites/#{suite.id}")} style="flex: 1; text-decoration: none;">
+              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+                {suite.name}
+              </h3>
+              <div style="color: var(--text-secondary); font-size: 14px;">
+                Prompt: {suite.prompt.name}
+              </div>
+            </.link>
+            <div style="display: flex; gap: 8px;">
+              <.link
+                navigate={vial_path("suites/#{suite.id}")}
+                class="button-primary"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                View & Run
+              </.link>
+              <.link
+                navigate={vial_path("suites/#{suite.id}/edit")}
+                class="button-secondary"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Edit
+              </.link>
+              <button
+                phx-click={show_modal("confirm-delete-suite-#{suite.id}")}
+                class="button-danger"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Modals outside cards --%>
+    <.modal
+      :for={suite <- @suites}
+      id={"confirm-delete-suite-#{suite.id}"}
+      on_confirm={JS.push("delete", value: %{id: suite.id})}
+    >
+      <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+        <.icon
+          name="hero-exclamation-triangle"
+          class="size-6 text-red-600 flex-shrink-0"
+        />
+        <div>
+          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+            Delete Suite
+          </h3>
+          <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+            Are you sure you want to delete "<strong style="color: var(--text-primary);">{suite.name}</strong>"? This action cannot be undone.
+          </p>
+        </div>
+      </div>
+      <:confirm>Delete Suite</:confirm>
+      <:cancel>Cancel</:cancel>
+    </.modal>
+  </div>
+</Layouts.app>

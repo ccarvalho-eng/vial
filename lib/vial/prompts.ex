@@ -3,17 +3,6 @@ defmodule Vial.Prompts do
   Context for managing prompts and their versions.
   """
 
-  defp repo do
-    Application.get_env(:vial, :repo) ||
-      raise """
-      Vial repo not configured.
-
-      Add to your config:
-
-          config :vial, repo: YourApp.Repo
-      """
-  end
-
   import Ecto.Query
 
   alias Vial.Prompts.Evolution
@@ -171,5 +160,16 @@ defmodule Vial.Prompts do
       nil -> 1
       max_version -> max_version + 1
     end
+  end
+
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
   end
 end

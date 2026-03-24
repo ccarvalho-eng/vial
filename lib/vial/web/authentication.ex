@@ -7,6 +7,9 @@ defmodule Vial.Web.Authentication do
 
   @doc false
   def on_mount(:default, _params, session, socket) do
+    # Store routing info in process dictionary for vial_path helper
+    Process.put(:routing, {socket, session["prefix"]})
+
     socket =
       socket
       |> assign(:access, session["access"])

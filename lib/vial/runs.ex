@@ -3,17 +3,6 @@ defmodule Vial.Runs do
   Context for managing runs and run results.
   """
 
-  defp repo do
-    Application.get_env(:vial, :repo) ||
-      raise """
-      Vial repo not configured.
-
-      Add to your config:
-
-          config :vial, repo: YourApp.Repo
-      """
-  end
-
   import Ecto.Query
 
   alias Vial.Evals.SuiteRun
@@ -253,5 +242,16 @@ defmodule Vial.Runs do
       "run:#{run_id}",
       {:run_result_update, result_id, status, output}
     )
+  end
+
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
   end
 end

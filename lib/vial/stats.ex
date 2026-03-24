@@ -6,7 +6,6 @@ defmodule Vial.Stats do
   import Ecto.Query
 
   alias Vial.Evals.SuiteRun
-  alias Vial.Repo
   alias Vial.Runs.{Run, RunResult}
 
   @doc """
@@ -14,8 +13,8 @@ defmodule Vial.Stats do
   """
   @spec total_runs() :: integer()
   def total_runs do
-    suite_runs = from(sr in SuiteRun, select: count(sr.id)) |> Repo.one()
-    prompt_runs = from(r in Run, select: count(r.id)) |> Repo.one()
+    suite_runs = from(sr in SuiteRun, select: count(sr.id)) |> repo().one()
+    prompt_runs = from(r in Run, select: count(r.id)) |> repo().one()
 
     suite_runs + prompt_runs
   end
@@ -32,7 +31,7 @@ defmodule Vial.Stats do
           total_failed: sum(sr.failed)
         }
 
-    result = Repo.one(query)
+    result = repo().one(query)
 
     passed = to_integer(result.total_passed)
     failed = to_integer(result.total_failed)
@@ -63,7 +62,7 @@ defmodule Vial.Stats do
         where: not is_nil(rr.latency_ms),
         select: avg(rr.latency_ms)
 
-    case Repo.one(query) do
+    case repo().one(query) do
       nil ->
         0
 
@@ -93,7 +92,7 @@ defmodule Vial.Stats do
         limit: ^limit,
         preload: [prompt_version: :prompt, run_results: :provider]
       )
-      |> Repo.all()
+      |> repo().all()
       |> Enum.map(&normalize_run/1)
 
     # Fetch recent suite runs
@@ -103,7 +102,7 @@ defmodule Vial.Stats do
         limit: ^limit,
         preload: [suite: :prompt, prompt_version: :prompt, provider: []]
       )
-      |> Repo.all()
+      |> repo().all()
       |> Enum.map(&normalize_suite_run/1)
 
     # Combine and sort by inserted_at
@@ -152,5 +151,16 @@ defmodule Vial.Stats do
     Enum.reduce(run_results, 0.0, fn result, acc ->
       if result.cost_usd, do: acc + result.cost_usd, else: acc
     end)
+  end
+
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
   end
 end

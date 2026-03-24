@@ -7,6 +7,12 @@ defmodule Vial.Web.Assets do
 
   import Plug.Conn
 
+  @css_hash "9561d988"
+  @js_hash "4a88baa4"
+
+  def current_hash(:css), do: @css_hash
+  def current_hash(:js), do: @js_hash
+
   @impl Plug
   def init(asset), do: asset
 
@@ -57,6 +63,7 @@ defmodule Vial.Web.Assets do
         conn
         |> put_resp_content_type(content_type)
         |> put_resp_header("cache-control", "public, max-age=31536000, immutable")
+        |> put_private(:plug_skip_csrf_protection, true)
         |> send_resp(200, content)
 
       {:error, _} ->
@@ -73,6 +80,7 @@ defmodule Vial.Web.Assets do
         conn
         |> put_resp_content_type(content_type)
         |> put_resp_header("cache-control", "public, max-age=31536000")
+        |> put_private(:plug_skip_csrf_protection, true)
         |> send_resp(200, content)
 
       {:error, _} ->

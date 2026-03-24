@@ -22,30 +22,85 @@ Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output 
 
 ---
 
-## Prerequisites
+## Installation
 
-- Elixir 1.19.5+
-- Erlang/OTP 28.4+
-- PostgreSQL 17+
-- Node.js 20+
+Vial can be embedded into any Phoenix LiveView application as a self-contained dashboard.
 
-Recommended: use [asdf](https://asdf-vm.com/) with the included `.tool-versions`.
+### 1. Add dependency
 
----
+Add Vial to your `mix.exs`:
 
-## Setup
+```elixir
+def deps do
+  [
+    {:vial, path: "../vial"}  # For local development
+    # Soon: {:vial, "~> 0.1"}  # When published to Hex
+  ]
+end
+```
+
+Run `mix deps.get`
+
+### 2. Configure the repo
+
+Add to `config/config.exs`:
+
+```elixir
+config :vial, repo: YourApp.Repo
+```
+
+### 3. Run migrations
 
 ```bash
-git clone https://github.com/ccarvalho-eng/vial.git
-cd vial
-cp .env.example .env
-# Edit .env and add your API keys (optional - Ollama works without them)
-mix deps.get
-mix ecto.setup
+mix ecto.migrate
+```
+
+### 4. Add router macro
+
+In your `lib/your_app_web/router.ex`:
+
+```elixir
+use YourAppWeb, :router
+import Vial.Web.Router  # Add this line
+
+scope "/admin" do
+  pipe_through :browser
+  vial_dashboard "/vial"  # Dashboard will be at /admin/vial
+end
+```
+
+The dashboard can be mounted at any path you choose.
+
+### 5. Configure API keys (optional)
+
+Vial reads provider API keys from application config. Add to your host app's config:
+
+```elixir
+# config/dev.exs (or config/runtime.exs for production)
+config :vial, :llm,
+  openai_api_key: System.get_env("OPENAI_API_KEY"),
+  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
+```
+
+Then set environment variables before starting the server:
+
+```bash
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
 mix phx.server
 ```
 
-Visit [localhost:4000](http://localhost:4000).
+Ollama runs locally and requires no API keys.
+
+### 6. Seed demo data (optional)
+
+```bash
+mix vial.seed
+```
+
+This populates the database with sample providers, prompts, and evaluation suites.
+
+Visit the dashboard at your configured path (e.g., `http://localhost:4000/admin/vial`).
 
 ---
 

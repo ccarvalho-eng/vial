@@ -3,17 +3,6 @@ defmodule Vial.Evals do
   Context for managing evaluation suites, test cases, and runs.
   """
 
-  defp repo do
-    Application.get_env(:vial, :repo) ||
-      raise """
-      Vial repo not configured.
-
-      Add to your config:
-
-          config :vial, repo: YourApp.Repo
-      """
-  end
-
   import Ecto.Query
 
   alias Vial.Evals.Suite
@@ -239,6 +228,14 @@ defmodule Vial.Evals do
   end
 
   @doc """
+  Reloads a suite run with associations preloaded.
+  """
+  @spec reload_suite_run_with_associations(SuiteRun.t()) :: SuiteRun.t()
+  def reload_suite_run_with_associations(%SuiteRun{} = suite_run) do
+    repo().preload(suite_run, [:prompt_version, :provider], force: true)
+  end
+
+  @doc """
   Creates a new suite run.
   """
   @spec create_suite_run(map()) ::
@@ -384,5 +381,16 @@ defmodule Vial.Evals do
 
   defp evaluate_assertion(output, %{"type" => "exact_match", "value" => value}) do
     output == value
+  end
+
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
   end
 end

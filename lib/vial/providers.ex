@@ -3,17 +3,6 @@ defmodule Vial.Providers do
   Context for managing AI provider configurations.
   """
 
-  defp repo do
-    Application.get_env(:vial, :repo) ||
-      raise """
-      Vial repo not configured.
-
-      Add to your config:
-
-          config :vial, repo: YourApp.Repo
-      """
-  end
-
   alias Vial.Providers.Provider
 
   @doc """
@@ -69,5 +58,16 @@ defmodule Vial.Providers do
   @spec change_provider(Provider.t(), map()) :: Ecto.Changeset.t()
   def change_provider(%Provider{} = provider, attrs \\ %{}) do
     Provider.changeset(provider, attrs)
+  end
+
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
   end
 end

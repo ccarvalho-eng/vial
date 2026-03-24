@@ -55,9 +55,25 @@ defmodule Vial.Web.Router do
           get "/fonts/*path", Vial.Web.Assets, :font, as: :vial_web_font
           get "/icons/*path", Vial.Web.Assets, :icon, as: :vial_web_icon
 
-          live "/", Vial.Web.DashboardLive, :home, route_opts
-          live "/:page", Vial.Web.DashboardLive, :index, route_opts
-          live "/:page/:id", Vial.Web.DashboardLive, :show, route_opts
+          live "/", Vial.Web.DashboardLive, :index, route_opts
+
+          live "/prompts", Vial.Web.PromptLive.Index, :index, route_opts
+          live "/prompts/new", Vial.Web.PromptLive.New, :new, route_opts
+          live "/prompts/:id/edit", Vial.Web.PromptLive.New, :edit, route_opts
+          live "/prompts/:id/evolution", Vial.Web.PromptLive.Evolution, :show, route_opts
+          live "/prompts/:id", Vial.Web.PromptLive.Show, :show, route_opts
+
+          live "/runs/new", Vial.Web.RunLive.New, :new, route_opts
+          live "/runs/:id", Vial.Web.RunLive.Show, :show, route_opts
+
+          live "/suites", Vial.Web.SuiteLive.Index, :index, route_opts
+          live "/suites/new", Vial.Web.SuiteLive.New, :new, route_opts
+          live "/suites/:id/edit", Vial.Web.SuiteLive.New, :edit, route_opts
+          live "/suites/:id", Vial.Web.SuiteLive.Show, :show, route_opts
+
+          live "/providers", Vial.Web.ProviderLive.Index, :index, route_opts
+          live "/providers/new", Vial.Web.ProviderLive.New, :new, route_opts
+          live "/providers/:id/edit", Vial.Web.ProviderLive.New, :edit, route_opts
         end
       end
     end
