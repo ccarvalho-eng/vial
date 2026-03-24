@@ -3,7 +3,7 @@ defmodule Vial.Web.Authentication do
   LiveView on_mount hook for Vial dashboard authentication.
   """
 
-  import Phoenix.Component
+  import Phoenix.Component, only: [assign: 3]
 
   @doc false
   def on_mount(:default, _params, session, socket) do

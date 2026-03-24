@@ -40,8 +40,6 @@ defmodule VialWeb do
     quote do
       use Phoenix.Controller, formats: [:html, :json]
 
-      use Gettext, backend: VialWeb.Gettext
-
       import Plug.Conn
 
       unquote(verified_routes())
@@ -81,9 +79,6 @@ defmodule VialWeb do
 
   defp html_helpers do
     quote do
-      # Translation
-      use Gettext, backend: VialWeb.Gettext
-
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components

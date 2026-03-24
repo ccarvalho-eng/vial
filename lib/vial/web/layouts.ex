@@ -12,8 +12,8 @@ defmodule Vial.Web.Layouts do
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Vial Dashboard</title>
-        <link rel="stylesheet" href={~p"/css-#{asset_hash(:css)}"} />
-        <script src={~p"/js-#{asset_hash(:js)}"} defer>
+        <link rel="stylesheet" href={"/css-#{asset_hash(:css)}"} />
+        <script src={"/js-#{asset_hash(:js)}"} defer>
         </script>
       </head>
       <body class="h-full">
