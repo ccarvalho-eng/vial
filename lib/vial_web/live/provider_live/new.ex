@@ -5,6 +5,7 @@ defmodule VialWeb.ProviderLive.New do
 
   use VialWeb, :live_view
 
+  alias Vial.Hooks
   alias Vial.Providers
   alias Vial.Providers.Provider
 
@@ -34,7 +35,8 @@ defmodule VialWeb.ProviderLive.New do
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    provider = Providers.get_provider!(id)
+    repo = Hooks.get_repo(socket)
+    provider = Providers.get_provider!(repo, id)
     changeset = Providers.change_provider(provider)
 
     socket
@@ -44,10 +46,11 @@ defmodule VialWeb.ProviderLive.New do
   end
 
   defp save_provider(socket, :new, provider_params) do
+    repo = Hooks.get_repo(socket)
     # Parse config JSON if provided
     provider_params = parse_config(provider_params)
 
-    case Providers.create_provider(provider_params) do
+    case Providers.create_provider(repo, provider_params) do
       {:ok, _provider} ->
         {:noreply,
          socket
@@ -60,10 +63,11 @@ defmodule VialWeb.ProviderLive.New do
   end
 
   defp save_provider(socket, :edit, provider_params) do
+    repo = Hooks.get_repo(socket)
     # Parse config JSON if provided
     provider_params = parse_config(provider_params)
 
-    case Providers.update_provider(socket.assigns.provider, provider_params) do
+    case Providers.update_provider(repo, socket.assigns.provider, provider_params) do
       {:ok, _provider} ->
         {:noreply,
          socket

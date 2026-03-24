@@ -8,6 +8,7 @@ defmodule VialWeb.RunLive.New do
 
   use VialWeb, :live_view
 
+  alias Vial.Hooks
   alias Vial.Prompts
   alias Vial.Providers
   alias Vial.Runs
@@ -19,8 +20,10 @@ defmodule VialWeb.RunLive.New do
 
   @impl Phoenix.LiveView
   def handle_params(%{"version" => version_id}, _url, socket) do
-    prompt_version = Prompts.get_prompt_version!(version_id)
-    providers = Providers.list_providers()
+    repo = Hooks.get_repo(socket)
+
+    prompt_version = Prompts.get_prompt_version!(repo, version_id)
+    providers = Providers.list_providers(repo)
 
     variable_values =
       Map.new(prompt_version.variables, fn var -> {var, ""} end)
@@ -81,6 +84,7 @@ defmodule VialWeb.RunLive.New do
   end
 
   defp create_and_execute_run(socket, run_params, provider_ids) do
+    repo = Hooks.get_repo(socket)
     variables_map = Map.get(run_params, "variables", %{})
     name = Map.get(run_params, "name", "")
 
@@ -90,17 +94,17 @@ defmodule VialWeb.RunLive.New do
       name: if(name == "", do: nil, else: name)
     }
 
-    case Runs.create_run(run_attrs) do
+    case Runs.create_run(repo, run_attrs) do
       {:ok, run} ->
         providers =
           Enum.map(provider_ids, fn id ->
-            Providers.get_provider!(id)
+            Providers.get_provider!(repo, id)
           end)
 
         run_with_version = %{run | prompt_version: socket.assigns.prompt_version}
 
         Task.start(fn ->
-          Runs.execute_run(run_with_version, providers)
+          Runs.execute_run(repo, run_with_version, providers)
         end)
 
         {:noreply,

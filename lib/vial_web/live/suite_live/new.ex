@@ -7,6 +7,7 @@ defmodule VialWeb.SuiteLive.New do
 
   alias Vial.Evals
   alias Vial.Evals.Suite
+  alias Vial.Hooks
   alias Vial.Prompts
 
   @impl Phoenix.LiveView
@@ -50,53 +51,90 @@ defmodule VialWeb.SuiteLive.New do
   end
 
   defp apply_action(socket, :new, _params) do
+    repo = Hooks.get_repo(socket)
     changeset = Evals.change_suite(%Suite{})
-    prompts = Prompts.list_prompts_with_versions()
+    prompts = Prompts.list_prompts_with_versions(repo)
 
     socket
     |> assign(:page_title, "New Suite")
     |> assign(:suite, %Suite{})
     |> assign(:form, to_form(changeset))
     |> assign(:prompts, prompts)
-    |> assign(:test_cases, [])
     |> assign(:selected_prompt, nil)
+    |> assign(:test_cases, [%{id: generate_id()}])
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    suite = Evals.get_suite_with_test_cases_and_prompt!(id)
+    repo = Hooks.get_repo(socket)
+    suite = Evals.get_suite_with_test_cases_and_prompt!(repo, id)
     changeset = Evals.change_suite(suite)
-    prompts = Prompts.list_prompts_with_versions()
+    prompts = Prompts.list_prompts_with_versions(repo)
 
-    # Get the selected prompt if suite has one
-    selected_prompt =
-      if suite.prompt_id do
-        Enum.find(prompts, fn p -> p.id == suite.prompt_id end)
-      else
-        nil
-      end
-
-    # Convert existing test cases to the format expected by the form
     test_cases =
-      Enum.map(suite.test_cases, fn tc ->
-        %{
-          id: tc.id,
-          variable_values: tc.variable_values,
-          assertions: tc.assertions
-        }
-      end)
+      if suite.test_cases == [] do
+        [%{id: generate_id()}]
+      else
+        Enum.map(suite.test_cases, fn tc ->
+          Map.put(tc, :id, tc.id || generate_id())
+        end)
+      end
 
     socket
     |> assign(:page_title, "Edit Suite")
     |> assign(:suite, suite)
     |> assign(:form, to_form(changeset))
     |> assign(:prompts, prompts)
+    |> assign(:selected_prompt, suite.prompt)
     |> assign(:test_cases, test_cases)
-    |> assign(:selected_prompt, selected_prompt)
   end
 
   defp save_suite(socket, :new, suite_params) do
-    case create_suite_with_test_cases(suite_params) do
+    repo = Hooks.get_repo(socket)
+    test_case_params = parse_test_cases(suite_params, socket.assigns.selected_prompt)
+
+    # Validate test cases
+    test_errors = validate_test_cases(test_case_params)
+
+    if test_errors == [] do
+      create_suite_with_test_cases(socket, repo, suite_params, test_case_params)
+    else
+      errors = Enum.join(test_errors, ", ")
+
+      {:noreply,
+       socket
+       |> put_flash(:error, errors)
+       |> assign(:test_case_errors, test_errors)}
+    end
+  end
+
+  defp save_suite(socket, :edit, suite_params) do
+    repo = Hooks.get_repo(socket)
+    suite = socket.assigns.suite
+    test_case_params = parse_test_cases(suite_params, socket.assigns.selected_prompt)
+
+    # Validate test cases
+    test_errors = validate_test_cases(test_case_params)
+
+    if test_errors == [] do
+      update_suite_with_test_cases(socket, repo, suite, suite_params, test_case_params)
+    else
+      errors = Enum.join(test_errors, ", ")
+
+      {:noreply,
+       socket
+       |> put_flash(:error, errors)
+       |> assign(:test_case_errors, test_errors)}
+    end
+  end
+
+  defp create_suite_with_test_cases(socket, repo, suite_params, test_case_params) do
+    params = prepare_suite_params(suite_params)
+
+    case Evals.create_suite(repo, Map.drop(params, ["test_cases"])) do
       {:ok, suite} ->
+        # Create test cases
+        create_test_cases_for_suite(repo, suite, test_case_params)
+
         {:noreply,
          socket
          |> put_flash(:info, "Suite created successfully")
@@ -107,90 +145,109 @@ defmodule VialWeb.SuiteLive.New do
     end
   end
 
-  defp save_suite(socket, :edit, suite_params) do
-    case update_suite_with_test_cases(socket.assigns.suite, suite_params) do
-      {:ok, suite} ->
+  defp update_suite_with_test_cases(socket, repo, suite, suite_params, test_case_params) do
+    params = prepare_suite_params(suite_params)
+
+    case Evals.update_suite(repo, suite, Map.drop(params, ["test_cases"])) do
+      {:ok, updated_suite} ->
+        # Delete existing test cases and create new ones
+        Enum.each(suite.test_cases, fn tc -> Evals.delete_test_case(repo, tc) end)
+
+        create_test_cases_for_suite(repo, updated_suite, test_case_params)
+
         {:noreply,
          socket
          |> put_flash(:info, "Suite updated successfully")
-         |> push_navigate(to: ~p"/suites/#{suite.id}")}
+         |> push_navigate(to: ~p"/suites/#{updated_suite.id}")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end
 
-  defp create_suite_with_test_cases(params) do
-    test_cases_params = extract_test_cases(params)
-
-    case Evals.create_suite(Map.drop(params, ["test_cases"])) do
-      {:ok, suite} ->
-        create_test_cases_for_suite(suite, test_cases_params)
-        {:ok, suite}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
+  defp create_test_cases_for_suite(repo, suite, test_case_params) do
+    Enum.each(test_case_params, fn tc_params ->
+      Evals.create_test_case(repo, Map.put(tc_params, :suite_id, suite.id))
+    end)
   end
 
-  defp extract_test_cases(params) do
-    test_cases = params["test_cases"] || %{}
+  defp prepare_suite_params(params) do
+    # Convert string tags to array
+    tags = params["tags"] || ""
 
-    test_cases
-    |> Enum.map(fn {_id, test_case_params} ->
-      variable_values = parse_json_or_empty(test_case_params["variable_values"])
-      assertions = parse_assertions(test_case_params["assertions"])
+    tags_list =
+      tags
+      |> String.split(",")
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    Map.put(params, "tags", tags_list)
+  end
+
+  defp parse_test_cases(suite_params, selected_prompt) do
+    test_cases_map = Map.get(suite_params, "test_cases", %{})
+
+    # Get variable names from selected prompt
+    variable_names =
+      if selected_prompt && selected_prompt.versions != [] do
+        List.first(selected_prompt.versions).variables
+      else
+        []
+      end
+
+    test_cases_map
+    |> Map.values()
+    |> Enum.filter(fn tc -> tc["name"] && tc["name"] != "" end)
+    |> Enum.map(fn tc ->
+      # Build variable values map from the test case form data
+      variable_values =
+        Map.new(variable_names, fn var_name ->
+          {var_name, Map.get(tc, var_name, "")}
+        end)
+
+      # Parse assertions from the form
+      assertions =
+        tc
+        |> Map.get("assertions", %{})
+        |> Map.values()
+        |> Enum.filter(fn a -> a["type"] && a["type"] != "" && a["value"] && a["value"] != "" end)
 
       %{
+        name: tc["name"],
+        description: tc["description"] || "",
         variable_values: variable_values,
         assertions: assertions
       }
     end)
-    |> Enum.reject(fn tc -> tc.variable_values == %{} end)
   end
 
-  defp create_test_cases_for_suite(suite, test_cases_params) do
-    Enum.each(test_cases_params, fn tc_params ->
-      Evals.create_test_case(Map.put(tc_params, :suite_id, suite.id))
-    end)
-  end
+  defp validate_test_cases(test_cases) do
+    if test_cases == [] do
+      ["At least one test case is required"]
+    else
+      Enum.flat_map(test_cases, fn tc ->
+        errors = []
 
-  defp update_suite_with_test_cases(suite, params) do
-    test_cases_params = extract_test_cases(params)
+        errors =
+          if tc.name == "" || tc.name == nil do
+            ["Test case name is required" | errors]
+          else
+            errors
+          end
 
-    case Evals.update_suite(suite, Map.drop(params, ["test_cases"])) do
-      {:ok, suite} ->
-        # Delete existing test cases and create new ones
-        Enum.each(suite.test_cases, fn tc -> Evals.delete_test_case(tc) end)
-        create_test_cases_for_suite(suite, test_cases_params)
-        {:ok, suite}
+        errors =
+          if tc.assertions == [] do
+            ["Each test case must have at least one assertion" | errors]
+          else
+            errors
+          end
 
-      {:error, changeset} ->
-        {:error, changeset}
-    end
-  end
-
-  defp parse_json_or_empty(nil), do: %{}
-  defp parse_json_or_empty(""), do: %{}
-
-  defp parse_json_or_empty(str) do
-    case Jason.decode(str) do
-      {:ok, map} -> map
-      _ -> %{}
-    end
-  end
-
-  defp parse_assertions(nil), do: []
-  defp parse_assertions(""), do: []
-
-  defp parse_assertions(str) do
-    case Jason.decode(str) do
-      {:ok, assertions} when is_list(assertions) -> assertions
-      _ -> []
+        errors
+      end)
     end
   end
 
   defp generate_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+    :crypto.strong_rand_bytes(16) |> Base.encode16()
   end
 end
