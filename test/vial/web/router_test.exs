@@ -1,5 +1,6 @@
 defmodule Vial.Web.RouterTest do
   use ExUnit.Case, async: true
+  import Phoenix.ConnTest
 
   defmodule TestRouter do
     use Phoenix.Router

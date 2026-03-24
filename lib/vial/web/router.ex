@@ -1,18 +1,6 @@
 defmodule Vial.Web.Router do
   @moduledoc """
-  Provides the `vial_dashboard/2` macro for embedding Vial in Phoenix routers.
-
-  ## Example
-
-      defmodule MyAppWeb.Router do
-        use Phoenix.Router
-        import Vial.Web.Router
-
-        scope "/" do
-          pipe_through :browser
-          vial_dashboard("/vial")
-        end
-      end
+  Provides the vial_dashboard macro for mounting Vial in host apps.
   """
 
   @default_opts [
@@ -21,135 +9,183 @@ defmodule Vial.Web.Router do
     transport: "websocket"
   ]
 
+  @transport_values ~w(longpoll websocket)
+
   @doc """
-  Mounts the Vial dashboard at the given path.
+  Defines a vial dashboard route.
 
   ## Options
 
-    * `:resolver` - Module implementing access control resolution
-      (default: `Vial.Web.Resolver`)
-    * `:name` - Dashboard instance name (default: `:vial`)
-    * `:socket_path` - Phoenix LiveView socket path
-      (default: `"/live"`)
-    * `:transport` - WebSocket transport protocol
-      (default: `"websocket"`)
-    * `:authentication` - Access control rules - can be:
-      * `false` - Disables authentication (open access)
-      * `{:bearer, secret}` - Bearer token authentication
-      * `{:basic, [username: "...", password: "..."]}` - HTTP Basic auth
+  * `:as` - override route name (default: :vial_dashboard)
+  * `:csp_nonce_assign_key` - CSP nonce keys (nil, atom, or map)
+  * `:logo_path` - custom logo link path
+  * `:on_mount` - additional mount hooks
+  * `:vial_name` - Vial instance name (default: Vial)
+  * `:resolver` - Vial.Web.Resolver implementation
+  * `:socket_path` - phoenix socket path (default: "/live")
+  * `:transport` - "websocket" or "longpoll" (default: "websocket")
 
   ## Examples
 
-      # Default configuration
-      vial_dashboard("/vial")
-
-      # Custom configuration
-      vial_dashboard("/admin/vial",
-        name: :admin_vial,
-        authentication: {:basic, username: "admin", password: "secret"}
-      )
-
-      # Disable authentication (NOT recommended for production)
-      vial_dashboard("/vial", authentication: false)
+      scope "/" do
+        pipe_through :browser
+        vial_dashboard "/vial"
+      end
   """
   defmacro vial_dashboard(path, opts \\ []) do
-    quote bind_quoted: [path: path, opts: opts] do
+    opts =
+      if Macro.quoted_literal?(opts) do
+        Macro.prewalk(opts, &expand_alias(&1, __CALLER__))
+      else
+        opts
+      end
+
+    quote bind_quoted: binding() do
+      prefix = Phoenix.Router.scoped_path(__MODULE__, path)
+
       scope path, alias: false, as: false do
-        import Phoenix.LiveView.Router, only: [live: 3, live_session: 3]
+        import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
 
-        {name, live_opts} = Vial.Web.Router.__options__(path, opts)
+        {session_name, session_opts, route_opts} =
+          Vial.Web.Router.__options__(prefix, opts)
 
-        live_session name, session: {Vial.Web.Router, :__session__, [name, live_opts]} do
-          live("/", Vial.Web.DashboardLive, :home)
-        end
+        live_session session_name, session_opts do
+          get "/css-:md5", Vial.Web.Assets, :css, as: :vial_web_asset
+          get "/js-:md5", Vial.Web.Assets, :js, as: :vial_web_asset
+          get "/fonts/*path", Vial.Web.Assets, :font, as: :vial_web_font
+          get "/icons/*path", Vial.Web.Assets, :icon, as: :vial_web_icon
 
-        scope "/assets" do
-          get("/css/:asset", Vial.Web.Assets, :css)
-          get("/js/:asset", Vial.Web.Assets, :js)
-          get("/fonts/:asset", Vial.Web.Assets, :fonts)
-          get("/icons/:asset", Vial.Web.Assets, :icons)
+          live "/", Vial.Web.DashboardLive, :home, route_opts
+          live "/:page", Vial.Web.DashboardLive, :index, route_opts
+          live "/:page/:id", Vial.Web.DashboardLive, :show, route_opts
         end
       end
     end
   end
 
+  defp expand_alias({:__aliases__, _, _} = alias_ast, env) do
+    Macro.expand(alias_ast, %{env | function: {:vial_dashboard, 2}})
+  end
+
+  defp expand_alias(other, _env), do: other
+
   @doc false
-  def __options__(path, opts) do
+  def __options__(prefix, opts) do
     opts = Keyword.merge(@default_opts, opts)
-    name = Keyword.get(opts, :name, :vial)
 
-    cond do
-      !is_binary(path) ->
-        raise ArgumentError, "path must be a string, got: #{inspect(path)}"
+    Enum.each(opts, &validate_opt!/1)
 
-      !is_atom(name) ->
-        raise ArgumentError, "name must be an atom, got: #{inspect(name)}"
+    on_mount = Keyword.get(opts, :on_mount, []) ++ [Vial.Web.Authentication]
 
-      !valid_resolver?(opts[:resolver]) ->
-        raise ArgumentError,
-              "resolver must be a module, got: #{inspect(opts[:resolver])}"
+    session_args = [
+      prefix,
+      opts[:vial_name],
+      opts[:resolver],
+      opts[:socket_path],
+      opts[:transport],
+      opts[:csp_nonce_assign_key],
+      opts[:logo_path]
+    ]
 
-      !valid_socket_path?(opts[:socket_path]) ->
-        raise ArgumentError,
-              "socket_path must be a string, got: #{inspect(opts[:socket_path])}"
+    session_opts = [
+      on_mount: on_mount,
+      session: {__MODULE__, :__session__, session_args},
+      root_layout: {Vial.Web.Layouts, :root}
+    ]
 
-      !valid_transport?(opts[:transport]) ->
-        raise ArgumentError,
-              "transport must be 'websocket' or 'longpoll', " <>
-                "got: #{inspect(opts[:transport])}"
+    session_name = Keyword.get(opts, :as, :vial_dashboard)
 
-      !valid_authentication?(opts[:authentication]) ->
-        raise ArgumentError,
-              "authentication must be false, {:bearer, secret}, or " <>
-                "{:basic, [username: ..., password: ...]}, " <>
-                "got: #{inspect(opts[:authentication])}"
-
-      true ->
-        {name, opts}
-    end
+    {session_name, session_opts, as: session_name}
   end
-
-  defp valid_resolver?(resolver) do
-    is_atom(resolver) and resolver != nil
-  end
-
-  defp valid_socket_path?(path) do
-    is_binary(path) and String.starts_with?(path, "/")
-  end
-
-  defp valid_transport?(transport) when transport in ["websocket", "longpoll"], do: true
-  defp valid_transport?(_), do: false
-
-  defp valid_authentication?(false), do: true
-  defp valid_authentication?({:bearer, secret}) when is_binary(secret), do: true
-
-  defp valid_authentication?({:basic, credentials}) when is_list(credentials) do
-    Keyword.has_key?(credentials, :username) and
-      Keyword.has_key?(credentials, :password) and
-      is_binary(credentials[:username]) and
-      is_binary(credentials[:password])
-  end
-
-  defp valid_authentication?(nil), do: true
-  defp valid_authentication?(_), do: false
 
   @doc false
   def __session__(
-        _conn,
-        name,
+        conn,
+        prefix,
+        vial_name,
         resolver,
-        socket_path,
-        transport,
-        authentication,
-        _extra1,
-        _extra2
+        live_path,
+        live_transport,
+        csp_key,
+        logo_path
       ) do
+    user = Vial.Web.Resolver.call_with_fallback(resolver, :resolve_user, [conn])
+    csp_keys = expand_csp_nonce_keys(csp_key)
+
     %{
-      "vial_name" => name,
+      "prefix" => prefix,
+      "vial_name" => vial_name,
+      "user" => user,
       "resolver" => resolver,
-      "socket_path" => socket_path,
-      "transport" => transport,
-      "authentication" => authentication
+      "access" => Vial.Web.Resolver.call_with_fallback(resolver, :resolve_access, [user]),
+      "refresh" => Vial.Web.Resolver.call_with_fallback(resolver, :resolve_refresh, [user]),
+      "live_path" => live_path,
+      "live_transport" => live_transport,
+      "logo_path" => logo_path,
+      "csp_nonces" => %{
+        img: conn.assigns[csp_keys[:img]],
+        style: conn.assigns[csp_keys[:style]],
+        script: conn.assigns[csp_keys[:script]]
+      }
     }
   end
+
+  defp expand_csp_nonce_keys(nil), do: %{img: nil, style: nil, script: nil}
+  defp expand_csp_nonce_keys(key) when is_atom(key), do: %{img: key, style: key, script: key}
+  defp expand_csp_nonce_keys(map) when is_map(map), do: map
+
+  defp validate_opt!({:transport, transport}) do
+    unless transport in @transport_values do
+      raise ArgumentError, """
+      invalid :transport, expected one of #{inspect(@transport_values)},
+      got #{inspect(transport)}
+      """
+    end
+  end
+
+  defp validate_opt!({:socket_path, path}) do
+    unless is_binary(path) and byte_size(path) > 0 do
+      raise ArgumentError, """
+      invalid :socket_path, expected a binary URL, got: #{inspect(path)}
+      """
+    end
+  end
+
+  defp validate_opt!({:resolver, resolver}) do
+    unless is_atom(resolver) and not is_nil(resolver) do
+      raise ArgumentError, """
+      invalid :resolver, expected a module implementing Vial.Web.Resolver,
+      got: #{inspect(resolver)}
+      """
+    end
+  end
+
+  defp validate_opt!({:vial_name, name}) do
+    unless is_atom(name) do
+      raise ArgumentError, """
+      invalid :vial_name, expected a module or atom,
+      got #{inspect(name)}
+      """
+    end
+  end
+
+  defp validate_opt!({:logo_path, path}) do
+    unless is_nil(path) or (is_binary(path) and byte_size(path) > 0) do
+      raise ArgumentError, """
+      invalid :logo_path, expected nil or a non-empty binary path,
+      got: #{inspect(path)}
+      """
+    end
+  end
+
+  defp validate_opt!({:csp_nonce_assign_key, key}) do
+    unless is_nil(key) or is_atom(key) or is_map(key) do
+      raise ArgumentError, """
+      invalid :csp_nonce_assign_key, expected nil, atom, or map with
+      atom keys, got #{inspect(key)}
+      """
+    end
+  end
+
+  defp validate_opt!(_option), do: :ok
 end
