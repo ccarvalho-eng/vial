@@ -13,7 +13,6 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
     * `--prefix` - Database schema prefix for multi-tenant apps (default:
       "public")
     * `--dev-only` - Only install in dev environment (default: false)
-    * `--seed` - Run seed task after installation (default: false)
 
   ## Examples
 
@@ -29,17 +28,14 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
       # Dev-only installation
       mix igniter.install vial --dev-only
 
-      # Install and seed example data
-      mix igniter.install vial --seed
-
   ## What it does
 
-  1. Adds TaskSupervisor to your application supervision tree
-  2. Imports Vial.Router in your router
-  3. Mounts vial_dashboard at the specified path
-  4. Adds Vial.Static plug to your endpoint
-  5. Generates the Vial database migration
-  6. Optionally runs seed task to populate example data
+  1. Adds Vial dependency to your mix.exs
+  2. Adds TaskSupervisor to your application supervision tree
+  3. Imports Vial.Router in your router
+  4. Mounts vial_dashboard at the specified path
+  5. Adds Vial.Static plug to your endpoint
+  6. Generates the Vial database migration
   """
 
   use Igniter.Mix.Task
@@ -62,14 +58,12 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
       schema: [
         path: :string,
         prefix: :string,
-        dev_only: :boolean,
-        seed: :boolean
+        dev_only: :boolean
       ],
       # Default values for options
       defaults: [
         prefix: "public",
-        dev_only: false,
-        seed: false
+        dev_only: false
       ],
       # CLI aliases
       aliases: []
@@ -82,7 +76,6 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
     path = options[:path]
     prefix = options[:prefix]
     dev_only = options[:dev_only]
-    run_seed = options[:seed]
 
     app_name = Igniter.Project.Application.app_name(igniter)
     web_module = Igniter.Project.Module.module_name(igniter, "#{app_name}_web")
@@ -93,7 +86,6 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
     |> add_vial_static_plug(web_module)
     |> setup_router(web_module, repo_module, app_name, path, dev_only)
     |> generate_migration(prefix)
-    |> maybe_run_seed(run_seed, repo_module)
   end
 
   defp find_repo_module(igniter, app_name) do
@@ -233,15 +225,49 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
   end
 
   defp generate_migration(igniter, prefix) do
-    # Queue up the migration task to run
-    Igniter.compose_task(igniter, "vial.install", ["--prefix", prefix])
+    # Generate the migration directly instead of delegating to vial.install
+    # to avoid Igniter.Mix.Task behavior requirements
+    app = Igniter.Project.Application.app_name(igniter)
+
+    case Application.get_env(app, :ecto_repos) do
+      [repo | _] ->
+        repo_name = repo |> Module.split() |> List.last()
+        timestamp = Calendar.strftime(DateTime.utc_now(), "%Y%m%d%H%M%S")
+        filename = "#{timestamp}_add_vial_tables.exs"
+        migrations_path = Path.join(["priv", "repo", "migrations", filename])
+
+        content = migration_template(repo_name, prefix)
+
+        Igniter.create_new_file(igniter, migrations_path, content)
+
+      _ ->
+        # No repo found, skip migration generation
+        igniter
+    end
   end
 
-  defp maybe_run_seed(igniter, true, _repo_module) do
-    Igniter.compose_task(igniter, "vial.seed", [])
-  end
+  defp migration_template(repo_name, prefix) do
+    module_name = "#{repo_name}.Migrations.AddVialTables"
 
-  defp maybe_run_seed(igniter, false, _repo_module) do
-    igniter
+    prefix_option =
+      if prefix == "public" do
+        ""
+      else
+        "prefix: \"#{prefix}\""
+      end
+
+    """
+    defmodule #{module_name} do
+      use Ecto.Migration
+
+      def up do
+        Vial.Migrations.up(#{prefix_option})
+      end
+
+      def down do
+        Vial.Migrations.down(#{prefix_option})
+      end
+    end
+    """
   end
 end
