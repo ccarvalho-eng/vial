@@ -1,124 +1,55 @@
 defmodule Vial.Web.Assets do
-  @moduledoc false
-
-  @behaviour Plug
+  @moduledoc """
+  Serves pre-compiled static assets for Vial dashboard.
+  """
 
   import Plug.Conn
 
-  @static_path Application.app_dir(:vial, ["priv", "static"])
+  @priv_dir :code.priv_dir(:vial)
 
-  # Icons
-
-  icon_files =
-    for dir <- ["outline", "solid", "special"],
-        base = Path.join([@static_path, "icons", dir]),
-        File.dir?(base),
-        file <- File.ls!(base),
-        String.ends_with?(file, ".svg") do
-      path = Path.join(base, file)
-      Module.put_attribute(__MODULE__, :external_resource, path)
-      {Path.join(dir, file), File.read!(path)}
-    end
-
-  @icons Map.new(icon_files)
-
-  # Font
-
-  font_path = Path.join(@static_path, "fonts/Inter.woff2")
-
-  if File.exists?(font_path) do
-    Module.put_attribute(__MODULE__, :external_resource, font_path)
-    @font File.read!(font_path)
-  else
-    @font ""
+  def css(conn, %{"md5" => md5}) do
+    serve_asset(conn, "css", md5, "text/css; charset=utf-8")
   end
 
-  # CSS
-
-  css_path = Path.join(@static_path, "app.css")
-
-  if File.exists?(css_path) do
-    Module.put_attribute(__MODULE__, :external_resource, css_path)
-    @css File.read!(css_path)
-  else
-    @css ""
+  def js(conn, %{"md5" => md5}) do
+    serve_asset(conn, "js", md5, "application/javascript; charset=utf-8")
   end
 
-  # JS
-
-  phoenix_js_paths =
-    for app <- ~w(phoenix phoenix_html phoenix_live_view)a,
-        path = Application.app_dir(app, ["priv", "static", "#{app}.js"]),
-        File.exists?(path) do
-      Module.put_attribute(__MODULE__, :external_resource, path)
-      path
-    end
-
-  js_path = Path.join(@static_path, "app.js")
-
-  if File.exists?(js_path) do
-    Module.put_attribute(__MODULE__, :external_resource, js_path)
+  def font(conn, %{"path" => path}) do
+    serve_static(conn, Path.join("fonts", path), "font/woff2")
   end
 
-  @js (if File.exists?(js_path) do
-         """
-         #{for path <- phoenix_js_paths, do: path |> File.read!() |> String.replace("//# sourceMappingURL=", "// ")}
-         #{File.read!(js_path)}
-         """
-       else
-         ""
-       end)
-
-  @impl Plug
-  def init(asset), do: asset
-
-  @impl Plug
-  def call(conn, :css) do
-    serve_asset(conn, @css, "text/css")
+  def icon(conn, %{"path" => path}) do
+    serve_static(conn, Path.join("icons", path), "image/svg+xml")
   end
 
-  def call(conn, :js) do
-    serve_asset(conn, @js, "text/javascript")
-  end
+  defp serve_asset(conn, type, md5, content_type) do
+    path = Path.join([@priv_dir, "static", "#{type}-#{md5}.#{type}"])
 
-  def call(conn, :font) do
-    serve_asset(conn, @font, "font/woff2")
-  end
-
-  def call(conn, :icon) do
-    icon_path = Enum.join(conn.path_params["path"], "/")
-
-    case Map.get(@icons, icon_path) do
-      nil ->
+    case File.read(path) do
+      {:ok, content} ->
         conn
-        |> put_resp_header("content-type", "text/plain")
-        |> send_resp(404, "Icon not found")
-        |> halt()
+        |> put_resp_content_type(content_type)
+        |> put_resp_header("cache-control", "public, max-age=31536000, immutable")
+        |> send_resp(200, content)
 
-      contents ->
-        serve_asset(conn, contents, "image/svg+xml")
+      {:error, _} ->
+        send_resp(conn, 404, "Not Found")
     end
   end
 
-  defp serve_asset(conn, "", content_type) do
-    conn
-    |> put_resp_header("content-type", content_type)
-    |> send_resp(404, "Not found")
-    |> halt()
-  end
+  defp serve_static(conn, path, content_type) do
+    full_path = Path.join([@priv_dir, "static", path])
 
-  defp serve_asset(conn, contents, content_type) do
-    conn
-    |> put_resp_header("content-type", content_type)
-    |> put_resp_header("cache-control", "public, max-age=31536000, immutable")
-    |> put_private(:plug_skip_csrf_protection, true)
-    |> send_resp(200, contents)
-    |> halt()
-  end
+    case File.read(full_path) do
+      {:ok, content} ->
+        conn
+        |> put_resp_content_type(content_type)
+        |> put_resp_header("cache-control", "public, max-age=31536000")
+        |> send_resp(200, content)
 
-  for {key, val} <- [css: @css, js: @js] do
-    md5 = Base.encode16(:crypto.hash(:md5, val), case: :lower)
-
-    def current_hash(unquote(key)), do: unquote(md5)
+      {:error, _} ->
+        send_resp(conn, 404, "Not Found")
+    end
   end
 end
