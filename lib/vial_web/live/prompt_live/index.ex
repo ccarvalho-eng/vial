@@ -5,8 +5,8 @@ defmodule VialWeb.PromptLive.Index do
 
   use VialWeb, :live_view
 
-  alias Vial.Prompts
   alias Vial.Hooks
+  alias Vial.Prompts
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do

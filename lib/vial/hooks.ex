@@ -82,10 +82,10 @@ defmodule Vial.Hooks do
         user = socket.assigns[:current_user]
 
         case action do
-          :view -> apply(resolver_module, :can_view_dashboard?, [user])
-          :modify_prompts -> apply(resolver_module, :can_modify_prompts?, [user])
-          :run_tests -> apply(resolver_module, :can_run_tests?, [user])
-          :manage_providers -> apply(resolver_module, :can_manage_providers?, [user])
+          :view -> resolver_module.can_view_dashboard?(user)
+          :modify_prompts -> resolver_module.can_modify_prompts?(user)
+          :run_tests -> resolver_module.can_run_tests?(user)
+          :manage_providers -> resolver_module.can_manage_providers?(user)
           _ -> false
         end
     end

@@ -116,14 +116,6 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
       {Task.Supervisor, name: supervisor_name},
       after: [:ecto_repos]
     )
-    |> case do
-      {:ok, igniter} ->
-        igniter
-
-      {:error, igniter} ->
-        # Already exists, continue
-        igniter
-    end
   end
 
   defp add_vial_static_plug(igniter, web_module) do
@@ -131,25 +123,25 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
 
     Igniter.Project.Module.find_and_update_module!(igniter, endpoint_module, fn
       zipper ->
-        with {:ok, zipper} <-
-               Igniter.Code.Function.move_to_function_call_in_current_scope(
-                 zipper,
-                 :plug,
-                 2,
-                 fn call ->
-                   Igniter.Code.Function.argument_matches_predicate?(
-                     call,
-                     0,
-                     &match?({:__aliases__, _, [:Plug, :Static]}, &1)
-                   )
-                 end
-               ) do
-          # Insert Vial.Static before the app's Plug.Static
-          Igniter.Code.Common.add_code(zipper, """
-          # Serve Vial static assets
-          plug Vial.Static
-          """)
-        else
+        case Igniter.Code.Function.move_to_function_call_in_current_scope(
+               zipper,
+               :plug,
+               2,
+               fn call ->
+                 Igniter.Code.Function.argument_matches_predicate?(
+                   call,
+                   0,
+                   &match?({:__aliases__, _, [:Plug, :Static]}, &1)
+                 )
+               end
+             ) do
+          {:ok, zipper} ->
+            # Insert Vial.Static before the app's Plug.Static
+            Igniter.Code.Common.add_code(zipper, """
+            # Serve Vial static assets
+            plug Vial.Static
+            """)
+
           :error ->
             # Couldn't find Plug.Static, add at the end of the module
             {:ok, zipper}
@@ -181,10 +173,7 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
     igniter
     |> Igniter.Project.Module.find_and_update_module!(router_module, fn zipper ->
       # Add import
-      with {:ok, zipper} <-
-             Igniter.Code.Common.add_code(zipper, "import Vial.Router", :before) do
-        {:ok, zipper}
-      end
+      Igniter.Code.Common.add_code(zipper, "import Vial.Router", :before)
     end)
     |> then(fn igniter ->
       if dev_only do
@@ -217,20 +206,20 @@ defmodule Mix.Tasks.Igniter.Install.Vial do
 
   defp find_or_create_dev_scope(zipper) do
     # Try to find existing dev scope
-    with {:ok, zipper} <-
-           Igniter.Code.Common.move_to(zipper, fn z ->
-             match?(
-               {:if, _,
-                [
-                  {{:., _, [{:__aliases__, _, [:Mix]}, :env]}, _, []},
-                  {:==, _, [:dev]},
-                  _
-                ]},
-               Sourceror.Zipper.node(z)
-             )
-           end) do
-      {:ok, zipper}
-    else
+    case Igniter.Code.Common.move_to(zipper, fn z ->
+           match?(
+             {:if, _,
+              [
+                {{:., _, [{:__aliases__, _, [:Mix]}, :env]}, _, []},
+                {:==, _, [:dev]},
+                _
+              ]},
+             Sourceror.Zipper.node(z)
+           )
+         end) do
+      {:ok, zipper} ->
+        {:ok, zipper}
+
       :error ->
         # Create new dev scope
         Igniter.Code.Common.add_code(zipper, """

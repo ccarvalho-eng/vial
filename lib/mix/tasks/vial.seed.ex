@@ -180,15 +180,17 @@ defmodule Mix.Tasks.Vial.Seed do
           true -> []
         end
 
-      with {:ok, prompt} <- Vial.Prompts.create_prompt(repo, prompt_attrs) do
-        # Create all versions for this prompt
-        Enum.each(versions, fn template ->
-          Vial.Prompts.create_prompt_version(repo, prompt, template)
-        end)
+      case Vial.Prompts.create_prompt(repo, prompt_attrs) do
+        {:ok, prompt} ->
+          # Create all versions for this prompt
+          Enum.each(versions, fn template ->
+            Vial.Prompts.create_prompt_version(repo, prompt, template)
+          end)
 
-        prompt
-      else
-        _ -> nil
+          prompt
+
+        _ ->
+          nil
       end
     end)
     |> Enum.filter(& &1)

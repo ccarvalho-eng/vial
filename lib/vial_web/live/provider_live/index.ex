@@ -5,8 +5,8 @@ defmodule VialWeb.ProviderLive.Index do
 
   use VialWeb, :live_view
 
-  alias Vial.Providers
   alias Vial.Hooks
+  alias Vial.Providers
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do

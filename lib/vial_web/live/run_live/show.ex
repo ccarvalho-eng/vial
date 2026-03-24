@@ -9,8 +9,8 @@ defmodule VialWeb.RunLive.Show do
 
   use VialWeb, :live_view
 
-  alias Vial.Runs
   alias Vial.Hooks
+  alias Vial.Runs
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
