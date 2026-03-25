@@ -10,7 +10,7 @@ config :vial, Vial.Test.Repo,
   priv: "test/support",
   show_sensitive_data_on_connection_error: true,
   stacktrace: true,
-  url: System.get_env("DATABASE_URL") || "postgres://localhost:5432/vial_test"
+  url: System.get_env("DATABASE_URL") || "postgres://postgres:postgres@localhost:5432/vial_test"
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
