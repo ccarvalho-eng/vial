@@ -63,13 +63,22 @@ In your `lib/your_app_web/router.ex`:
 use YourAppWeb, :router
 import Vial.Web.Router  # Add this line
 
-scope "/admin" do
-  pipe_through :browser
-  vial_dashboard "/vial"  # Dashboard will be at /admin/vial
+# In development
+if Mix.env() == :dev do
+  scope "/dev" do
+    pipe_through :browser
+    vial_dashboard "/vial"  # Dashboard will be at /dev/vial
+  end
 end
+
+# Or in production (with authentication)
+# scope "/admin" do
+#   pipe_through [:browser, :require_admin]
+#   vial_dashboard "/vial"
+# end
 ```
 
-The dashboard can be mounted at any path you choose.
+The dashboard can be mounted at any path you choose. It's common to mount it under `/dev` in development or `/admin` in production (with proper authentication).
 
 ### 5. Configure API keys (optional)
 
@@ -100,7 +109,7 @@ mix vial.seed
 
 This populates the database with sample providers, prompts, and evaluation suites.
 
-Visit the dashboard at your configured path (e.g., `http://localhost:4000/admin/vial`).
+Visit the dashboard at your configured path (e.g., `http://localhost:4000/dev/vial`).
 
 ---
 
