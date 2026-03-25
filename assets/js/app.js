@@ -39,15 +39,6 @@ const AutoDismissFlash = {
 }
 
 // Theme switching logic
-function getPreferredTheme() {
-  const savedTheme = localStorage.getItem('theme')
-  if (savedTheme && savedTheme !== 'system') {
-    return savedTheme
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
-
 function setTheme(theme) {
   localStorage.setItem('theme', theme)
 
