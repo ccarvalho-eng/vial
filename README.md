@@ -226,14 +226,22 @@ mix deps.compile vial --force
 
 **Live development workflow:**
 
-For faster iteration, you can use the watcher in development mode:
+For faster iteration during development, you can use Mix tasks with watchers:
 
 ```bash
-# In the vial directory
-mix phx.server  # Starts asset watchers automatically
+# Watch and rebuild CSS on changes
+mix tailwind vial --watch
+
+# Watch and rebuild JS on changes (in another terminal)
+mix esbuild vial --watch
 ```
 
-The asset watchers will automatically rebuild CSS/JS on file changes.
+Alternatively, run the standalone app for a full development server:
+
+```bash
+cd standalone
+mix phx.server  # Starts asset watchers automatically
+```
 
 ---
 
