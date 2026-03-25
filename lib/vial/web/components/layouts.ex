@@ -18,10 +18,17 @@ defmodule Vial.Web.Layouts do
 
     prefix = get_in(meta, [:extra, :session, Access.elem(2), Access.at(0)])
 
+    path =
+      case prefix do
+        "/" -> "/#{asset}-#{hash}"
+        "" -> "/#{asset}-#{hash}"
+        _ -> "#{prefix}/#{asset}-#{hash}"
+      end
+
     Phoenix.VerifiedRoutes.unverified_path(
       conn,
       conn.private.phoenix_router,
-      "#{prefix}/#{asset}-#{hash}"
+      path
     )
   end
 
