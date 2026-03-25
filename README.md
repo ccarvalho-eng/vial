@@ -113,6 +113,54 @@ Visit the dashboard at your configured path (e.g., `http://localhost:4000/dev/vi
 
 ---
 
+## Standalone Mode
+
+Vial includes a standalone application in the `standalone/` directory for running the dashboard without embedding it in a Phoenix app.
+
+### Setup
+
+```bash
+cd standalone
+mix deps.get
+mix ecto.create
+mix ecto.migrate
+mix vial.seed  # Optional: add demo data
+mix phx.server
+```
+
+Visit `http://localhost:4000`
+
+### Configuration
+
+Edit `standalone/config/dev.exs` to configure:
+
+- **Database** — Default: `postgres://postgres:postgres@localhost/vial_dash_dev`
+- **Port** — Default: `4000`
+- **API Keys** — Set `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` environment variables
+
+### Production Deployment
+
+```bash
+# Set required environment variables
+export DATABASE_URL=postgres://...
+export SECRET_KEY_BASE=$(mix phx.gen.secret)
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Optional: Enable basic auth
+export BASIC_AUTH_USER=admin
+export BASIC_AUTH_PASS=secret
+
+# Optional: Set read-only mode
+export READ_ONLY=true
+
+# Run the app
+MIX_ENV=prod mix release
+_build/prod/rel/vial_dash/bin/vial_dash start
+```
+
+---
+
 ## Providers
 
 | Provider | API Key Required | Configuration |

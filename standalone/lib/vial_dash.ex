@@ -2,6 +2,14 @@ defmodule VialDash.Repo do
   use Ecto.Repo, otp_app: :vial_dash, adapter: Ecto.Adapters.Postgres
 end
 
+defmodule VialDash.ErrorHTML do
+  use Phoenix.Component
+
+  def render(template, _assigns) do
+    Phoenix.Controller.status_message_from_template(template)
+  end
+end
+
 defmodule VialDash.BasicAuth do
   @moduledoc false
 
@@ -92,6 +100,7 @@ defmodule VialDash.Application do
   def start(_type, _args) do
     children = [
       VialDash.Repo,
+      {Phoenix.PubSub, name: VialDash.PubSub},
       VialDash.Endpoint
     ]
 
