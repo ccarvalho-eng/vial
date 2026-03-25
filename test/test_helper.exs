@@ -38,7 +38,7 @@ defmodule Vial.Web.Test.Router do
 
   scope "/" do
     pipe_through :browser
-    vial_dashboard("/vial")
+    vial_dashboard("/")
   end
 end
 

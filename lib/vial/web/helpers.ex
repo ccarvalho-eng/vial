@@ -24,7 +24,14 @@ defmodule Vial.Web.Helpers do
 
     case Process.get(:routing) do
       {socket, prefix} ->
-        VerifiedRoutes.unverified_path(socket, socket.router, "#{prefix}/#{route}", params)
+        path =
+          case prefix do
+            "/" -> "/#{route}"
+            "" -> "/#{route}"
+            _ -> "#{prefix}/#{route}"
+          end
+
+        VerifiedRoutes.unverified_path(socket, socket.router, path, params)
 
       :nowhere ->
         "/"
