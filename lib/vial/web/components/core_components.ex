@@ -450,6 +450,7 @@ defmodule Vial.Web.CoreComponents do
       id={@id}
       phx-mounted={@show && show_modal(@id)}
       phx-remove={hide_modal(@id)}
+      data-cancel={JS.exec("phx-remove", to: "##{@id}")}
       class="relative z-50 hidden"
     >
       <div
@@ -471,7 +472,7 @@ defmodule Vial.Web.CoreComponents do
             id={"#{@id}-container"}
             class="vial-card"
             style="max-width: 400px; width: 100%;"
-            onclick="event.stopPropagation();"
+            phx-click-away={hide_modal(@id)}
           >
             <div id={"#{@id}-content"}>
               <div style="margin-bottom: 20px; font-size: 16px; color: var(--text-primary);">
@@ -488,7 +489,8 @@ defmodule Vial.Web.CoreComponents do
                 </button>
                 <button
                   type="button"
-                  phx-click={@on_confirm |> hide_modal(@id)}
+                  phx-click={@on_confirm}
+                  phx-disable-with="..."
                   class="button-danger"
                   style="font-size: 13px; padding: 6px 12px;"
                 >
@@ -531,14 +533,12 @@ defmodule Vial.Web.CoreComponents do
     )
     |> JS.hide(
       to: "##{id}-container",
-      time: 200,
       transition:
         {"transition-all ease-in duration-200", "opacity-100 translate-y-0 sm:scale-100",
          "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}
     )
     |> JS.hide(to: "##{id}", transition: {"block", "block", "hidden"})
     |> JS.remove_class("overflow-hidden", to: "body")
-    |> JS.pop_focus()
   end
 
   def show(js \\ %JS{}, selector) do
