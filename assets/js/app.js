@@ -91,7 +91,9 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
 })
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-const liveSocket = new LiveSocket("/live", Socket, {
+const vialConfig = document.querySelector("#vial-config")
+const livePath = vialConfig?.getAttribute("data-live-path") || "/live"
+const liveSocket = new LiveSocket(livePath, Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
   hooks: {...colocatedHooks, AutoDismissFlash, EvolutionChart},

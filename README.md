@@ -143,6 +143,43 @@ Explain {{topic}} in exactly 3 sentences.
 
 ---
 
+## Development
+
+### Working with assets (CSS/JS)
+
+Vial uses Tailwind CSS and esbuild for styling and JavaScript bundling.
+
+**After making changes to CSS or JS files:**
+
+```bash
+# 1. Rebuild assets (from vial directory)
+mix assets.build
+
+# 2. If working on an embedded installation, recompile the dependency
+cd ../your_host_app
+mix deps.compile vial --force
+
+# 3. Restart the Phoenix server to pick up changes
+```
+
+**Asset files:**
+- CSS: `assets/css/app.css`
+- JavaScript: `assets/js/app.js` and `assets/js/hooks/`
+- Built assets go to: `priv/static/assets/`
+
+**Live development workflow:**
+
+For faster iteration, you can use the watcher in development mode:
+
+```bash
+# In the vial directory
+mix phx.server  # Starts asset watchers automatically
+```
+
+The asset watchers will automatically rebuild CSS/JS on file changes.
+
+---
+
 ## Contributing
 
 1. Fork the repository
@@ -150,6 +187,8 @@ Explain {{topic}} in exactly 3 sentences.
 3. Commit using [conventional commits](https://www.conventionalcommits.org/)
 4. Run `mix precommit` before submitting
 5. Open a Pull Request
+
+**For changes to CSS/JS:** Make sure to rebuild assets with `mix assets.build` before committing. Built assets in `priv/static/assets/` are gitignored - only source files in `assets/` are tracked.
 
 ---
 

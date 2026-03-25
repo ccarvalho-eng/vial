@@ -20,6 +20,8 @@ defmodule Vial.Web.Authentication do
       |> assign(:prefix, session["prefix"])
       |> assign(:logo_path, session["logo_path"])
       |> assign(:csp_nonces, session["csp_nonces"])
+      |> assign(:live_path, session["live_path"])
+      |> assign(:live_transport, session["live_transport"])
 
     {:cont, socket}
   end
