@@ -53,7 +53,7 @@ defmodule Vial.MixProject do
   defp package do
     [
       name: "vial",
-      maintainers: ["Your Name"],
+      maintainers: ["Cristiano Carvalho"],
       licenses: ["Apache-2.0"],
       files: ~w(lib priv/static* .formatter.exs mix.exs README* CHANGELOG* LICENSE*),
       links: %{
