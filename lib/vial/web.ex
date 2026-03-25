@@ -42,8 +42,8 @@ defmodule Vial.Web do
       import Vial.Web.CoreComponents
       import Vial.Web.Helpers
 
-      alias Vial.Web.Layouts
       alias Phoenix.LiveView.JS
+      alias Vial.Web.Layouts
     end
   end
 

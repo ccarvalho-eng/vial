@@ -38,9 +38,10 @@ defmodule Vial.Web.Helpers do
 
   defp encode_params(params) do
     for {key, value} <- params do
-      cond do
-        is_list(value) -> {key, Enum.join(value, ",")}
-        true -> {key, value}
+      if is_list(value) do
+        {key, Enum.join(value, ",")}
+      else
+        {key, value}
       end
     end
   end

@@ -62,7 +62,10 @@
       <%!-- Prompts list --%>
       <div :for={prompt <- @prompts} class="vial-card">
         <div style="display: flex; justify-content: space-between; align-items: start;">
-          <.link navigate={vial_path("prompts/#{prompt.id}")} style="flex: 1; text-decoration: none;">
+          <.link
+            navigate={vial_path("prompts/#{prompt.id}")}
+            style="flex: 1; text-decoration: none;"
+          >
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
               {prompt.name}
             </h3>
