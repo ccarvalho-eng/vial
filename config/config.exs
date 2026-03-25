@@ -21,14 +21,7 @@ config :vial, VialWeb.Endpoint,
   pubsub_server: Vial.PubSub,
   live_view: [signing_salt: "DBrn//Hy"]
 
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :vial, Vial.Mailer, adapter: Swoosh.Adapters.Local
+# Mailer config removed as Swoosh is not a dependency for embedded library
 
 # Configure esbuild (the version is required)
 config :esbuild,

@@ -1,3 +1,9 @@
+# Start test repo
+Vial.Test.Repo.start_link()
+
+# Set sandbox mode for test repo
+Ecto.Adapters.SQL.Sandbox.mode(Vial.Test.Repo, :manual)
+
 # Exclude integration tests that require external services or real API keys
 # Run with: mix test --include ollama (if you have Ollama running)
 # Run with: mix test --include anthropic_integration (requires ANTHROPIC_API_KEY)

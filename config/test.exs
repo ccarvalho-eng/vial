@@ -1,5 +1,17 @@
 import Config
 
+# Configure test repo for Vial
+config :vial,
+  repo: Vial.Test.Repo,
+  ecto_repos: [Vial.Test.Repo]
+
+config :vial, Vial.Test.Repo,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  priv: "test/support",
+  show_sensitive_data_on_connection_error: true,
+  stacktrace: true,
+  url: System.get_env("DATABASE_URL") || "postgres://localhost:5432/vial_test"
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :vial, VialWeb.Endpoint,
@@ -7,11 +19,7 @@ config :vial, VialWeb.Endpoint,
   secret_key_base: "jHQ6deVasGy1rWMbTOBYSJIzswGrAo9e8AAvOVQdshCwwZMdQEk1XafnApBV/koE",
   server: false
 
-# In test we don't send emails
-config :vial, Vial.Mailer, adapter: Swoosh.Adapters.Test
-
-# Disable swoosh api client as it is only required for production adapters
-config :swoosh, :api_client, false
+# In test we don't send emails (config removed as Swoosh is not a dependency for embedded library)
 
 # Print only warnings and errors during test
 config :logger, level: :warning
