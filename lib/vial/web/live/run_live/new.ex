@@ -18,6 +18,14 @@ defmodule Vial.Web.RunLive.New do
   end
 
   @impl Phoenix.LiveView
+  def handle_params(params, url, socket) when map_size(params) == 0 do
+    # Parse query params from URL since they weren't provided
+    uri = URI.parse(url)
+    query_params = if uri.query, do: URI.decode_query(uri.query), else: %{}
+
+    handle_params(query_params, url, socket)
+  end
+
   def handle_params(%{"version" => version_id}, _url, socket) do
     prompt_version = Prompts.get_prompt_version!(version_id)
     providers = Providers.list_providers()
