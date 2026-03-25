@@ -1,5 +1,5 @@
 name: "CodeQL Config"
 
 paths-ignore:
+  - 'priv/static/**'
   - 'assets/vendor/**'
-  - '**/vendor/**'
