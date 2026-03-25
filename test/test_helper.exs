@@ -1,6 +1,13 @@
 # Start test repo
 Vial.Test.Repo.start_link()
 
+# Start PubSub for tests
+{:ok, _} =
+  Supervisor.start_link(
+    [{Phoenix.PubSub, name: Vial.PubSub}],
+    strategy: :one_for_one
+  )
+
 # Set sandbox mode for test repo
 Ecto.Adapters.SQL.Sandbox.mode(Vial.Test.Repo, :manual)
 
