@@ -274,7 +274,7 @@ defmodule Vial.RunsTest do
       run: run,
       provider: provider
     } do
-      run = Vial.Repo.preload(run, :prompt_version)
+      run = Repo.preload(run, :prompt_version)
       assert {:ok, result_run} = Runs.execute_run(run, [provider])
 
       assert Ecto.assoc_loaded?(result_run.run_results)
@@ -297,7 +297,7 @@ defmodule Vial.RunsTest do
       provider2 = provider_fixture(%{name: "Provider 2"})
       provider3 = provider_fixture(%{name: "Provider 3"})
 
-      run = Vial.Repo.preload(run, :prompt_version)
+      run = Repo.preload(run, :prompt_version)
 
       assert {:ok, result_run} =
                Runs.execute_run(run, [provider1, provider2, provider3])
@@ -324,7 +324,7 @@ defmodule Vial.RunsTest do
     } do
       Phoenix.PubSub.subscribe(Vial.PubSub, "run:#{run.id}")
 
-      run = Vial.Repo.preload(run, :prompt_version)
+      run = Repo.preload(run, :prompt_version)
       assert {:ok, _result_run} = Runs.execute_run(run, [provider])
 
       # Should receive at least one update message
@@ -337,7 +337,7 @@ defmodule Vial.RunsTest do
       run: run,
       provider: provider
     } do
-      run = Vial.Repo.preload(run, :prompt_version)
+      run = Repo.preload(run, :prompt_version)
       assert {:ok, result_run} = Runs.execute_run(run, [provider])
 
       result = hd(result_run.run_results)
@@ -356,7 +356,7 @@ defmodule Vial.RunsTest do
           variable_values: %{"user" => "Test"}
         })
 
-      run = Vial.Repo.preload(run, :prompt_version)
+      run = Repo.preload(run, :prompt_version)
 
       # For now, this should still succeed but handle errors per-provider
       assert {:ok, _result_run} = Runs.execute_run(run, [provider])
