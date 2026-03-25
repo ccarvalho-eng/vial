@@ -84,6 +84,14 @@ defmodule VialDash.Endpoint do
 
   socket("/live", Phoenix.LiveView.Socket)
 
+  # Serve static files from Vial's priv/static
+  plug(Plug.Static,
+    at: "/",
+    from: {:vial, "priv/static"},
+    gzip: false,
+    only: ~w(assets fonts images favicon.ico robots.txt)
+  )
+
   plug(Plug.Session,
     store: :cookie,
     key: "_vial_dash_key",
