@@ -1,5 +1,5 @@
-defmodule VialWeb.PromptLive.EvolutionTest do
-  use VialWeb.ConnCase, async: true
+defmodule Vial.Web.PromptLive.EvolutionTest do
+  use Vial.Web.ConnCase, async: true
 
   import Phoenix.LiveViewTest
   import Vial.PromptsFixtures
@@ -12,7 +12,7 @@ defmodule VialWeb.PromptLive.EvolutionTest do
     test "renders evolution tab for prompt", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Evolution Test"})
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}/evolution")
 
       assert html =~ "Evolution Test"
       assert html =~ "Evolution"
@@ -21,7 +21,7 @@ defmodule VialWeb.PromptLive.EvolutionTest do
     test "displays message when no versions exist", %{conn: conn} do
       prompt = prompt_fixture()
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}/evolution")
 
       assert html =~ "No versions"
     end
@@ -31,7 +31,7 @@ defmodule VialWeb.PromptLive.EvolutionTest do
       {:ok, _v1} = Prompts.create_prompt_version(prompt, "Version 1 {{var}}")
       {:ok, _v2} = Prompts.create_prompt_version(prompt, "Version 2 {{var}}")
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}/evolution")
 
       assert html =~ "v1"
       assert html =~ "v2"
@@ -52,7 +52,7 @@ defmodule VialWeb.PromptLive.EvolutionTest do
           failed: 2
         })
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}/evolution")
 
       assert html =~ "Test Provider"
       assert html =~ "80.0%"
@@ -63,7 +63,7 @@ defmodule VialWeb.PromptLive.EvolutionTest do
     test "assigns chart data on mount", %{conn: conn} do
       prompt = prompt_fixture()
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}/evolution")
 
       state = :sys.get_state(view.pid)
       socket = state.socket
@@ -75,7 +75,7 @@ defmodule VialWeb.PromptLive.EvolutionTest do
     test "toggles view mode", %{conn: conn} do
       prompt = prompt_fixture()
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}/evolution")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}/evolution")
 
       state = :sys.get_state(view.pid)
       socket = state.socket

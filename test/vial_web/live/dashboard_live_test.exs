@@ -1,5 +1,5 @@
-defmodule VialWeb.DashboardLiveTest do
-  use VialWeb.ConnCase, async: true
+defmodule Vial.Web.DashboardLiveTest do
+  use Vial.Web.ConnCase, async: true
 
   import Phoenix.LiveViewTest
   import Vial.RunsFixtures
@@ -7,7 +7,7 @@ defmodule VialWeb.DashboardLiveTest do
   import Vial.PromptsFixtures
 
   test "renders dashboard", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, "/")
 
     assert has_element?(view, "#dashboard")
     assert render(view) =~ "Dashboard"
@@ -16,7 +16,7 @@ defmodule VialWeb.DashboardLiveTest do
   test "shows recent runs", %{conn: conn} do
     _run = run_fixture(%{name: "Recent Test Run"})
 
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, "/")
 
     assert has_element?(view, "#recent-runs")
     assert render(view) =~ "Recent Test Run"
@@ -26,7 +26,7 @@ defmodule VialWeb.DashboardLiveTest do
     run = run_fixture()
     _result = run_result_fixture(%{run_id: run.id, cost_usd: 0.05})
 
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, "/")
 
     assert has_element?(view, "#cost-summary")
     assert render(view) =~ "0.05"
@@ -43,14 +43,14 @@ defmodule VialWeb.DashboardLiveTest do
         failed: 2
       })
 
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, "/")
 
     assert has_element?(view, "#pass-rates")
     assert render(view) =~ "Test Prompt"
   end
 
   test "shows empty state when no runs", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, "/")
 
     assert render(view) =~ "No recent runs"
   end

@@ -1,5 +1,5 @@
-defmodule VialWeb.RunLive.NewTest do
-  use VialWeb.ConnCase, async: false
+defmodule Vial.Web.RunLive.NewTest do
+  use Vial.Web.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Vial.PromptsFixtures
@@ -34,7 +34,7 @@ defmodule VialWeb.RunLive.NewTest do
       prompt: prompt
     } do
       {:ok, _view, html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
       assert html =~ "Configure Run"
       assert html =~ prompt.name
@@ -46,7 +46,7 @@ defmodule VialWeb.RunLive.NewTest do
       version: version
     } do
       {:ok, _view, html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
       assert html =~ "user"
       assert html =~ "topic"
@@ -59,7 +59,7 @@ defmodule VialWeb.RunLive.NewTest do
       provider2: provider2
     } do
       {:ok, _view, html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
       assert html =~ provider1.name
       assert html =~ provider2.name
@@ -72,7 +72,7 @@ defmodule VialWeb.RunLive.NewTest do
       provider2: provider2
     } do
       {:ok, view, _html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
       result =
         view
@@ -98,7 +98,7 @@ defmodule VialWeb.RunLive.NewTest do
       provider1: provider1
     } do
       {:ok, view, _html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
       html =
         view
@@ -118,7 +118,7 @@ defmodule VialWeb.RunLive.NewTest do
       version: version
     } do
       {:ok, view, _html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
       html =
         view
@@ -135,7 +135,7 @@ defmodule VialWeb.RunLive.NewTest do
 
     test "shows template preview", %{conn: conn, version: version} do
       {:ok, _view, html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
       assert html =~ version.template
     end
@@ -146,9 +146,9 @@ defmodule VialWeb.RunLive.NewTest do
       prompt: prompt
     } do
       {:ok, _view, html} =
-        live(conn, ~p"/runs/new?version=#{version.id}")
+        live(conn, "/runs/new?version=#{version.id}")
 
-      assert html =~ ~p"/prompts/#{prompt.id}"
+      assert html =~ "/prompts/#{prompt.id}"
     end
   end
 end

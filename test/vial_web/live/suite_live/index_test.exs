@@ -1,5 +1,5 @@
-defmodule VialWeb.SuiteLive.IndexTest do
-  use VialWeb.ConnCase, async: false
+defmodule Vial.Web.SuiteLive.IndexTest do
+  use Vial.Web.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Vial.EvalsFixtures
@@ -9,7 +9,7 @@ defmodule VialWeb.SuiteLive.IndexTest do
     prompt = prompt_fixture(%{name: "Test Prompt"})
     _suite = suite_fixture(%{name: "Test Suite", prompt_id: prompt.id})
 
-    {:ok, view, _html} = live(conn, ~p"/suites")
+    {:ok, view, _html} = live(conn, "/suites")
 
     assert has_element?(view, "#suites")
     assert render(view) =~ "Test Suite"
@@ -19,13 +19,13 @@ defmodule VialWeb.SuiteLive.IndexTest do
   test "links to suite show page", %{conn: conn} do
     suite = suite_fixture(%{name: "Test Suite"})
 
-    {:ok, view, _html} = live(conn, ~p"/suites")
+    {:ok, view, _html} = live(conn, "/suites")
 
     assert has_element?(view, "a[href='/suites/#{suite.id}']")
   end
 
   test "has button to create new suite", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/suites")
+    {:ok, view, _html} = live(conn, "/suites")
 
     assert has_element?(view, "#new-suite-btn")
   end
