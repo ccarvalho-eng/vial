@@ -1,4 +1,4 @@
-defmodule Vial.PromptsFixtures do
+defmodule Aludel.PromptsFixtures do
   @moduledoc """
   Test fixtures for creating prompts.
   """
@@ -11,7 +11,7 @@ defmodule Vial.PromptsFixtures do
         description: "A sample prompt",
         tags: ["sample"]
       })
-      |> Vial.Prompts.create_prompt()
+      |> Aludel.Prompts.create_prompt()
 
     prompt
   end

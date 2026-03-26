@@ -1,9 +1,9 @@
-defmodule VialDash.MixProject do
+defmodule AludelDash.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :vial_dash,
+      app: :aludel_dash,
       version: "0.2.0",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
@@ -15,13 +15,13 @@ defmodule VialDash.MixProject do
   def application do
     [
       extra_applications: [:logger, :runtime_tools],
-      mod: {VialDash.Application, []}
+      mod: {AludelDash.Application, []}
     ]
   end
 
   defp deps do
     [
-      {:vial, path: ".."},
+      {:aludel, path: ".."},
       {:phoenix, "~> 1.8"},
       {:phoenix_live_view, "~> 1.1"},
       {:phoenix_html, "~> 4.0"},
@@ -34,7 +34,7 @@ defmodule VialDash.MixProject do
 
   defp releases do
     [
-      vial_dash: [
+      aludel_dash: [
         include_executables_for: [:unix]
       ]
     ]

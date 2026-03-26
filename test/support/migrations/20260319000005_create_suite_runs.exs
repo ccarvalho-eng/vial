@@ -1,4 +1,4 @@
-defmodule Vial.Repo.Migrations.CreateSuiteRuns do
+defmodule Aludel.Repo.Migrations.CreateSuiteRuns do
   use Ecto.Migration
 
   def change do

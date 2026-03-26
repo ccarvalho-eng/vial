@@ -1,4 +1,4 @@
-defmodule Vial.Repo.Migrations.AddEvolutionIndexes do
+defmodule Aludel.Repo.Migrations.AddEvolutionIndexes do
   use Ecto.Migration
 
   def change do

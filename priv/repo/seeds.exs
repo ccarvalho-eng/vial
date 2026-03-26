@@ -5,14 +5,14 @@
 # Inside the script, you can read and write to any of your
 # repositories directly:
 #
-#     Vial.Repo.insert!(%Vial.SomeSchema{})
+#     Aludel.Repo.insert!(%Aludel.SomeSchema{})
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
-alias Vial.Providers
-alias Vial.Prompts
-alias Vial.Evals
+alias Aludel.Providers
+alias Aludel.Prompts
+alias Aludel.Evals
 
 # Create default providers if they don't exist
 case Providers.list_providers() do

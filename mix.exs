@@ -1,9 +1,9 @@
-defmodule Vial.MixProject do
+defmodule Aludel.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :vial,
+      app: :aludel,
       version: "0.1.0",
       elixir: "~> 1.19",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -26,7 +26,7 @@ defmodule Vial.MixProject do
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
       ],
       package: package(),
-      description: "LLM prompt evaluation workbench for Phoenix applications"
+      description: "Aludel - LLM Eval Workbench for Phoenix applications"
     ]
   end
 
@@ -35,7 +35,7 @@ defmodule Vial.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {Vial.Application, []},
+      mod: {Aludel.Application, []},
       extra_applications: [:logger]
     ]
   end
@@ -52,12 +52,12 @@ defmodule Vial.MixProject do
 
   defp package do
     [
-      name: "vial",
+      name: "aludel",
       maintainers: ["Cristiano Carvalho"],
       licenses: ["Apache-2.0"],
       files: ~w(lib priv/static* .formatter.exs mix.exs README* CHANGELOG* LICENSE*),
       links: %{
-        "GitHub" => "https://github.com/ccarvalho-eng/vial"
+        "GitHub" => "https://github.com/ccarvalho-eng/aludel"
       }
     ]
   end
@@ -111,10 +111,10 @@ defmodule Vial.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind vial", "esbuild vial"],
+      "assets.build": ["tailwind aludel", "esbuild aludel"],
       "assets.deploy": [
-        "tailwind vial --minify",
-        "esbuild vial --minify",
+        "tailwind aludel --minify",
+        "esbuild aludel --minify",
         "phx.digest"
       ],
       precommit: [

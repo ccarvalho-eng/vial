@@ -1,3 +1,3 @@
 import Config
 
-config :vial_dash, VialDash.Endpoint, cache_static_manifest: "priv/static/cache_manifest.json"
+config :aludel_dash, AludelDash.Endpoint, cache_static_manifest: "priv/static/cache_manifest.json"

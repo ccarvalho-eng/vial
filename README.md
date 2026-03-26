@@ -1,10 +1,19 @@
-# Vial
+<div align="center">
+  <img src="assets/images/logo.png" alt="Aludel Logo" width="200"/>
 
-**LLM prompt evaluation workbench**
+  # Aludel
 
-[![CI](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/ci.yml)
-[![Security](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/vial/actions/workflows/security.yml)
-[![codecov](https://codecov.io/gh/ccarvalho-eng/vial/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/vial)
+  **LLM Eval Workbench**
+
+  [![CI](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml)
+  [![Security](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml)
+  [![codecov](https://codecov.io/gh/ccarvalho-eng/aludel/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/aludel)
+
+  <br/>
+
+  *From medieval Latin, derived from Arabic al-uthāl — a vessel for sublimation, where matter is refined through stages.*
+  *Like jinn answering invocation, LLMs respond to prompts; here, their nature is revealed, tested, and distilled.*
+</div>
 
 Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output quality, latency, token usage, and cost in real-time.
 
@@ -24,16 +33,16 @@ Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output 
 
 ## Installation
 
-Vial can be embedded into any Phoenix LiveView application as a self-contained dashboard.
+Aludel can be embedded into any Phoenix LiveView application as a self-contained dashboard.
 
 ### 1. Add dependency
 
-Add Vial to your `mix.exs`:
+Add Aludel to your `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:vial, github: "ccarvalho-eng/vial"}
+    {:aludel, github: "ccarvalho-eng/aludel"}
   ]
 end
 ```
@@ -45,16 +54,16 @@ Run `mix deps.get`
 Add to `config/config.exs`:
 
 ```elixir
-config :vial, repo: YourApp.Repo
+config :aludel, repo: YourApp.Repo
 ```
 
 ### 3. Install migrations
 
 ```bash
-mix vial.install
+mix aludel.install
 ```
 
-This copies Vial's migrations to your `priv/repo/migrations/` directory.
+This copies Aludel's migrations to your `priv/repo/migrations/` directory.
 
 ### 4. Run migrations
 
@@ -68,20 +77,20 @@ In your `lib/your_app_web/router.ex`:
 
 ```elixir
 use YourAppWeb, :router
-import Vial.Web.Router  # Add this line
+import Aludel.Web.Router  # Add this line
 
 # In development
 if Mix.env() == :dev do
   scope "/dev" do
     pipe_through :browser
-    vial_dashboard "/vial"  # Dashboard will be at /dev/vial
+    aludel_dashboard "/aludel"  # Dashboard will be at /dev/aludel
   end
 end
 
 # Or in production (with authentication)
 # scope "/admin" do
 #   pipe_through [:browser, :require_admin]
-#   vial_dashboard "/vial"
+#   aludel_dashboard "/aludel"
 # end
 ```
 
@@ -89,11 +98,11 @@ The dashboard can be mounted at any path you choose. It's common to mount it und
 
 ### 6. Configure API keys (optional)
 
-Vial reads provider API keys from application config. Add to your host app's config:
+Aludel reads provider API keys from application config. Add to your host app's config:
 
 ```elixir
 # config/dev.exs (or config/runtime.exs for production)
-config :vial, :llm,
+config :aludel, :llm,
   openai_api_key: System.get_env("OPENAI_API_KEY"),
   anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
 ```
@@ -111,18 +120,18 @@ Ollama runs locally and requires no API keys.
 ### 7. Seed demo data (optional)
 
 ```bash
-mix vial.seed
+mix aludel.seed
 ```
 
 This populates the database with sample providers, prompts, and evaluation suites.
 
-Visit the dashboard at your configured path (e.g., `http://localhost:4000/dev/vial`).
+Visit the dashboard at your configured path (e.g., `http://localhost:4000/dev/aludel`).
 
 ---
 
 ## Standalone Mode
 
-Vial includes a standalone application in the `standalone/` directory for running the dashboard without embedding it in a Phoenix app.
+Aludel includes a standalone application in the `standalone/` directory for running the dashboard without embedding it in a Phoenix app.
 
 ### Setup
 
@@ -131,7 +140,7 @@ cd standalone
 mix deps.get
 mix ecto.create
 mix ecto.migrate
-mix vial.seed  # Optional: add demo data
+mix aludel.seed  # Optional: add demo data
 mix phx.server
 ```
 
@@ -141,7 +150,7 @@ Visit `http://localhost:4000`
 
 Edit `standalone/config/dev.exs` to configure:
 
-- **Database** — Default: `postgres://postgres:postgres@localhost/vial_dash_dev`
+- **Database** — Default: `postgres://postgres:postgres@localhost/aludel_dash_dev`
 - **Port** — Default: `4000`
 - **API Keys** — Set `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` environment variables
 
@@ -163,7 +172,7 @@ export READ_ONLY=true
 
 # Run the app
 MIX_ENV=prod mix release
-_build/prod/rel/vial_dash/bin/vial_dash start
+_build/prod/rel/aludel_dash/bin/aludel_dash start
 ```
 
 ---
@@ -211,12 +220,12 @@ Explain {{topic}} in exactly 3 sentences.
 
 ### Working with assets (CSS/JS)
 
-Vial uses Tailwind CSS and esbuild for styling and JavaScript bundling.
+Aludel uses Tailwind CSS and esbuild for styling and JavaScript bundling.
 
 **After making changes to CSS or JS files:**
 
 ```bash
-# 1. Rebuild assets (from vial directory)
+# 1. Rebuild assets (from aludel directory)
 mix assets.build
 
 # 2. Force recompile to pick up new asset hashes
@@ -224,7 +233,7 @@ mix compile --force
 
 # 3. If working on an embedded installation, recompile the dependency
 cd ../your_host_app
-mix deps.compile vial --force
+mix deps.compile aludel --force
 
 # 4. Restart the Phoenix server to pick up changes
 ```
@@ -240,10 +249,10 @@ For faster iteration during development, you can use Mix tasks with watchers:
 
 ```bash
 # Watch and rebuild CSS on changes
-mix tailwind vial --watch
+mix tailwind aludel --watch
 
 # Watch and rebuild JS on changes (in another terminal)
-mix esbuild vial --watch
+mix esbuild aludel --watch
 ```
 
 Alternatively, run the standalone app for a full development server:

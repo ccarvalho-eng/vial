@@ -1,4 +1,4 @@
-defmodule Vial.ProvidersFixtures do
+defmodule Aludel.ProvidersFixtures do
   @moduledoc """
   Test fixtures for creating providers.
   """
@@ -12,7 +12,7 @@ defmodule Vial.ProvidersFixtures do
         model: "gpt-4o",
         config: %{"temperature" => 0.7, "max_tokens" => 1000}
       })
-      |> Vial.Providers.create_provider()
+      |> Aludel.Providers.create_provider()
 
     provider
   end
