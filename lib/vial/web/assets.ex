@@ -3,7 +3,7 @@ defmodule Vial.Web.Assets do
   Serves pre-compiled static assets for Vial dashboard.
 
   Assets are read at compile time and hashes are calculated dynamically
-  from the file contents, following the Oban Web pattern.
+  from the file contents for cache busting.
   """
 
   @behaviour Plug
