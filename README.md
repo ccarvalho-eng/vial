@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/logo.png" alt="Aludel Logo" width="200"/>
+  <img src="assets/images/logo.png" alt="Aludel Logo" width="500"/>
 
   # Aludel
 
