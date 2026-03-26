@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/logo.png" alt="Aludel Logo" width="500"/>
+  <img src="assets/images/logo.png" alt="Aludel Logo" width="550"/>
 
   **LLM Eval Workbench**
 
