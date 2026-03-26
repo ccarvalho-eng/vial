@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/logo.png" alt="Aludel Logo" width="550"/>
+  <img src="assets/images/logo.png" alt="Aludel Logo" width="700"/>
 
   [![CI](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml)
   [![Security](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml)
