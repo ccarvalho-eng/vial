@@ -17,6 +17,9 @@ defmodule Vial.Web.Helpers do
   end
 
   def vial_path(route, params) do
+    # Normalize route to prevent double slashes
+    route = String.trim_leading(route, "/")
+
     params =
       params
       |> Enum.sort()

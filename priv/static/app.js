@@ -20541,7 +20541,9 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   });
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
-  var liveSocket = new LiveSocket2("/live", Socket, {
+  var vialConfig = document.querySelector("#vial-config");
+  var livePath = vialConfig?.getAttribute("data-live-path") || "/live";
+  var liveSocket = new LiveSocket2(livePath, Socket, {
     longPollFallbackMs: 2500,
     params: { _csrf_token: csrfToken },
     hooks: { ...hooks, AutoDismissFlash, EvolutionChart }

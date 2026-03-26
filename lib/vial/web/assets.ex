@@ -1,17 +1,31 @@
 defmodule Vial.Web.Assets do
   @moduledoc """
   Serves pre-compiled static assets for Vial dashboard.
+
+  Assets are read at compile time and hashes are calculated dynamically
+  from the file contents, following the Oban Web pattern.
   """
 
   @behaviour Plug
 
   import Plug.Conn
 
-  @css_hash "9561d988"
-  @js_hash "4a88baa4"
+  @static_path Application.app_dir(:vial, ["priv", "static"])
 
-  def current_hash(:css), do: @css_hash
-  def current_hash(:js), do: @js_hash
+  # CSS
+  @external_resource css_path = Path.join(@static_path, "app.css")
+  @css File.read!(css_path)
+
+  # JS
+  @external_resource js_path = Path.join(@static_path, "app.js")
+  @js File.read!(js_path)
+
+  # Generate current_hash/1 functions with MD5 hashes
+  for {key, val} <- [css: @css, js: @js] do
+    md5 = Base.encode16(:crypto.hash(:md5, val), case: :lower) |> String.slice(0, 8)
+
+    def current_hash(unquote(key)), do: unquote(md5)
+  end
 
   @impl Plug
   def init(asset), do: asset
@@ -19,12 +33,12 @@ defmodule Vial.Web.Assets do
   @impl Plug
   def call(conn, :css) do
     %{"md5" => md5} = conn.params
-    serve_asset(conn, "css", md5, "text/css; charset=utf-8")
+    serve_asset(conn, :css, md5, @css, "text/css; charset=utf-8")
   end
 
   def call(conn, :js) do
     %{"md5" => md5} = conn.params
-    serve_asset(conn, "js", md5, "application/javascript; charset=utf-8")
+    serve_asset(conn, :js, md5, @js, "application/javascript; charset=utf-8")
   end
 
   def call(conn, :font) do
@@ -39,11 +53,11 @@ defmodule Vial.Web.Assets do
 
   # Legacy function-based endpoints (for backwards compatibility)
   def css(conn, %{"md5" => md5}) do
-    serve_asset(conn, "css", md5, "text/css; charset=utf-8")
+    serve_asset(conn, :css, md5, @css, "text/css; charset=utf-8")
   end
 
   def js(conn, %{"md5" => md5}) do
-    serve_asset(conn, "js", md5, "application/javascript; charset=utf-8")
+    serve_asset(conn, :js, md5, @js, "application/javascript; charset=utf-8")
   end
 
   def font(conn, %{"path" => path}) do
@@ -54,23 +68,14 @@ defmodule Vial.Web.Assets do
     serve_static(conn, Path.join("icons", path), "image/svg+xml")
   end
 
-  defp serve_asset(conn, type, md5, content_type) do
-    # Validate md5 hash to prevent path traversal
-    if valid_md5?(md5) do
-      priv_dir = :code.priv_dir(:vial)
-      path = Path.join([priv_dir, "static", "#{type}-#{md5}.#{type}"])
-
-      case File.read(path) do
-        {:ok, content} ->
-          conn
-          |> put_resp_content_type(content_type)
-          |> put_resp_header("cache-control", "public, max-age=31536000, immutable")
-          |> put_private(:plug_skip_csrf_protection, true)
-          |> send_resp(200, content)
-
-        {:error, _} ->
-          send_resp(conn, 404, "Not Found")
-      end
+  defp serve_asset(conn, type, requested_md5, content, content_type) do
+    # Validate hash matches to prevent cache poisoning
+    if valid_md5?(requested_md5) and requested_md5 == current_hash(type) do
+      conn
+      |> put_resp_content_type(content_type)
+      |> put_resp_header("cache-control", "public, max-age=31536000, immutable")
+      |> put_private(:plug_skip_csrf_protection, true)
+      |> send_resp(200, content)
     else
       send_resp(conn, 404, "Not Found")
     end
