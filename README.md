@@ -1,8 +1,6 @@
 <div align="center">
   <img src="assets/images/logo.png" alt="Aludel Logo" width="500"/>
 
-  # Aludel
-
   **LLM Eval Workbench**
 
   [![CI](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml)
