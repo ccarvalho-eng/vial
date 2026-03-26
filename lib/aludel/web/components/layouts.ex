@@ -62,10 +62,7 @@ defmodule Aludel.Web.Layouts do
       <div class="aludel-header-inner">
         <nav class="aludel-nav">
           <.nav_link href={aludel_path("")} current_path={@current_path}>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <.icon name="hero-beaker" class="size-4" />
-              <span>Aludel</span>
-            </div>
+            Home
           </.nav_link>
           <.nav_link href={aludel_path("prompts")} current_path={@current_path}>
             Prompts
