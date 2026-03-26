@@ -53,29 +53,48 @@ defmodule Aludel.Stats do
   end
 
   @doc """
-  Returns average latency in milliseconds across all run results.
+  Returns average latency in milliseconds across all run results and suite
+  runs.
   """
   @spec avg_latency() :: number()
   def avg_latency do
-    query =
+    # Get average latency from individual run results
+    run_result_query =
       from rr in RunResult,
         where: not is_nil(rr.latency_ms),
-        select: avg(rr.latency_ms)
+        select: %{avg: avg(rr.latency_ms), count: count(rr.id)}
 
-    case repo().one(query) do
-      nil ->
-        0
+    run_result = repo().one(run_result_query)
 
-      %Decimal{} = latency ->
-        latency |> Decimal.to_float() |> Float.round(0)
+    # Get average latency from suite runs
+    suite_run_query =
+      from sr in SuiteRun,
+        where: not is_nil(sr.avg_latency_ms),
+        select: %{avg: avg(sr.avg_latency_ms), count: count(sr.id)}
 
-      latency when is_float(latency) ->
-        Float.round(latency, 0)
+    suite_run = repo().one(suite_run_query)
 
-      latency ->
-        latency
+    # Calculate weighted average
+    run_avg = to_float(run_result.avg)
+    run_count = run_result.count || 0
+
+    suite_avg = to_float(suite_run.avg)
+    suite_count = suite_run.count || 0
+
+    total_count = run_count + suite_count
+
+    if total_count > 0 do
+      weighted_avg = (run_avg * run_count + suite_avg * suite_count) / total_count
+      Float.round(weighted_avg, 0)
+    else
+      0
     end
   end
+
+  defp to_float(nil), do: 0.0
+  defp to_float(%Decimal{} = value), do: Decimal.to_float(value)
+  defp to_float(value) when is_float(value), do: value
+  defp to_float(value) when is_integer(value), do: value * 1.0
 
   @doc """
   Returns recent activity combining both Run and SuiteRun records.
