@@ -21,9 +21,15 @@ defmodule Vial.Web.RunLive.New do
   def handle_params(params, url, socket) when map_size(params) == 0 do
     # Parse query params from URL since they weren't provided
     uri = URI.parse(url)
-    query_params = if uri.query, do: URI.decode_query(uri.query), else: %{}
 
-    handle_params(query_params, url, socket)
+    if uri.query do
+      handle_params(URI.decode_query(uri.query), url, socket)
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, "Missing required parameter: version")
+       |> push_navigate(to: vial_path("/prompts"))}
+    end
   end
 
   def handle_params(%{"version" => version_id}, _url, socket) do

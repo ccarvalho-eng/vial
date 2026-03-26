@@ -49,13 +49,21 @@ Add to `config/config.exs`:
 config :vial, repo: YourApp.Repo
 ```
 
-### 3. Run migrations
+### 3. Install migrations
+
+```bash
+mix vial.install
+```
+
+This copies Vial's migrations to your `priv/repo/migrations/` directory.
+
+### 4. Run migrations
 
 ```bash
 mix ecto.migrate
 ```
 
-### 4. Add router macro
+### 5. Add router macro
 
 In your `lib/your_app_web/router.ex`:
 
@@ -80,7 +88,7 @@ end
 
 The dashboard can be mounted at any path you choose. It's common to mount it under `/dev` in development or `/admin` in production (with proper authentication).
 
-### 5. Configure API keys (optional)
+### 6. Configure API keys (optional)
 
 Vial reads provider API keys from application config. Add to your host app's config:
 
@@ -101,7 +109,7 @@ mix phx.server
 
 Ollama runs locally and requires no API keys.
 
-### 6. Seed demo data (optional)
+### 7. Seed demo data (optional)
 
 ```bash
 mix vial.seed
