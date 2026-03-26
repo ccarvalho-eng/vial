@@ -1,4 +1,4 @@
-defmodule Vial.Repo.Migrations.CreatePromptVersions do
+defmodule Aludel.Repo.Migrations.CreatePromptVersions do
   use Ecto.Migration
 
   def change do

@@ -4,7 +4,7 @@
 @import "tailwindcss" source(none);
 @source "../css";
 @source "../js";
-@source "../../lib/vial/web";
+@source "../../lib/aludel/web";
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
@@ -102,7 +102,7 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
-/* Custom Vial Styles - Modern Dark Theme */
+/* Custom Aludel Styles - Modern Dark Theme */
 
 :root,
 [data-theme="light"] {
@@ -181,7 +181,7 @@ body {
 }
 
 /* Layout */
-.vial-header {
+.aludel-header {
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -189,7 +189,7 @@ body {
   z-index: 50;
 }
 
-.vial-header-inner {
+.aludel-header-inner {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
@@ -198,13 +198,13 @@ body {
   height: 56px;
 }
 
-.vial-nav {
+.aludel-nav {
   display: flex;
   gap: 4px;
   align-items: center;
 }
 
-.vial-nav-link {
+.aludel-nav-link {
   padding: 8px 16px;
   color: var(--text-secondary);
   text-decoration: none;
@@ -214,24 +214,24 @@ body {
   border-radius: 4px;
 }
 
-.vial-nav-link:hover {
+.aludel-nav-link:hover {
   background-color: var(--bg-hover);
   color: var(--text-primary);
 }
 
-.vial-nav-link.active {
+.aludel-nav-link.active {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
-.vial-container {
+.aludel-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
 /* Main content area */
-.vial-main {
+.aludel-main {
   padding: 24px 0;
   min-height: calc(100vh - 56px);
 }
@@ -429,7 +429,7 @@ a.button-secondary:hover {
 
 /* Card Styles */
 .card,
-.vial-card {
+.aludel-card {
   background: rgba(33, 37, 43, 0.7);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -442,7 +442,7 @@ a.button-secondary:hover {
   transition: all 0.2s ease;
 }
 
-[data-theme="light"] .vial-card {
+[data-theme="light"] .aludel-card {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -767,21 +767,21 @@ select:-webkit-autofill:focus {
 }
 
 /* Card hover effects */
-.vial-card:hover {
+.aludel-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16),
               inset 0 1px 0 rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-[data-theme="light"] .vial-card:hover {
+[data-theme="light"] .aludel-card:hover {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1),
               inset 0 1px 0 rgba(255, 255, 255, 1);
   border-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Quick action cards */
-a:has(.vial-card) .vial-card:hover {
+a:has(.aludel-card) .aludel-card:hover {
   transform: translateY(-2px);
 }
 
@@ -839,23 +839,23 @@ a:has(.vial-card) .vial-card:hover {
 
 /* Responsive design for mobile devices */
 @media (max-width: 768px) {
-  .vial-container {
+  .aludel-container {
     padding: 0 var(--space-4);
   }
 
-  .vial-main {
+  .aludel-main {
     padding: var(--space-4) 0;
   }
 
-  .vial-header-inner {
+  .aludel-header-inner {
     padding: 0 var(--space-4);
   }
 
-  .vial-nav {
+  .aludel-nav {
     gap: 0;
   }
 
-  .vial-nav-link {
+  .aludel-nav-link {
     padding: 8px 12px;
     font-size: 14px;
   }
@@ -868,7 +868,7 @@ a:has(.vial-card) .vial-card:hover {
     font-size: 20px;
   }
 
-  .vial-card {
+  .aludel-card {
     padding: 16px;
   }
 

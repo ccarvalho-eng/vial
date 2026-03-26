@@ -26,7 +26,7 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: vial_test
+          POSTGRES_DB: aludel_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -59,8 +59,8 @@ jobs:
       - name: Build assets
         run: mix assets.build
 
-      - name: Run database migrations
-        run: mix ecto.migrate
+      - name: Create and migrate database
+        run: mix ecto.create && mix ecto.migrate
 
       - name: Run tests with coverage
         run: mix coveralls.json

@@ -1,4 +1,4 @@
-defmodule Vial.Repo.Migrations.AddCostLatencyToSuiteRuns do
+defmodule Aludel.Repo.Migrations.AddCostLatencyToSuiteRuns do
   use Ecto.Migration
 
   def change do

@@ -7,7 +7,7 @@ if config_env() == :prod do
       environment variable DATABASE_URL is missing.
       """
 
-  config :vial_dash, VialDash.Repo,
+  config :aludel_dash, AludelDash.Repo,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
@@ -17,11 +17,11 @@ if config_env() == :prod do
       environment variable SECRET_KEY_BASE is missing.
       """
 
-  config :vial_dash, VialDash.Endpoint,
+  config :aludel_dash, AludelDash.Endpoint,
     http: [port: String.to_integer(System.get_env("PORT") || "4000")],
     secret_key_base: secret_key_base
 
-  config :vial_dash,
+  config :aludel_dash,
     basic_auth_user: System.get_env("BASIC_AUTH_USER"),
     basic_auth_pass: System.get_env("BASIC_AUTH_PASS"),
     read_only: System.get_env("READ_ONLY") == "true"

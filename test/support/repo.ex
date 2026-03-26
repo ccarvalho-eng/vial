@@ -1,5 +1,5 @@
-defmodule Vial.Test.Repo do
+defmodule Aludel.Test.Repo do
   @moduledoc false
 
-  use Ecto.Repo, otp_app: :vial, adapter: Ecto.Adapters.Postgres
+  use Ecto.Repo, otp_app: :aludel, adapter: Ecto.Adapters.Postgres
 end

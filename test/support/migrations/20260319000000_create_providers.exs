@@ -1,4 +1,4 @@
-defmodule Vial.Repo.Migrations.CreateProviders do
+defmodule Aludel.Repo.Migrations.CreateProviders do
   use Ecto.Migration
 
   def change do

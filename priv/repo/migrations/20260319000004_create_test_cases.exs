@@ -1,4 +1,4 @@
-defmodule Vial.Repo.Migrations.CreateTestCases do
+defmodule Aludel.Repo.Migrations.CreateTestCases do
   use Ecto.Migration
 
   def change do

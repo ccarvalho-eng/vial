@@ -6,7 +6,7 @@ import Config
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :vial, VialWeb.Endpoint,
+config :aludel, Aludel.Web.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
@@ -15,11 +15,11 @@ config :vial, VialWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "rLQ/w7azJvKtaJi+PmZc7hV2mdazgEKfx1+Z0pZWmG1ANvY0O6D0fr+S99CK+4vm",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:vial, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:vial, ~w(--watch)]}
+    esbuild: {Esbuild, :install_and_run, [:aludel, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:aludel, ~w(--watch)]}
   ]
 
-config :vial, :llm,
+config :aludel, :llm,
   openai_api_key: System.get_env("OPENAI_API_KEY"),
   anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
 
@@ -47,7 +47,7 @@ config :vial, :llm,
 # different ports.
 
 # Enable dev routes for dashboard and mailbox
-config :vial, dev_routes: true
+config :aludel, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
@@ -66,6 +66,3 @@ config :phoenix_live_view,
   debug_attributes: true,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
-
-# Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false

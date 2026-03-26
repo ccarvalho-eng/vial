@@ -1,10 +1,10 @@
-defmodule Vial.EvalsFixtures do
+defmodule Aludel.EvalsFixtures do
   @moduledoc """
   Test fixtures for creating evaluation suites and test cases.
   """
 
-  import Vial.PromptsFixtures
-  import Vial.ProvidersFixtures
+  import Aludel.PromptsFixtures
+  import Aludel.ProvidersFixtures
 
   def suite_fixture(attrs \\ %{}) do
     prompt = prompt_fixture()
@@ -15,7 +15,7 @@ defmodule Vial.EvalsFixtures do
         name: "Sample Suite",
         prompt_id: prompt.id
       })
-      |> Vial.Evals.create_suite()
+      |> Aludel.Evals.create_suite()
 
     suite
   end
@@ -30,7 +30,7 @@ defmodule Vial.EvalsFixtures do
         variable_values: %{"name" => "John"},
         assertions: [%{"type" => "contains", "value" => "Hello"}]
       })
-      |> Vial.Evals.create_test_case()
+      |> Aludel.Evals.create_test_case()
 
     test_case
   end
@@ -38,7 +38,7 @@ defmodule Vial.EvalsFixtures do
   def suite_run_fixture(attrs \\ %{}) do
     suite = if Map.has_key?(attrs, :suite_id), do: nil, else: suite_fixture()
     prompt = prompt_fixture()
-    {:ok, version} = Vial.Prompts.create_prompt_version(prompt, "Template {{var}}")
+    {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Template {{var}}")
     provider = provider_fixture()
 
     {:ok, suite_run} =
@@ -51,7 +51,7 @@ defmodule Vial.EvalsFixtures do
         passed: 0,
         failed: 0
       })
-      |> Vial.Evals.create_suite_run()
+      |> Aludel.Evals.create_suite_run()
 
     suite_run
   end

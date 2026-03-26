@@ -1,0 +1,293 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div id="dashboard" class="page-container-wide">
+    <div class="page-header flex-between">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <%= if @last_run_at do %>
+          <div class="flex-row mt-sm">
+            <.icon name="hero-clock" class="size-4 text-muted" />
+            <span class="text-sm text-secondary">
+              Last run {Calendar.strftime(@last_run_at, "%b %d at %I:%M %p")}
+            </span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="aludel-card p-md">
+        <div class="stat-card-header">
+          <.icon name="hero-play" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value mb-xs">{@total_runs}</div>
+        <div class="stat-label text-sm font-medium">Total Runs</div>
+        <div class="stat-description mt-xs">Evaluations executed</div>
+      </div>
+
+      <div class="aludel-card p-md">
+        <div class="stat-card-header">
+          <.icon name="hero-check-circle" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value mb-xs">{@success_rate}%</div>
+        <div class="stat-label text-sm font-medium">Success Rate</div>
+        <div class="stat-description mt-xs">
+          {@total_passed} passed, {@total_failed} failed
+        </div>
+      </div>
+
+      <div class="aludel-card p-md">
+        <div class="stat-card-header">
+          <.icon name="hero-clock" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value mb-xs">{trunc(@avg_latency)}ms</div>
+        <div class="stat-label text-sm font-medium">Avg Response</div>
+        <div class="stat-description mt-xs">Average latency</div>
+      </div>
+
+      <div id="cost-summary" class="aludel-card p-md">
+        <div class="stat-card-header">
+          <.icon name="hero-currency-dollar" class="size-5 text-muted" />
+        </div>
+        <div class="stat-value" style="margin-bottom: 2px;">
+          ${:erlang.float_to_binary(@total_cost, decimals: 4)}
+        </div>
+        <div class="stat-label" style="font-size: 13px; font-weight: 500;">Total Cost</div>
+        <div class="stat-description" style="margin-top: 2px;">All evaluations</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 48px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Quick Actions</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+        <.link navigate={aludel_path("prompts/new")} style="text-decoration: none;">
+          <div
+            class="aludel-card"
+            style="padding: 20px; transition: all 0.2s; cursor: pointer; border: 2px solid var(--accent); display: flex; align-items: center; gap: 16px;"
+          >
+            <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px; flex-shrink: 0;">
+              <.icon name="hero-plus-circle" class="size-6 text-[var(--accent)]" />
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                New Prompt
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary);">
+                Create a new prompt template
+              </div>
+            </div>
+            <.icon name="hero-arrow-right" class="size-5 text-muted" />
+          </div>
+        </.link>
+        <.link navigate={aludel_path("prompts")} style="text-decoration: none;">
+          <div
+            class="aludel-card"
+            style="padding: 20px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 16px;"
+          >
+            <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px; flex-shrink: 0;">
+              <.icon name="hero-document-text" class="size-6 text-muted" />
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                View Prompts
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary);">Browse all prompts</div>
+            </div>
+            <.icon name="hero-arrow-right" class="size-5 text-muted" />
+          </div>
+        </.link>
+        <.link navigate={aludel_path("suites")} style="text-decoration: none;">
+          <div
+            class="aludel-card"
+            style="padding: 20px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 16px;"
+          >
+            <div style="padding: 10px; background-color: var(--bg-secondary); border-radius: 8px; flex-shrink: 0;">
+              <.icon name="hero-beaker" class="size-6 text-muted" />
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                View Suites
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary);">Browse test suites</div>
+            </div>
+            <.icon name="hero-arrow-right" class="size-5 text-muted" />
+          </div>
+        </.link>
+      </div>
+    </div>
+
+    <%= if @pass_rates != [] do %>
+      <div id="pass-rates" style="margin-bottom: 48px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Pass Rates by Prompt</h2>
+        </div>
+        <div class="aludel-card" style="padding: 20px;">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <%= for rate <- @pass_rates do %>
+              <% total = (rate.total_passed || 0) + (rate.total_failed || 0) %>
+              <% pass_rate =
+                if total > 0,
+                  do: Float.round((rate.total_passed || 0) / total * 100, 1),
+                  else: 0 %>
+              <div style="display: flex; align-items: center; gap: 20px; padding: 14px 16px; background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
+                <div style="flex: 0 0 200px; display: flex; align-items: center; gap: 8px;">
+                  <%= cond do %>
+                    <% pass_rate >= 80 -> %>
+                      <.icon name="hero-check-badge-solid" class="size-4 text-green-600" />
+                    <% pass_rate >= 50 -> %>
+                      <.icon name="hero-exclamation-circle" class="size-4 text-yellow-600" />
+                    <% true -> %>
+                      <.icon name="hero-x-circle" class="size-4 text-red-600" />
+                  <% end %>
+                  <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {rate.prompt_name}
+                  </div>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 20px; font-weight: 600; color: var(--text-primary); white-space: nowrap;">
+                      {trunc(pass_rate)}<span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">%</span>
+                    </div>
+                    <div style="flex: 1;">
+                      <div class="progress-bar" style="height: 5px;">
+                        <div class="progress-bar-fill" style={"width: #{pass_rate}%"}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div style="flex: 0 0 auto; display: flex; gap: 20px; padding-left: 20px; border-left: 1px solid var(--border);">
+                  <div style="text-align: center;">
+                    <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em;">
+                      Passed
+                    </div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                      {rate.total_passed || 0}
+                    </div>
+                  </div>
+                  <div style="text-align: center;">
+                    <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em;">
+                      Failed
+                    </div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                      {rate.total_failed || 0}
+                    </div>
+                  </div>
+                  <div style="text-align: center;">
+                    <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em;">
+                      Total
+                    </div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                      {total}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <div style="margin-bottom: 48px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Recent Evaluations</h2>
+      </div>
+      <%= if @recent_activity == [] do %>
+        <div class="aludel-card" style="padding: 60px 20px; text-align: center;">
+          <.icon name="hero-inbox" class="size-12 text-muted empty-state-icon" />
+          <div class="empty-state-description">No recent runs</div>
+        </div>
+      <% else %>
+        <div class="aludel-card" style="overflow: hidden;">
+          <div id="recent-runs" style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Type
+                  </th>
+                  <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Name
+                  </th>
+                  <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Prompt
+                  </th>
+                  <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Results
+                  </th>
+                  <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Cost
+                  </th>
+                  <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for activity <- @recent_activity do %>
+                  <tr style="border-bottom: 1px solid var(--border); transition: background-color 0.15s;">
+                    <td style="padding: 16px;">
+                      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500;">
+                        <.icon
+                          name={
+                            if activity.type == :suite_run, do: "hero-beaker", else: "hero-play"
+                          }
+                          class="size-3 text-muted"
+                        />
+                        {if activity.type == :suite_run, do: "Suite", else: "Run"}
+                      </div>
+                    </td>
+                    <td style="padding: 16px;">
+                      <.link
+                        navigate={aludel_path(activity.path)}
+                        style="color: var(--text-primary); font-weight: 500; text-decoration: none;"
+                      >
+                        {activity.name}
+                      </.link>
+                    </td>
+                    <td style="padding: 16px; color: var(--text-secondary); font-size: 14px;">
+                      {activity.prompt_name}
+                    </td>
+                    <td style="padding: 16px;">
+                      <%= if activity.type == :suite_run do %>
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary);">
+                          <div style="display: flex; align-items: center; gap: 4px;">
+                            <.icon name="hero-check-circle" class="size-4 text-green-600" />
+                            {activity.passed}
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 4px;">
+                            <.icon name="hero-x-circle" class="size-4 text-red-600" />
+                            {activity.failed}
+                          </div>
+                        </div>
+                      <% else %>
+                        <span style="color: var(--text-secondary); font-size: 13px;">
+                          {activity.providers_count} {if activity.providers_count == 1,
+                            do: "provider",
+                            else: "providers"}
+                        </span>
+                      <% end %>
+                    </td>
+                    <td style="padding: 16px; font-size: 14px; font-family: 'SF Mono', 'Monaco', monospace;">
+                      <%= if activity.cost > 0 do %>
+                        <span style="color: var(--text-secondary);">
+                          ${:erlang.float_to_binary(activity.cost, decimals: 4)}
+                        </span>
+                      <% else %>
+                        <span style="color: var(--text-muted);">—</span>
+                      <% end %>
+                    </td>
+                    <td style="padding: 16px; color: var(--text-secondary); font-size: 13px;">
+                      {Calendar.strftime(activity.inserted_at, "%b %d, %Y")}
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

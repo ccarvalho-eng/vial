@@ -7,18 +7,18 @@
 # General application configuration
 import Config
 
-config :vial,
+config :aludel,
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
 # Configures the endpoint
-config :vial, VialWeb.Endpoint,
+config :aludel, Aludel.Web.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: VialWeb.ErrorHTML, json: VialWeb.ErrorJSON],
+    formats: [html: Aludel.Web.ErrorHTML, json: Aludel.Web.ErrorJSON],
     layout: false
   ],
-  pubsub_server: Vial.PubSub,
+  pubsub_server: Aludel.PubSub,
   live_view: [signing_salt: "DBrn//Hy"]
 
 # Mailer config removed as Swoosh is not a dependency for embedded library
@@ -26,7 +26,7 @@ config :vial, VialWeb.Endpoint,
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.25.4",
-  vial: [
+  aludel: [
     args:
       ~w(assets/js/app.js --bundle --target=es2022 --outdir=priv/static --external:/fonts/* --external:/images/*),
     cd: Path.expand("..", __DIR__),
@@ -36,7 +36,7 @@ config :esbuild,
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "4.1.7",
-  vial: [
+  aludel: [
     args: ~w(
       --input=css/app.css
       --output=../priv/static/app.css

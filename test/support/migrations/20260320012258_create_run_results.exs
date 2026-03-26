@@ -1,4 +1,4 @@
-defmodule Vial.Repo.Migrations.CreateRunResults do
+defmodule Aludel.Repo.Migrations.CreateRunResults do
   use Ecto.Migration
 
   def change do

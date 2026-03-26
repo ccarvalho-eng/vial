@@ -9,17 +9,17 @@
   "skip_files": [
     "test/",
     "priv/",
-    "lib/vial_web/channels/user_socket.ex",
-    "lib/vial_web/endpoint.ex",
-    "lib/vial_web/gettext.ex",
-    "lib/vial_web/telemetry.ex",
-    "lib/vial/application.ex",
-    "lib/vial/mailer.ex",
-    "lib/vial/repo.ex",
-    "lib/vial_web/controllers/error_json.ex",
-    "lib/vial_web/controllers/error_html.ex",
-    "lib/vial_web/components/core_components.ex",
-    "lib/vial_web/components/layouts.ex"
+    "lib/aludel/web/channels/user_socket.ex",
+    "lib/aludel/web/endpoint.ex",
+    "lib/aludel/web/gettext.ex",
+    "lib/aludel/web/telemetry.ex",
+    "lib/aludel/application.ex",
+    "lib/aludel/mailer.ex",
+    "lib/aludel/repo.ex",
+    "lib/aludel/web/controllers/error_json.ex",
+    "lib/aludel/web/controllers/error_html.ex",
+    "lib/aludel/web/components/core_components.ex",
+    "lib/aludel/web/components/layouts.ex"
   ],
   "custom_skip_files": [
     "_build/",
