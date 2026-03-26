@@ -445,6 +445,13 @@ defmodule Vial.Web.CoreComponents do
   slot :cancel, required: true
 
   def modal(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :on_confirm,
+        JS.exec(assigns.on_confirm, "phx-remove", to: "##{assigns.id}")
+      )
+
     ~H"""
     <div
       id={@id}
