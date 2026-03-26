@@ -43,12 +43,12 @@ defmodule Vial.Web.Assets do
 
   def call(conn, :font) do
     %{"path" => path} = conn.params
-    serve_static(conn, Path.join("fonts", path), "font/woff2")
+    serve_static(conn, Path.join(["fonts" | normalize_path(path)]), "font/woff2")
   end
 
   def call(conn, :icon) do
     %{"path" => path} = conn.params
-    serve_static(conn, Path.join("icons", path), "image/svg+xml")
+    serve_static(conn, Path.join(["icons" | normalize_path(path)]), "image/svg+xml")
   end
 
   # Legacy function-based endpoints (for backwards compatibility)
@@ -61,11 +61,11 @@ defmodule Vial.Web.Assets do
   end
 
   def font(conn, %{"path" => path}) do
-    serve_static(conn, Path.join("fonts", path), "font/woff2")
+    serve_static(conn, Path.join(["fonts" | normalize_path(path)]), "font/woff2")
   end
 
   def icon(conn, %{"path" => path}) do
-    serve_static(conn, Path.join("icons", path), "image/svg+xml")
+    serve_static(conn, Path.join(["icons" | normalize_path(path)]), "image/svg+xml")
   end
 
   defp serve_asset(conn, type, requested_md5, content, content_type) do
@@ -118,4 +118,8 @@ defmodule Vial.Web.Assets do
   end
 
   defp valid_md5?(_), do: false
+
+  # Normalize path parameter - Phoenix wildcard routes (*path) return lists
+  defp normalize_path(path) when is_list(path), do: path
+  defp normalize_path(path) when is_binary(path), do: [path]
 end

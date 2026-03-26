@@ -61,7 +61,6 @@ defmodule Vial.Web.Layouts do
     <div
       id="vial-config"
       data-live-path={assigns[:live_path] || "/live"}
-      data-live-transport={assigns[:live_transport] || "websocket"}
       style="display: none;"
     >
     </div>

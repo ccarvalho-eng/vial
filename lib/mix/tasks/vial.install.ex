@@ -41,10 +41,16 @@ defmodule Mix.Tasks.Vial.Install do
       """)
     end
 
+    base_timestamp = timestamp()
+
     vial_migrations_dir
     |> File.ls!()
     |> Enum.filter(&String.ends_with?(&1, ".exs"))
-    |> Enum.each(&copy_migration(&1, vial_migrations_dir, app_migrations_dir))
+    |> Enum.sort()
+    |> Enum.with_index()
+    |> Enum.each(fn {filename, index} ->
+      copy_migration(filename, vial_migrations_dir, app_migrations_dir, base_timestamp, index)
+    end)
 
     Mix.shell().info("""
 
@@ -69,16 +75,16 @@ defmodule Mix.Tasks.Vial.Install do
     """)
   end
 
-  defp copy_migration(filename, source_dir, dest_dir) do
+  defp copy_migration(filename, source_dir, dest_dir, base_timestamp, index) do
     # Extract the original migration name (everything after the timestamp)
     migration_name =
       filename
       |> String.split("_", parts: 2)
       |> List.last()
 
-    # Generate a new timestamp for the host app
-    timestamp = timestamp()
-    new_filename = "#{timestamp}_#{migration_name}"
+    # Generate monotonically increasing timestamp: base + index seconds
+    migration_timestamp = add_seconds_to_timestamp(base_timestamp, index)
+    new_filename = "#{migration_timestamp}_#{migration_name}"
 
     source = Path.join(source_dir, filename)
     dest = Path.join(dest_dir, new_filename)
@@ -89,6 +95,35 @@ defmodule Mix.Tasks.Vial.Install do
       File.cp!(source, dest)
       Mix.shell().info("* copying #{new_filename}")
     end
+  end
+
+  defp add_seconds_to_timestamp(timestamp, seconds) do
+    # Parse timestamp string to datetime
+    <<year::binary-4, month::binary-2, day::binary-2, hour::binary-2, minute::binary-2,
+      second::binary-2>> = timestamp
+
+    base_datetime =
+      NaiveDateTime.new!(
+        String.to_integer(year),
+        String.to_integer(month),
+        String.to_integer(day),
+        String.to_integer(hour),
+        String.to_integer(minute),
+        String.to_integer(second)
+      )
+
+    # Add seconds
+    new_datetime = NaiveDateTime.add(base_datetime, seconds, :second)
+
+    # Format back to timestamp string
+    year = new_datetime.year |> Integer.to_string() |> String.pad_leading(4, "0")
+    month = new_datetime.month |> Integer.to_string() |> String.pad_leading(2, "0")
+    day = new_datetime.day |> Integer.to_string() |> String.pad_leading(2, "0")
+    hour = new_datetime.hour |> Integer.to_string() |> String.pad_leading(2, "0")
+    minute = new_datetime.minute |> Integer.to_string() |> String.pad_leading(2, "0")
+    second = new_datetime.second |> Integer.to_string() |> String.pad_leading(2, "0")
+
+    "#{year}#{month}#{day}#{hour}#{minute}#{second}"
   end
 
   defp timestamp do
