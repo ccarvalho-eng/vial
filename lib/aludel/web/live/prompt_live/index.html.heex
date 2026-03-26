@@ -52,7 +52,11 @@
     <% end %>
 
     <div id="prompts" style="display: flex; flex-direction: column; gap: 16px;">
-      <div :if={@prompts == []} class="aludel-card" style="padding: 60px 20px; text-align: center;">
+      <div
+        :if={@prompts == []}
+        class="aludel-card"
+        style="padding: 60px 20px; text-align: center;"
+      >
         <.icon name="hero-document-text" class="size-12 text-muted empty-state-icon" />
         <div class="empty-state-description">
           No prompts yet. Create your first prompt to get started.
