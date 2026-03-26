@@ -1,8 +1,6 @@
 <div align="center">
   <img src="assets/images/logo.png" alt="Aludel Logo" width="550"/>
 
-  **LLM Eval Workbench**
-
   [![CI](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml)
   [![Security](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml)
   [![codecov](https://codecov.io/gh/ccarvalho-eng/aludel/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/aludel)
