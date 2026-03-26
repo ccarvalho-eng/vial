@@ -46,6 +46,7 @@ defmodule Mix.Tasks.Vial.Install do
     vial_migrations_dir
     |> File.ls!()
     |> Enum.filter(&String.ends_with?(&1, ".exs"))
+    |> Enum.reject(&String.starts_with?(&1, "."))
     |> Enum.sort()
     |> Enum.with_index()
     |> Enum.each(fn {filename, index} ->
