@@ -33,8 +33,7 @@ Add Vial to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:vial, path: "../vial"}  # For local development
-    # Soon: {:vial, "~> 0.1"}  # When published to Hex
+    {:vial, "~> 0.1"}
   ]
 end
 ```
