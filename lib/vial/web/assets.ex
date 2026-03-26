@@ -51,23 +51,6 @@ defmodule Vial.Web.Assets do
     serve_static(conn, Path.join(["icons" | normalize_path(path)]), "image/svg+xml")
   end
 
-  # Legacy function-based endpoints (for backwards compatibility)
-  def css(conn, %{"md5" => md5}) do
-    serve_asset(conn, :css, md5, @css, "text/css; charset=utf-8")
-  end
-
-  def js(conn, %{"md5" => md5}) do
-    serve_asset(conn, :js, md5, @js, "application/javascript; charset=utf-8")
-  end
-
-  def font(conn, %{"path" => path}) do
-    serve_static(conn, Path.join(["fonts" | normalize_path(path)]), "font/woff2")
-  end
-
-  def icon(conn, %{"path" => path}) do
-    serve_static(conn, Path.join(["icons" | normalize_path(path)]), "image/svg+xml")
-  end
-
   defp serve_asset(conn, type, requested_md5, content, content_type) do
     # Validate hash matches to prevent cache poisoning
     if valid_md5?(requested_md5) and requested_md5 == current_hash(type) do
