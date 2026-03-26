@@ -1,5 +1,5 @@
-defmodule VialWeb.RunLive.ShowTest do
-  use VialWeb.ConnCase, async: true
+defmodule Vial.Web.RunLive.ShowTest do
+  use Vial.Web.ConnCase, async: true
 
   import Phoenix.LiveViewTest
   import Vial.RunsFixtures
@@ -45,7 +45,7 @@ defmodule VialWeb.RunLive.ShowTest do
     end
 
     test "mounts and displays run details", %{conn: conn, run: run} do
-      {:ok, _view, html} = live(conn, ~p"/runs/#{run.id}")
+      {:ok, _view, html} = live(conn, "/runs/#{run.id}")
 
       assert html =~ "Test Run"
       assert html =~ "user"
@@ -58,7 +58,7 @@ defmodule VialWeb.RunLive.ShowTest do
       provider1: provider1,
       provider2: provider2
     } do
-      {:ok, _view, html} = live(conn, ~p"/runs/#{run.id}")
+      {:ok, _view, html} = live(conn, "/runs/#{run.id}")
 
       assert html =~ provider1.name
       assert html =~ provider2.name
@@ -67,7 +67,7 @@ defmodule VialWeb.RunLive.ShowTest do
     end
 
     test "displays result metrics", %{conn: conn, run: run} do
-      {:ok, _view, html} = live(conn, ~p"/runs/#{run.id}")
+      {:ok, _view, html} = live(conn, "/runs/#{run.id}")
 
       assert html =~ "10"
       assert html =~ "20"
@@ -79,7 +79,7 @@ defmodule VialWeb.RunLive.ShowTest do
       conn: conn,
       run: run
     } do
-      {:ok, view, _html} = live(conn, ~p"/runs/#{run.id}")
+      {:ok, view, _html} = live(conn, "/runs/#{run.id}")
 
       provider3 = provider_fixture(%{name: "Cohere"})
 
@@ -111,7 +111,7 @@ defmodule VialWeb.RunLive.ShowTest do
       conn: conn,
       run: run
     } do
-      {:ok, view, _html} = live(conn, ~p"/runs/#{run.id}")
+      {:ok, view, _html} = live(conn, "/runs/#{run.id}")
 
       provider3 = provider_fixture(%{name: "Cohere"})
 
@@ -151,7 +151,7 @@ defmodule VialWeb.RunLive.ShowTest do
           error: "API call failed"
         })
 
-      {:ok, _view, html} = live(conn, ~p"/runs/#{run.id}")
+      {:ok, _view, html} = live(conn, "/runs/#{run.id}")
 
       assert html =~ "error"
       assert html =~ "API call failed"
@@ -161,7 +161,7 @@ defmodule VialWeb.RunLive.ShowTest do
       fake_id = Ecto.UUID.generate()
 
       assert_raise Ecto.NoResultsError, fn ->
-        live(conn, ~p"/runs/#{fake_id}")
+        live(conn, "/runs/#{fake_id}")
       end
     end
   end

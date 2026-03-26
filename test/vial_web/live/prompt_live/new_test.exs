@@ -1,12 +1,12 @@
-defmodule VialWeb.PromptLive.NewTest do
-  use VialWeb.ConnCase, async: true
+defmodule Vial.Web.PromptLive.NewTest do
+  use Vial.Web.ConnCase, async: true
 
   import Phoenix.LiveViewTest
   import Vial.PromptsFixtures
 
   describe "new prompt" do
     test "renders new prompt form", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/prompts/new")
+      {:ok, _view, html} = live(conn, "/prompts/new")
 
       assert html =~ "New Prompt"
       assert html =~ "name"
@@ -16,7 +16,7 @@ defmodule VialWeb.PromptLive.NewTest do
     end
 
     test "creates new prompt with valid data", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/prompts/new")
+      {:ok, view, _html} = live(conn, "/prompts/new")
 
       result =
         view
@@ -31,11 +31,11 @@ defmodule VialWeb.PromptLive.NewTest do
         |> render_submit()
 
       assert {:error, {:live_redirect, %{to: path}}} = result
-      assert path =~ ~p"/prompts/"
+      assert path =~ "/prompts/"
     end
 
     test "shows validation errors", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/prompts/new")
+      {:ok, view, _html} = live(conn, "/prompts/new")
 
       html =
         view
@@ -46,7 +46,7 @@ defmodule VialWeb.PromptLive.NewTest do
     end
 
     test "displays extracted variables preview", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/prompts/new")
+      {:ok, view, _html} = live(conn, "/prompts/new")
 
       html =
         view
@@ -69,7 +69,7 @@ defmodule VialWeb.PromptLive.NewTest do
           tags: ["existing"]
         })
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}/edit")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}/edit")
 
       assert html =~ "Edit Prompt"
       assert html =~ "Existing Prompt"
@@ -79,7 +79,7 @@ defmodule VialWeb.PromptLive.NewTest do
     test "updates prompt and creates new version", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Original"})
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}/edit")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}/edit")
 
       result =
         view
@@ -92,13 +92,13 @@ defmodule VialWeb.PromptLive.NewTest do
         |> render_submit()
 
       assert {:error, {:live_redirect, %{to: path}}} = result
-      assert path == ~p"/prompts/#{prompt.id}"
+      assert path == "/prompts/#{prompt.id}"
     end
 
     test "shows validation errors on edit", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Test"})
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}/edit")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}/edit")
 
       html =
         view

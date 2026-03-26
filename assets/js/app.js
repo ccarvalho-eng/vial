@@ -20,9 +20,8 @@
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
 // Establish Phoenix Socket and LiveView configuration.
-import {Socket} from "phoenix"
+import {Socket, LongPoll} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
-import {hooks as colocatedHooks} from "phoenix-colocated/vial"
 import topbar from "../vendor/topbar"
 import {EvolutionChart} from "./hooks/evolution_chart"
 
@@ -39,15 +38,6 @@ const AutoDismissFlash = {
 }
 
 // Theme switching logic
-function getPreferredTheme() {
-  const savedTheme = localStorage.getItem('theme')
-  if (savedTheme && savedTheme !== 'system') {
-    return savedTheme
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
-
 function setTheme(theme) {
   localStorage.setItem('theme', theme)
 
@@ -91,10 +81,12 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
 })
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-const liveSocket = new LiveSocket("/live", Socket, {
-  longPollFallbackMs: 2500,
+const liveTran = document.querySelector("meta[name='live-transport']").getAttribute("content")
+const livePath = document.querySelector("meta[name='live-path']").getAttribute("content")
+const liveSocket = new LiveSocket(livePath, Socket, {
+  transport: liveTran === "longpoll" ? LongPoll : WebSocket,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AutoDismissFlash, EvolutionChart},
+  hooks: {AutoDismissFlash, EvolutionChart},
 })
 
 // Show progress bar on live navigation and form submits

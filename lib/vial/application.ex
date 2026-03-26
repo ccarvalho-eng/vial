@@ -8,28 +8,12 @@ defmodule Vial.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      VialWeb.Telemetry,
-      Vial.Repo,
-      {DNSCluster, query: Application.get_env(:vial, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Vial.PubSub},
-      {Task.Supervisor, name: Vial.TaskSupervisor},
-      # Start a worker by calling: Vial.Worker.start_link(arg)
-      # {Vial.Worker, arg},
-      # Start to serve requests, typically the last entry
-      VialWeb.Endpoint
+      {Task.Supervisor, name: Vial.TaskSupervisor}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Vial.Supervisor]
     Supervisor.start_link(children, opts)
-  end
-
-  # Tell Phoenix to update the endpoint configuration
-  # whenever the application is updated.
-  @impl true
-  def config_change(changed, _new, removed) do
-    VialWeb.Endpoint.config_change(changed, removed)
-    :ok
   end
 end

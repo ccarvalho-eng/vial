@@ -9,7 +9,6 @@ defmodule Vial.Prompts.Evolution do
   alias Vial.Evals.SuiteRun
   alias Vial.Prompts.PromptVersion
   alias Vial.Providers.Provider
-  alias Vial.Repo
 
   @doc """
   Returns aggregated metrics for all versions of a prompt.
@@ -35,7 +34,7 @@ defmodule Vial.Prompts.Evolution do
     PromptVersion
     |> where([v], v.prompt_id == ^prompt_id)
     |> order_by([v], asc: v.version)
-    |> Repo.all()
+    |> repo().all()
   end
 
   defp build_version_metrics(version) do
@@ -56,7 +55,7 @@ defmodule Vial.Prompts.Evolution do
   defp get_suite_runs(version_id) do
     SuiteRun
     |> where([sr], sr.prompt_version_id == ^version_id)
-    |> Repo.all()
+    |> repo().all()
   end
 
   defp calculate_avg_pass_rate([]), do: nil
@@ -115,7 +114,7 @@ defmodule Vial.Prompts.Evolution do
     suite_runs
     |> Enum.group_by(& &1.provider_id)
     |> Enum.map(fn {provider_id, runs} ->
-      provider = Repo.get!(Provider, provider_id)
+      provider = repo().get!(Provider, provider_id)
 
       total_tests = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed + sr.failed end)
       total_passed = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed end)
@@ -207,5 +206,16 @@ defmodule Vial.Prompts.Evolution do
        }}
     end)
     |> Map.new()
+  end
+
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
   end
 end

@@ -22,30 +22,149 @@ Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output 
 
 ---
 
-## Prerequisites
+## Installation
 
-- Elixir 1.19.5+
-- Erlang/OTP 28.4+
-- PostgreSQL 17+
-- Node.js 20+
+Vial can be embedded into any Phoenix LiveView application as a self-contained dashboard.
 
-Recommended: use [asdf](https://asdf-vm.com/) with the included `.tool-versions`.
+### 1. Add dependency
 
----
+Add Vial to your `mix.exs`:
 
-## Setup
+```elixir
+def deps do
+  [
+    {:vial, "~> 0.1"}
+  ]
+end
+```
+
+Run `mix deps.get`
+
+### 2. Configure the repo
+
+Add to `config/config.exs`:
+
+```elixir
+config :vial, repo: YourApp.Repo
+```
+
+### 3. Install migrations
 
 ```bash
-git clone https://github.com/ccarvalho-eng/vial.git
-cd vial
-cp .env.example .env
-# Edit .env and add your API keys (optional - Ollama works without them)
-mix deps.get
-mix ecto.setup
+mix vial.install
+```
+
+This copies Vial's migrations to your `priv/repo/migrations/` directory.
+
+### 4. Run migrations
+
+```bash
+mix ecto.migrate
+```
+
+### 5. Add router macro
+
+In your `lib/your_app_web/router.ex`:
+
+```elixir
+use YourAppWeb, :router
+import Vial.Web.Router  # Add this line
+
+# In development
+if Mix.env() == :dev do
+  scope "/dev" do
+    pipe_through :browser
+    vial_dashboard "/vial"  # Dashboard will be at /dev/vial
+  end
+end
+
+# Or in production (with authentication)
+# scope "/admin" do
+#   pipe_through [:browser, :require_admin]
+#   vial_dashboard "/vial"
+# end
+```
+
+The dashboard can be mounted at any path you choose. It's common to mount it under `/dev` in development or `/admin` in production (with proper authentication).
+
+### 6. Configure API keys (optional)
+
+Vial reads provider API keys from application config. Add to your host app's config:
+
+```elixir
+# config/dev.exs (or config/runtime.exs for production)
+config :vial, :llm,
+  openai_api_key: System.get_env("OPENAI_API_KEY"),
+  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
+```
+
+Then set environment variables before starting the server:
+
+```bash
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
 mix phx.server
 ```
 
-Visit [localhost:4000](http://localhost:4000).
+Ollama runs locally and requires no API keys.
+
+### 7. Seed demo data (optional)
+
+```bash
+mix vial.seed
+```
+
+This populates the database with sample providers, prompts, and evaluation suites.
+
+Visit the dashboard at your configured path (e.g., `http://localhost:4000/dev/vial`).
+
+---
+
+## Standalone Mode
+
+Vial includes a standalone application in the `standalone/` directory for running the dashboard without embedding it in a Phoenix app.
+
+### Setup
+
+```bash
+cd standalone
+mix deps.get
+mix ecto.create
+mix ecto.migrate
+mix vial.seed  # Optional: add demo data
+mix phx.server
+```
+
+Visit `http://localhost:4000`
+
+### Configuration
+
+Edit `standalone/config/dev.exs` to configure:
+
+- **Database** — Default: `postgres://postgres:postgres@localhost/vial_dash_dev`
+- **Port** — Default: `4000`
+- **API Keys** — Set `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` environment variables
+
+### Production Deployment
+
+```bash
+# Set required environment variables
+export DATABASE_URL=postgres://...
+export SECRET_KEY_BASE=$(mix phx.gen.secret)
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Optional: Enable basic auth
+export BASIC_AUTH_USER=admin
+export BASIC_AUTH_PASS=secret
+
+# Optional: Set read-only mode
+export READ_ONLY=true
+
+# Run the app
+MIX_ENV=prod mix release
+_build/prod/rel/vial_dash/bin/vial_dash start
+```
 
 ---
 
@@ -88,6 +207,54 @@ Explain {{topic}} in exactly 3 sentences.
 
 ---
 
+## Development
+
+### Working with assets (CSS/JS)
+
+Vial uses Tailwind CSS and esbuild for styling and JavaScript bundling.
+
+**After making changes to CSS or JS files:**
+
+```bash
+# 1. Rebuild assets (from vial directory)
+mix assets.build
+
+# 2. Force recompile to pick up new asset hashes
+mix compile --force
+
+# 3. If working on an embedded installation, recompile the dependency
+cd ../your_host_app
+mix deps.compile vial --force
+
+# 4. Restart the Phoenix server to pick up changes
+```
+
+**Asset files:**
+- CSS: `assets/css/app.css`
+- JavaScript: `assets/js/app.js` and `assets/js/hooks/`
+- Built assets: `priv/static/app.css` and `priv/static/app.js` (committed to git)
+
+**Live development workflow:**
+
+For faster iteration during development, you can use Mix tasks with watchers:
+
+```bash
+# Watch and rebuild CSS on changes
+mix tailwind vial --watch
+
+# Watch and rebuild JS on changes (in another terminal)
+mix esbuild vial --watch
+```
+
+Alternatively, run the standalone app for a full development server:
+
+```bash
+cd standalone
+mix phx.server  # Starts asset watchers automatically
+```
+
+---
+
 ## Contributing
 
 1. Fork the repository
@@ -95,6 +262,8 @@ Explain {{topic}} in exactly 3 sentences.
 3. Commit using [conventional commits](https://www.conventionalcommits.org/)
 4. Run `mix precommit` before submitting
 5. Open a Pull Request
+
+**For changes to CSS/JS:** Make sure to rebuild assets with `mix assets.build` and recompile with `mix compile --force` before committing. Built assets in `priv/static/` are committed to git to ensure asset hashes are calculated correctly at compile time.
 
 ---
 

@@ -8,12 +8,7 @@
 import Config
 
 config :vial,
-  ecto_repos: [Vial.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
-
-config :vial, Vial.Repo,
-  migration_primary_key: [type: :binary_id],
-  migration_foreign_key: [type: :binary_id]
 
 # Configures the endpoint
 config :vial, VialWeb.Endpoint,
@@ -26,23 +21,16 @@ config :vial, VialWeb.Endpoint,
   pubsub_server: Vial.PubSub,
   live_view: [signing_salt: "DBrn//Hy"]
 
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :vial, Vial.Mailer, adapter: Swoosh.Adapters.Local
+# Mailer config removed as Swoosh is not a dependency for embedded library
 
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.25.4",
   vial: [
     args:
-      ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
-    cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
+      ~w(assets/js/app.js --bundle --target=es2022 --outdir=priv/static --external:/fonts/* --external:/images/*),
+    cd: Path.expand("..", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
 # Configure tailwind (the version is required)
@@ -50,10 +38,10 @@ config :tailwind,
   version: "4.1.7",
   vial: [
     args: ~w(
-      --input=assets/css/app.css
-      --output=priv/static/assets/css/app.css
+      --input=css/app.css
+      --output=../priv/static/app.css
     ),
-    cd: Path.expand("..", __DIR__)
+    cd: Path.expand("../assets", __DIR__)
   ]
 
 # Configures Elixir's Logger

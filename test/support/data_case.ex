@@ -20,7 +20,7 @@ defmodule Vial.DataCase do
 
   using do
     quote do
-      alias Vial.Repo
+      alias Vial.Test.Repo
 
       import Ecto
       import Ecto.Changeset
@@ -41,7 +41,7 @@ defmodule Vial.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    pid = Sandbox.start_owner!(Vial.Repo, shared: not tags[:async])
+    pid = Sandbox.start_owner!(Vial.Test.Repo, shared: not tags[:async])
     on_exit(fn -> Sandbox.stop_owner(pid) end)
   end
 

@@ -1,0 +1,127 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <%= if @live_action == :new do %>
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h1>{@page_title}</h1>
+        <p style="margin-bottom: 24px; color: var(--text-secondary);">
+          Create a new prompt template
+        </p>
+
+        <.form for={@form} id="prompt-form" phx-change="validate" phx-submit="save">
+          <div class="vial-card" style="margin-bottom: 24px;">
+            <h2 style="margin-bottom: 16px;">Prompt Details</h2>
+
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_name">Name</label>
+              <.input field={@form[:name]} type="text" required />
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_description">Description</label>
+              <.input field={@form[:description]} type="textarea" rows="3" />
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_tags">Tags (comma-separated)</label>
+              <.input field={@form[:tags]} type="text" placeholder="elixir, langchain, ai" />
+            </div>
+
+            <div>
+              <label for="prompt_template">Template</label>
+              <.input
+                field={@form[:template]}
+                type="textarea"
+                placeholder="Hello {{name}}, welcome to {{topic}}"
+                rows="6"
+              />
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                Use {raw("{{variable}}")} syntax to define variables
+              </div>
+            </div>
+
+            <%= if @variables != [] do %>
+              <div style="margin-top: 16px; padding: 12px; background-color: var(--bg-tertiary); border-radius: 6px; border: 1px solid var(--border);">
+                <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">
+                  Extracted Variables:
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary);">
+                  {Enum.join(@variables, ", ")}
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <button type="submit" class="button-primary">
+              Create Prompt
+            </button>
+            <.link navigate={vial_path("prompts")} class="button-secondary">
+              Cancel
+            </.link>
+          </div>
+        </.form>
+      </div>
+    <% else %>
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h1>{@page_title}</h1>
+        <p style="margin-bottom: 24px; color: var(--text-secondary);">
+          Changes to the template will create a new version
+        </p>
+
+        <.form for={@form} id="prompt-form" phx-change="validate" phx-submit="save">
+          <div class="vial-card" style="margin-bottom: 24px;">
+            <h2 style="margin-bottom: 16px;">Prompt Details</h2>
+
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_name">Name</label>
+              <.input field={@form[:name]} type="text" required />
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_description">Description</label>
+              <.input field={@form[:description]} type="textarea" rows="3" />
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_tags">Tags (comma-separated)</label>
+              <.input field={@form[:tags]} type="text" placeholder="elixir, langchain, ai" />
+            </div>
+
+            <div>
+              <label for="prompt_template">Template</label>
+              <.input
+                field={@form[:template]}
+                type="textarea"
+                placeholder="Hello {{name}}, welcome to {{topic}}"
+                rows="10"
+              />
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                Use {raw("{{variable}}")} syntax to define variables
+              </div>
+            </div>
+
+            <%= if @variables != [] do %>
+              <div style="margin-top: 16px; padding: 12px; background-color: var(--bg-tertiary); border-radius: 6px; border: 1px solid var(--border);">
+                <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">
+                  Extracted Variables:
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary);">
+                  {Enum.join(@variables, ", ")}
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <button type="submit" class="button-primary">
+              Update Prompt
+            </button>
+            <.link navigate={vial_path("prompts/#{@prompt.id}")} class="button-secondary">
+              Cancel
+            </.link>
+          </div>
+        </.form>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

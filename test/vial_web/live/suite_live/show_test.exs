@@ -1,5 +1,5 @@
-defmodule VialWeb.SuiteLive.ShowTest do
-  use VialWeb.ConnCase, async: false
+defmodule Vial.Web.SuiteLive.ShowTest do
+  use Vial.Web.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Vial.EvalsFixtures
@@ -9,7 +9,7 @@ defmodule VialWeb.SuiteLive.ShowTest do
     prompt = prompt_fixture(%{name: "Test Prompt"})
     suite = suite_fixture(%{name: "Test Suite", prompt_id: prompt.id})
 
-    {:ok, view, _html} = live(conn, ~p"/suites/#{suite.id}")
+    {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
     assert render(view) =~ "Test Suite"
     assert render(view) =~ "Test Prompt"
@@ -19,7 +19,7 @@ defmodule VialWeb.SuiteLive.ShowTest do
     suite = suite_fixture()
     _test_case = test_case_fixture(%{suite_id: suite.id})
 
-    {:ok, view, _html} = live(conn, ~p"/suites/#{suite.id}")
+    {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
     assert has_element?(view, "#test-cases")
   end
@@ -27,7 +27,7 @@ defmodule VialWeb.SuiteLive.ShowTest do
   test "has run suite button", %{conn: conn} do
     suite = suite_fixture()
 
-    {:ok, view, _html} = live(conn, ~p"/suites/#{suite.id}")
+    {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
     assert has_element?(view, "#run-suite-btn")
   end

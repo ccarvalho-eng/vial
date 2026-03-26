@@ -8,7 +8,6 @@ defmodule Vial.Runs do
   alias Vial.Evals.SuiteRun
   alias Vial.LLM
   alias Vial.Providers.Provider
-  alias Vial.Repo
   alias Vial.Runs.Run
   alias Vial.Runs.RunResult
 
@@ -17,7 +16,7 @@ defmodule Vial.Runs do
   """
   @spec list_runs() :: [Run.t()]
   def list_runs do
-    Repo.all(Run)
+    repo().all(Run)
   end
 
   @doc """
@@ -32,7 +31,7 @@ defmodule Vial.Runs do
     |> order_by([r], desc: r.inserted_at)
     |> limit(^limit)
     |> preload(prompt_version: :prompt, run_results: :provider)
-    |> Repo.all()
+    |> repo().all()
   end
 
   @doc """
@@ -48,7 +47,7 @@ defmodule Vial.Runs do
       from(rr in RunResult,
         select: sum(rr.cost_usd)
       )
-      |> Repo.one() || 0.0
+      |> repo().one() || 0.0
 
     # Suite runs cost
     suite_cost =
@@ -56,7 +55,7 @@ defmodule Vial.Runs do
         where: not is_nil(sr.avg_cost_usd),
         select: sum(sr.avg_cost_usd)
       )
-      |> Repo.one()
+      |> repo().one()
 
     suite_cost_float =
       if suite_cost do
@@ -77,8 +76,8 @@ defmodule Vial.Runs do
   @spec get_run!(binary()) :: Run.t()
   def get_run!(id) do
     Run
-    |> Repo.get!(id)
-    |> Repo.preload(prompt_version: :prompt, run_results: :provider)
+    |> repo().get!(id)
+    |> repo().preload(prompt_version: :prompt, run_results: :provider)
   end
 
   @doc """
@@ -88,7 +87,7 @@ defmodule Vial.Runs do
   def create_run(attrs \\ %{}) do
     %Run{}
     |> Run.changeset(attrs)
-    |> Repo.insert()
+    |> repo().insert()
   end
 
   @doc """
@@ -99,7 +98,7 @@ defmodule Vial.Runs do
   def update_run(%Run{} = run, attrs) do
     run
     |> Run.changeset(attrs)
-    |> Repo.update()
+    |> repo().update()
   end
 
   @doc """
@@ -107,7 +106,7 @@ defmodule Vial.Runs do
   """
   @spec delete_run(Run.t()) :: {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
   def delete_run(%Run{} = run) do
-    Repo.delete(run)
+    repo().delete(run)
   end
 
   @doc """
@@ -126,7 +125,7 @@ defmodule Vial.Runs do
   def create_run_result(attrs \\ %{}) do
     %RunResult{}
     |> RunResult.changeset(attrs)
-    |> Repo.insert()
+    |> repo().insert()
   end
 
   @doc """
@@ -137,7 +136,7 @@ defmodule Vial.Runs do
   def update_run_result(%RunResult{} = run_result, attrs) do
     run_result
     |> RunResult.changeset(attrs)
-    |> Repo.update()
+    |> repo().update()
   end
 
   @doc """
@@ -183,9 +182,9 @@ defmodule Vial.Runs do
       )
       |> Enum.to_list()
 
-    case Repo.get(Run, run.id) do
+    case repo().get(Run, run.id) do
       nil -> {:error, :run_not_found}
-      updated_run -> {:ok, Repo.preload(updated_run, :run_results)}
+      updated_run -> {:ok, repo().preload(updated_run, :run_results)}
     end
   end
 
@@ -243,5 +242,16 @@ defmodule Vial.Runs do
       "run:#{run_id}",
       {:run_result_update, result_id, status, output}
     )
+  end
+
+  defp repo do
+    Application.get_env(:vial, :repo) ||
+      raise """
+      Vial repo not configured.
+
+      Add to your config:
+
+          config :vial, repo: YourApp.Repo
+      """
   end
 end

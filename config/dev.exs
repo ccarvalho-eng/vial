@@ -1,15 +1,5 @@
 import Config
 
-# Configure your database
-config :vial, Vial.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "vial_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
-
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -55,17 +45,6 @@ config :vial, :llm,
 # If desired, both `http:` and `https:` keys can be
 # configured to run both http and https servers on
 # different ports.
-
-# Watch static and templates for browser reloading.
-config :vial, VialWeb.Endpoint,
-  live_reload: [
-    web_console_logger: true,
-    patterns: [
-      ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"priv/gettext/.*(po)$",
-      ~r"lib/vial_web/(?:controllers|live|components|router)/?.*\.(ex|heex)$"
-    ]
-  ]
 
 # Enable dev routes for dashboard and mailbox
 config :vial, dev_routes: true

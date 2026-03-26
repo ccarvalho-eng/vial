@@ -1,0 +1,102 @@
+<Layouts.app flash={@flash} current_path={@current_path}>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+        <div style="flex: 1;">
+          <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 600;">{@prompt.name}</h1>
+          <p
+            :if={@prompt.description}
+            style="color: var(--text-secondary); margin: 0; font-size: 15px;"
+          >
+            {@prompt.description}
+          </p>
+        </div>
+        <.link navigate={vial_path("prompts/#{@prompt.id}/edit")} class="button-primary">
+          <.icon name="hero-pencil" class="size-4" /> Edit Prompt
+        </.link>
+      </div>
+      <div :if={@prompt.tags != []} style="display: flex; gap: 8px;">
+        <span :for={tag <- @prompt.tags} class="tag">
+          {tag}
+        </span>
+      </div>
+    </div>
+
+    <div style="border-bottom: 1px solid var(--border); margin-bottom: 24px;">
+      <nav style="display: flex; gap: 32px; margin-bottom: -1px;">
+        <.link
+          navigate={vial_path("prompts/#{@prompt.id}")}
+          style="border-bottom: 2px solid var(--accent); padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none;"
+        >
+          Details
+        </.link>
+        <.link
+          navigate={vial_path("prompts/#{@prompt.id}/evolution")}
+          style="border-bottom: 2px solid transparent; padding: 16px 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; gap: 6px;"
+        >
+          <.icon name="hero-beaker" class="size-4" /> Evolution
+        </.link>
+      </nav>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Versions</h2>
+    </div>
+
+    <div
+      :if={@prompt.versions == []}
+      class="vial-card"
+      style="padding: 60px 20px; text-align: center;"
+    >
+      <.icon name="hero-clock" class="size-12 text-muted empty-state-icon" />
+      <div class="empty-state-description">
+        No versions yet. Edit this prompt to create the first version.
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div :for={version <- @prompt.versions} class="vial-card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="font-size: 14px; font-weight: 600;">v{version.version}</div>
+            <.link
+              navigate={vial_path("runs/new?version=#{version.id}")}
+              class="button-primary"
+              style="font-size: 13px; padding: 6px 12px;"
+            >
+              Run
+            </.link>
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary);">
+            {Calendar.strftime(version.inserted_at, "%Y-%m-%d %H:%M")}
+          </div>
+        </div>
+
+        <div style="border-radius: 6px; padding: 12px; margin-bottom: 12px; background-color: var(--bg-tertiary); border: 1px solid var(--border);">
+          <pre style="font-size: 13px; white-space: pre-wrap; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; margin: 0; max-height: 300px; overflow-y: auto;">{version.template}</pre>
+        </div>
+
+        <div :if={version.variables != []} style="margin-top: 12px;">
+          <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Variables:</p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span
+              :for={var <- version.variables}
+              class="tag"
+            >
+              {var}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px;">
+      <.link
+        navigate={vial_path("prompts")}
+        style="font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none;"
+      >
+        &larr; Back to prompts
+      </.link>
+    </div>
+  </div>
+</Layouts.app>

@@ -1,14 +1,14 @@
-defmodule VialWeb.ErrorHTMLTest do
-  use VialWeb.ConnCase, async: true
+defmodule Vial.Web.ErrorHTMLTest do
+  use Vial.Web.ConnCase, async: true
 
   # Bring render_to_string/4 for testing custom views
   import Phoenix.Template, only: [render_to_string: 4]
 
   test "renders 404.html" do
-    assert render_to_string(VialWeb.ErrorHTML, "404", "html", []) == "Not Found"
+    assert render_to_string(Vial.Web.ErrorHTML, "404", "html", []) == "Not Found"
   end
 
   test "renders 500.html" do
-    assert render_to_string(VialWeb.ErrorHTML, "500", "html", []) == "Internal Server Error"
+    assert render_to_string(Vial.Web.ErrorHTML, "500", "html", []) == "Internal Server Error"
   end
 end

@@ -1,5 +1,5 @@
-defmodule VialWeb.PromptLive.ShowTest do
-  use VialWeb.ConnCase, async: true
+defmodule Vial.Web.PromptLive.ShowTest do
+  use Vial.Web.ConnCase, async: true
 
   import Phoenix.LiveViewTest
   import Vial.PromptsFixtures
@@ -15,7 +15,7 @@ defmodule VialWeb.PromptLive.ShowTest do
           tags: ["test", "example"]
         })
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}")
 
       assert html =~ "Test Prompt"
       assert html =~ "Test description"
@@ -31,7 +31,7 @@ defmodule VialWeb.PromptLive.ShowTest do
       {:ok, v2} = Prompts.create_prompt_version(prompt, "Version 2 template")
       {:ok, v3} = Prompts.create_prompt_version(prompt, "Version 3 template")
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}")
 
       # Check all versions are displayed
       assert html =~ "Version 1 template"
@@ -53,7 +53,7 @@ defmodule VialWeb.PromptLive.ShowTest do
           "Hello {{name}}, welcome to {{topic}}"
         )
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}")
 
       assert html =~ "name"
       assert html =~ "topic"
@@ -62,7 +62,7 @@ defmodule VialWeb.PromptLive.ShowTest do
     test "shows edit button linking to edit page", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Editable Prompt"})
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}")
 
       assert has_element?(view, "a[href=\"/prompts/#{prompt.id}/edit\"]")
     end
@@ -70,7 +70,7 @@ defmodule VialWeb.PromptLive.ShowTest do
     test "shows back button to index", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Test Prompt"})
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}")
 
       assert has_element?(view, "a[href=\"/prompts\"]")
     end
@@ -79,14 +79,14 @@ defmodule VialWeb.PromptLive.ShowTest do
       fake_id = Ecto.UUID.generate()
 
       assert_raise Ecto.NoResultsError, fn ->
-        live(conn, ~p"/prompts/#{fake_id}")
+        live(conn, "/prompts/#{fake_id}")
       end
     end
 
     test "displays message when prompt has no versions", %{conn: conn} do
       prompt = prompt_fixture(%{name: "No Versions"})
 
-      {:ok, _view, html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}")
 
       assert html =~ "No versions"
     end
@@ -95,7 +95,7 @@ defmodule VialWeb.PromptLive.ShowTest do
       prompt = prompt_fixture(%{name: "Test Prompt"})
       {:ok, version} = Prompts.create_prompt_version(prompt, "Hello {{name}}")
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}")
 
       assert has_element?(
                view,
@@ -106,7 +106,7 @@ defmodule VialWeb.PromptLive.ShowTest do
     test "shows evolution tab link", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Test Prompt"})
 
-      {:ok, view, _html} = live(conn, ~p"/prompts/#{prompt.id}")
+      {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}")
 
       assert has_element?(view, "a[href=\"/prompts/#{prompt.id}/evolution\"]")
     end
