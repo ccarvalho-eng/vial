@@ -83,16 +83,22 @@ defmodule Mix.Tasks.Vial.Install do
       |> String.split("_", parts: 2)
       |> List.last()
 
-    # Generate monotonically increasing timestamp: base + index seconds
-    migration_timestamp = add_seconds_to_timestamp(base_timestamp, index)
-    new_filename = "#{migration_timestamp}_#{migration_name}"
+    # Check if a migration with this name already exists (with any timestamp)
+    existing_migration =
+      dest_dir
+      |> File.ls!()
+      |> Enum.find(fn f -> String.ends_with?(f, migration_name) end)
 
-    source = Path.join(source_dir, filename)
-    dest = Path.join(dest_dir, new_filename)
-
-    if File.exists?(dest) do
-      Mix.shell().info("* skipping #{new_filename} (already exists)")
+    if existing_migration do
+      Mix.shell().info("* skipping #{migration_name} (already exists as #{existing_migration})")
     else
+      # Generate monotonically increasing timestamp: base + index seconds
+      migration_timestamp = add_seconds_to_timestamp(base_timestamp, index)
+      new_filename = "#{migration_timestamp}_#{migration_name}"
+
+      source = Path.join(source_dir, filename)
+      dest = Path.join(dest_dir, new_filename)
+
       File.cp!(source, dest)
       Mix.shell().info("* copying #{new_filename}")
     end
