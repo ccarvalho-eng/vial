@@ -25,9 +25,9 @@
     mod
   ));
 
-  // vendor/topbar.js
+  // assets/vendor/topbar.js
   var require_topbar = __commonJS({
-    "vendor/topbar.js"(exports, module) {
+    "assets/vendor/topbar.js"(exports, module) {
       (function(window2, document2) {
         "use strict";
         var canvas, currentProgress, showing, progressTimerId = null, fadeTimerId = null, delayTimerId = null, addEvent = function(elem, type, handler) {
@@ -146,7 +146,7 @@
     }
   });
 
-  // ../deps/phoenix_html/priv/static/phoenix_html.js
+  // deps/phoenix_html/priv/static/phoenix_html.js
   (function() {
     var PolyfillEvent = eventConstructor();
     function eventConstructor() {
@@ -211,7 +211,7 @@
     }, false);
   })();
 
-  // ../deps/phoenix/priv/static/phoenix.mjs
+  // deps/phoenix/priv/static/phoenix.mjs
   var closure = (value) => {
     if (typeof value === "function") {
       return value;
@@ -1645,7 +1645,7 @@
     }
   };
 
-  // ../deps/phoenix_live_view/priv/static/phoenix_live_view.esm.js
+  // deps/phoenix_live_view/priv/static/phoenix_live_view.esm.js
   var CONSECUTIVE_RELOADS = "consecutive-reloads";
   var MAX_RELOADS = 10;
   var RELOAD_JITTER_MIN = 5e3;
@@ -6201,7 +6201,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
           parent,
           `[${PHX_VIEW_REF}="${this.id}"][${PHX_COMPONENT}]`
         );
-        const hooks2 = dom_default.all(
+        const hooks = dom_default.all(
           parent,
           `[${this.binding(PHX_HOOK)}], [data-phx-hook]`
         );
@@ -6211,7 +6211,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
             destroyedCIDs.push(cid);
           }
         });
-        hooks2.concat(parent).forEach((hookEl) => {
+        hooks.concat(parent).forEach((hookEl) => {
           const hook = this.getHook(hookEl);
           hook && this.destroyHook(hook);
         });
@@ -8551,13 +8551,10 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
   };
   var LiveSocket2 = LiveSocket;
 
-  // ../_build/dev/phoenix-colocated/vial/index.js
-  var hooks = {};
-
-  // js/app.js
+  // assets/js/app.js
   var import_topbar = __toESM(require_topbar());
 
-  // node_modules/@kurkle/color/dist/color.esm.js
+  // assets/node_modules/@kurkle/color/dist/color.esm.js
   function round(v) {
     return v + 0.5 | 0;
   }
@@ -9114,7 +9111,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   };
 
-  // node_modules/chart.js/dist/chunks/helpers.dataset.js
+  // assets/node_modules/chart.js/dist/chunks/helpers.dataset.js
   function noop2() {
   }
   var uid = /* @__PURE__ */ (() => {
@@ -11512,7 +11509,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     };
   }
 
-  // node_modules/chart.js/dist/chart.js
+  // assets/node_modules/chart.js/dist/chart.js
   var Animator = class {
     constructor() {
       this._request = null;
@@ -20218,7 +20215,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   };
 
-  // js/hooks/evolution_chart.js
+  // assets/js/hooks/evolution_chart.js
   Chart.register(
     LineController,
     LineElement,
@@ -20498,7 +20495,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   };
 
-  // js/app.js
+  // assets/js/app.js
   var AutoDismissFlash = {
     mounted() {
       this.timer = setTimeout(() => {
@@ -20546,7 +20543,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
   var liveSocket = new LiveSocket2(livePath, Socket, {
     longPollFallbackMs: 2500,
     params: { _csrf_token: csrfToken },
-    hooks: { ...hooks, AutoDismissFlash, EvolutionChart }
+    hooks: { AutoDismissFlash, EvolutionChart }
   });
   import_topbar.default.config({ barColors: { 0: "#29d" }, shadowColor: "rgba(0, 0, 0, .3)" });
   window.addEventListener("phx:page-loading-start", (_info) => import_topbar.default.show(300));
@@ -20591,13 +20588,6 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
    *)
 
 chart.js/dist/chunks/helpers.dataset.js:
-  (*!
-   * Chart.js v4.5.1
-   * https://www.chartjs.org
-   * (c) 2025 Chart.js Contributors
-   * Released under the MIT License
-   *)
-
 chart.js/dist/chart.js:
   (*!
    * Chart.js v4.5.1

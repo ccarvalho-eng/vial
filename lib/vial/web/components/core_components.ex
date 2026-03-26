@@ -452,6 +452,7 @@ defmodule Vial.Web.CoreComponents do
       phx-remove={hide_modal(@id)}
       data-cancel={JS.exec("phx-remove", to: "##{@id}")}
       class="relative z-50 hidden"
+      style="display: none;"
     >
       <div
         id={"#{@id}-bg"}
