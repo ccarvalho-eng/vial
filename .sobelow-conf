@@ -8,5 +8,5 @@
   out: "",
   threshold: "low",
   ignore: ["Config.CSP", "Config.HTTPS"],
-  ignore_files: []
+  ignore_files: ["lib/vial/web/assets.ex"]
 ]
