@@ -42,8 +42,8 @@ defmodule Aludel.Web do
       import Aludel.Web.CoreComponents
       import Aludel.Web.Helpers
 
-      alias Phoenix.LiveView.JS
       alias Aludel.Web.Layouts
+      alias Phoenix.LiveView.JS
     end
   end
 

@@ -18,6 +18,12 @@
       <div class="aludel-card p-md">
         <div class="stat-card-header">
           <.icon name="hero-play" class="size-5 text-muted" />
+          <div class="stat-info-tooltip">
+            <.icon name="hero-information-circle" class="size-4 stat-info-icon" />
+            <div class="stat-info-tooltip-content">
+              Total number of prompt runs and suite runs executed
+            </div>
+          </div>
         </div>
         <div class="stat-value mb-xs">{@total_runs}</div>
         <div class="stat-label text-sm font-medium">Total Runs</div>
@@ -27,6 +33,12 @@
       <div class="aludel-card p-md">
         <div class="stat-card-header">
           <.icon name="hero-check-circle" class="size-5 text-muted" />
+          <div class="stat-info-tooltip">
+            <.icon name="hero-information-circle" class="size-4 stat-info-icon" />
+            <div class="stat-info-tooltip-content">
+              Percentage of test assertions that passed in suite runs
+            </div>
+          </div>
         </div>
         <div class="stat-value mb-xs">{@success_rate}%</div>
         <div class="stat-label text-sm font-medium">Success Rate</div>
@@ -38,6 +50,12 @@
       <div class="aludel-card p-md">
         <div class="stat-card-header">
           <.icon name="hero-clock" class="size-5 text-muted" />
+          <div class="stat-info-tooltip">
+            <.icon name="hero-information-circle" class="size-4 stat-info-icon" />
+            <div class="stat-info-tooltip-content">
+              Average API response time for individual prompt runs
+            </div>
+          </div>
         </div>
         <div class="stat-value mb-xs">{trunc(@avg_latency)}ms</div>
         <div class="stat-label text-sm font-medium">Avg Response</div>
@@ -47,6 +65,12 @@
       <div id="cost-summary" class="aludel-card p-md">
         <div class="stat-card-header">
           <.icon name="hero-currency-dollar" class="size-5 text-muted" />
+          <div class="stat-info-tooltip">
+            <.icon name="hero-information-circle" class="size-4 stat-info-icon" />
+            <div class="stat-info-tooltip-content">
+              Total cost across all prompt runs and suite runs
+            </div>
+          </div>
         </div>
         <div class="stat-value" style="margin-bottom: 2px;">
           ${:erlang.float_to_binary(@total_cost, decimals: 4)}
