@@ -33,7 +33,7 @@ Add Vial to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:vial, "~> 0.1"}
+    {:vial, github: "ccarvalho-eng/vial"}
   ]
 end
 ```
