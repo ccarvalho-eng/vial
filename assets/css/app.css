@@ -1353,3 +1353,10 @@ a:has(.aludel-card) .aludel-card:hover {
   font-weight: 600;
   color: var(--text-primary);
 }
+
+/* Trends Button */
+.trends-button:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background-color: var(--bg-secondary) !important;
+}

@@ -1559,6 +1559,9 @@
   .block {
     display: block;
   }
+  .contents {
+    display: contents;
+  }
   .flex {
     display: flex;
   }
@@ -2999,6 +3002,11 @@ a:has(.aludel-card) .aludel-card:hover {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+}
+.trends-button:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background-color: var(--bg-secondary) !important;
 }
 @layer base {
   :root:has( .modal-open, .modal[open], .modal:target, .modal-toggle:checked, .drawer:not([class*="drawer-open"]) > .drawer-toggle:checked ) {

@@ -140,20 +140,32 @@
                     <% true -> %>
                       <.icon name="hero-x-circle" class="size-4 text-red-600" />
                   <% end %>
-                  <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <.link
+                    navigate={aludel_path("prompts/#{rate.prompt_id}/evolution")}
+                    style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none;"
+                  >
                     {rate.prompt_name}
-                  </div>
+                  </.link>
                 </div>
                 <div style="flex: 1; min-width: 0;">
                   <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 20px; font-weight: 600; color: var(--text-primary); white-space: nowrap;">
-                      {trunc(pass_rate)}<span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">%</span>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text-primary); white-space: nowrap;">
+                      {trunc(pass_rate)}<span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">%</span>
                     </div>
                     <div style="flex: 1;">
                       <div class="progress-bar" style="height: 5px;">
                         <div class="progress-bar-fill" style={"width: #{pass_rate}%"}></div>
                       </div>
                     </div>
+                    <.link
+                      navigate={aludel_path("prompts/#{rate.prompt_id}/evolution")}
+                      class="trends-button"
+                      style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background-color: transparent; border: 1px solid var(--border); border-radius: 6px; text-decoration: none; color: var(--text-muted); font-size: 13px; font-weight: 500; transition: all 0.2s; white-space: nowrap;"
+                      title="View trends"
+                    >
+                      <.icon name="hero-chart-bar" class="size-4" />
+                      <span>Trends</span>
+                    </.link>
                   </div>
                 </div>
                 <div style="flex: 0 0 auto; display: flex; gap: 20px; padding-left: 20px; border-left: 1px solid var(--border);">
