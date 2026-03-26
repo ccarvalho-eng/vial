@@ -58,13 +58,6 @@ defmodule Vial.Web.Layouts do
 
   def app(assigns) do
     ~H"""
-    <div
-      id="vial-config"
-      data-live-path={assigns[:live_path] || "/live"}
-      style="display: none;"
-    >
-    </div>
-
     <header class="vial-header">
       <div class="vial-header-inner">
         <nav class="vial-nav">

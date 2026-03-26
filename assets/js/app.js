@@ -20,7 +20,7 @@
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
 // Establish Phoenix Socket and LiveView configuration.
-import {Socket} from "phoenix"
+import {Socket, LongPoll} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import {EvolutionChart} from "./hooks/evolution_chart"
@@ -81,10 +81,10 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
 })
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-const vialConfig = document.querySelector("#vial-config")
-const livePath = vialConfig?.getAttribute("data-live-path") || "/live"
+const liveTran = document.querySelector("meta[name='live-transport']").getAttribute("content")
+const livePath = document.querySelector("meta[name='live-path']").getAttribute("content")
 const liveSocket = new LiveSocket(livePath, Socket, {
-  longPollFallbackMs: 2500,
+  transport: liveTran === "longpoll" ? LongPoll : WebSocket,
   params: {_csrf_token: csrfToken},
   hooks: {AutoDismissFlash, EvolutionChart},
 })

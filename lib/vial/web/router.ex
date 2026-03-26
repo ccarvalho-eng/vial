@@ -5,8 +5,11 @@ defmodule Vial.Web.Router do
 
   @default_opts [
     resolver: Vial.Web.Resolver,
-    socket_path: "/live"
+    socket_path: "/live",
+    transport: "websocket"
   ]
+
+  @transport_values ~w(longpoll websocket)
 
   @doc """
   Defines a vial dashboard route.
@@ -20,6 +23,7 @@ defmodule Vial.Web.Router do
   * `:vial_name` - Vial instance name (default: Vial)
   * `:resolver` - Vial.Web.Resolver implementation
   * `:socket_path` - phoenix socket path (default: "/live")
+  * `:transport` - "websocket" or "longpoll" (default: "websocket")
 
   ## Examples
 
@@ -94,6 +98,7 @@ defmodule Vial.Web.Router do
       opts[:vial_name],
       opts[:resolver],
       opts[:socket_path],
+      opts[:transport],
       opts[:csp_nonce_assign_key],
       opts[:logo_path]
     ]
@@ -116,6 +121,7 @@ defmodule Vial.Web.Router do
         vial_name,
         resolver,
         live_path,
+        live_transport,
         csp_key,
         logo_path
       ) do
@@ -130,6 +136,7 @@ defmodule Vial.Web.Router do
       "access" => Vial.Web.Resolver.call_with_fallback(resolver, :resolve_access, [user]),
       "refresh" => Vial.Web.Resolver.call_with_fallback(resolver, :resolve_refresh, [user]),
       "live_path" => live_path,
+      "live_transport" => live_transport,
       "logo_path" => logo_path,
       "csp_nonces" => %{
         img: conn.assigns[csp_keys[:img]],
@@ -142,6 +149,15 @@ defmodule Vial.Web.Router do
   defp expand_csp_nonce_keys(nil), do: %{img: nil, style: nil, script: nil}
   defp expand_csp_nonce_keys(key) when is_atom(key), do: %{img: key, style: key, script: key}
   defp expand_csp_nonce_keys(map) when is_map(map), do: map
+
+  defp validate_opt!({:transport, transport}) do
+    unless transport in @transport_values do
+      raise ArgumentError, """
+      invalid :transport, expected one of #{inspect(@transport_values)},
+      got #{inspect(transport)}
+      """
+    end
+  end
 
   defp validate_opt!({:socket_path, path}) do
     unless is_binary(path) and byte_size(path) > 0 do

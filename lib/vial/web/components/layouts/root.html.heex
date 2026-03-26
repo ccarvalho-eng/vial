@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
+    <meta name="live-transport" content={assigns[:live_transport] || "websocket"} />
+    <meta name="live-path" content={assigns[:live_path] || "/live"} />
     <.live_title prefix="Vial · ">
       {assigns[:page_title] || "Dashboard"}
     </.live_title>

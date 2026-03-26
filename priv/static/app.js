@@ -20538,10 +20538,10 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   });
   var csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
-  var vialConfig = document.querySelector("#vial-config");
-  var livePath = vialConfig?.getAttribute("data-live-path") || "/live";
+  var liveTran = document.querySelector("meta[name='live-transport']").getAttribute("content");
+  var livePath = document.querySelector("meta[name='live-path']").getAttribute("content");
   var liveSocket = new LiveSocket2(livePath, Socket, {
-    longPollFallbackMs: 2500,
+    transport: liveTran === "longpoll" ? LongPoll : WebSocket,
     params: { _csrf_token: csrfToken },
     hooks: { AutoDismissFlash, EvolutionChart }
   });
