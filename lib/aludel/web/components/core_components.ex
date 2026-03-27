@@ -473,14 +473,20 @@ defmodule Aludel.Web.CoreComponents do
         role="dialog"
         aria-modal="true"
         tabindex="0"
-        phx-click={hide_modal(@id)}
       >
-        <div class="flex min-h-full items-start justify-center p-4" style="padding-top: 120px;">
+        <div
+          class="flex min-h-full items-start justify-center p-4"
+          style="padding-top: 120px;"
+          phx-click={hide_modal(@id)}
+        >
           <div
             id={"#{@id}-container"}
             class="aludel-card"
             style="max-width: 400px; width: 100%;"
             phx-click-away={hide_modal(@id)}
+            phx-window-keydown={hide_modal(@id)}
+            phx-key="escape"
+            phx-click-stop
           >
             <div id={"#{@id}-content"}>
               <div style="margin-bottom: 20px; font-size: 16px; color: var(--text-primary);">
