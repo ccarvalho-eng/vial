@@ -139,10 +139,12 @@ defmodule Aludel.Web.PromptLive.Index do
   def handle_event("create_project", %{"project" => project_params}, socket) do
     case Prompts.create_project(project_params) do
       {:ok, _project} ->
+        projects = Prompts.list_projects_with_prompts()
+
         {:noreply,
          socket
-         |> put_flash(:info, "Project created successfully")
-         |> push_patch(to: aludel_path("prompts"))}
+         |> assign(:projects, projects)
+         |> put_flash(:info, "Project created successfully")}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to create project")}

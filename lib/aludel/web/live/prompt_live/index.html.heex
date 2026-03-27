@@ -287,7 +287,12 @@
         </p>
       </div>
 
-      <.form for={%{}} id="new-project-form" phx-submit="create_project">
+      <.form
+        for={%{}}
+        id="new-project-form"
+        phx-submit="create_project"
+        onsubmit="setTimeout(() => this.reset(), 100)"
+      >
         <div style="margin-bottom: 16px;">
           <label for="project_name">Project Name</label>
           <input type="text" name="project[name]" id="project_name" required phx-click-stop />
