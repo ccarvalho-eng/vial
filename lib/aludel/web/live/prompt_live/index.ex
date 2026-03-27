@@ -135,6 +135,47 @@ defmodule Aludel.Web.PromptLive.Index do
      )}
   end
 
+  @impl Phoenix.LiveView
+  def handle_event("create_project", %{"project" => project_params}, socket) do
+    case Prompts.create_project(project_params) do
+      {:ok, _project} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Project created successfully")
+         |> push_patch(to: aludel_path("prompts"))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to create project")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("update_project", %{"project" => project_params}, socket) do
+    project = Prompts.get_project!(project_params["id"])
+
+    case Prompts.update_project(project, project_params) do
+      {:ok, _project} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Project updated successfully")
+         |> push_patch(to: aludel_path("prompts"))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update project")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("delete_project", %{"id" => id}, socket) do
+    project = Prompts.get_project!(id)
+    {:ok, _} = Prompts.delete_project(project)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Project deleted successfully")
+     |> push_patch(to: aludel_path("prompts"))}
+  end
+
   defp filter_prompts(prompts, search_query, selected_tags) do
     prompts
     |> filter_by_search(search_query)

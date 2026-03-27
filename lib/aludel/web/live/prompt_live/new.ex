@@ -44,15 +44,20 @@ defmodule Aludel.Web.PromptLive.New do
     save_prompt(socket, socket.assigns.live_action, prompt_params)
   end
 
-  defp apply_action(socket, :new, _params) do
+  defp apply_action(socket, :new, params) do
     prompt = %Prompt{}
-    changeset = Prompts.change_prompt(prompt)
+    project_id = Map.get(params, "project_id")
+
+    initial_data = if project_id, do: %{"project_id" => project_id}, else: %{}
+    changeset = Prompts.change_prompt(prompt, initial_data)
+    projects = Prompts.list_projects()
 
     socket
     |> assign(:page_title, "New Prompt")
     |> assign(:prompt, prompt)
     |> assign(:form, to_form(changeset))
     |> assign(:variables, [])
+    |> assign(:projects, projects)
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
@@ -67,19 +72,22 @@ defmodule Aludel.Web.PromptLive.New do
       "name" => prompt.name,
       "description" => prompt.description,
       "tags" => Enum.join(prompt.tags, ", "),
-      "template" => latest_template
+      "template" => latest_template,
+      "project_id" => prompt.project_id
     }
 
     changeset = Prompts.change_prompt(prompt, form_data)
 
     # Extract variables from latest template
     variables = Prompts.extract_variables(latest_template)
+    projects = Prompts.list_projects()
 
     socket
     |> assign(:page_title, "Edit Prompt")
     |> assign(:prompt, prompt)
     |> assign(:form, to_form(changeset))
     |> assign(:variables, variables)
+    |> assign(:projects, projects)
   end
 
   defp save_prompt(socket, :new, prompt_params) do
