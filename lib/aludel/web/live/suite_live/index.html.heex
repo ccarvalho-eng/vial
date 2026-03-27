@@ -10,67 +10,84 @@
       </.link>
     </div>
 
-    <div id="suites" style="display: flex; flex-direction: column; gap: 16px;">
-      <div :if={@suites == []} class="aludel-card" style="padding: 60px 20px; text-align: center;">
-        <.icon name="hero-beaker" class="size-12 text-muted empty-state-icon" />
-        <div class="empty-state-description">
-          No suites yet. Create your first evaluation suite to get started.
-        </div>
-      </div>
-
-      <%= for suite <- @suites do %>
-        <div class="aludel-card">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
-            <.link
-              navigate={aludel_path("suites/#{suite.id}")}
-              style="flex: 1; text-decoration: none;"
-            >
-              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
-                {suite.name}
-              </h3>
-              <div style="color: var(--text-secondary); font-size: 14px;">
-                Prompt: {suite.prompt.name}
-              </div>
-            </.link>
-            <div style="display: flex; gap: 8px;">
-              <.link
-                navigate={aludel_path("suites/#{suite.id}")}
-                class="button-primary"
-                style="font-size: 13px; padding: 6px 12px;"
-              >
-                View & Run
-              </.link>
-              <.link
-                navigate={aludel_path("suites/#{suite.id}/edit")}
-                class="button-secondary"
-                style="font-size: 13px; padding: 6px 12px;"
-              >
-                Edit
-              </.link>
-              <button
-                phx-click={show_modal("confirm-delete-suite-#{suite.id}")}
-                class="button-danger"
-                style="font-size: 13px; padding: 6px 12px;"
-              >
-                Delete
-              </button>
-            </div>
+    <div class="aludel-card" style="padding: 0; overflow: hidden;">
+      <%= if @suites == [] do %>
+        <div style="padding: 60px 20px; text-align: center;">
+          <.icon name="hero-beaker" class="size-12 text-muted empty-state-icon" />
+          <div class="empty-state-description">
+            No suites yet. Create your first evaluation suite to get started.
           </div>
         </div>
+      <% else %>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+            <tr>
+              <th style="text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
+                NAME
+              </th>
+              <th style="text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
+                PROMPT
+              </th>
+              <th style="text-align: right; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary); width: 280px;">
+                ACTIONS
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for suite <- @suites do %>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 16px;">
+                  <.link
+                    navigate={aludel_path("suites/#{suite.id}")}
+                    style="display: flex; align-items: center; gap: 8px; text-decoration: none;"
+                  >
+                    <.icon name="hero-beaker" class="size-5 text-muted" />
+                    <span style="font-weight: 500;">{suite.name}</span>
+                  </.link>
+                </td>
+                <td style="padding: 12px 16px; color: var(--text-secondary); font-size: 14px;">
+                  {suite.prompt.name}
+                </td>
+                <td style="padding: 12px 16px; text-align: right;">
+                  <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <.link
+                      navigate={aludel_path("suites/#{suite.id}")}
+                      class="button-primary"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      View & Run
+                    </.link>
+                    <.link
+                      navigate={aludel_path("suites/#{suite.id}/edit")}
+                      class="button-secondary"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      Edit
+                    </.link>
+                    <button
+                      phx-click={show_modal("confirm-delete-suite-#{suite.id}")}
+                      class="button-danger"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       <% end %>
     </div>
 
-    <%!-- Modals outside cards --%>
+    <%!-- Delete Modals --%>
     <.modal
       :for={suite <- @suites}
       id={"confirm-delete-suite-#{suite.id}"}
       on_confirm={JS.push("delete", value: %{id: suite.id})}
     >
       <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
-        <.icon
-          name="hero-exclamation-triangle"
-          class="size-6 text-red-600 flex-shrink-0"
-        />
+        <.icon name="hero-exclamation-triangle" class="size-6 text-red-600 flex-shrink-0" />
         <div>
           <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
             Delete Suite

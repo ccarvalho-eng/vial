@@ -11,7 +11,7 @@ defmodule Aludel.Web.SuiteLive.IndexTest do
 
     {:ok, view, _html} = live(conn, "/suites")
 
-    assert has_element?(view, "#suites")
+    assert has_element?(view, "table")
     assert render(view) =~ "Test Suite"
     assert render(view) =~ "Test Prompt"
   end
