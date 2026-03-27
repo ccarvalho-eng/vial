@@ -42,3 +42,6 @@ npm-debug.log
 
 .env
 priv/plts/
+
+.DS_Store
+assets/.DS_Store
