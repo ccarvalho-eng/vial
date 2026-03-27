@@ -51,67 +51,149 @@
       </div>
     <% end %>
 
-    <div id="prompts" style="display: flex; flex-direction: column; gap: 16px;">
-      <div
-        :if={@prompts == []}
-        class="aludel-card"
-        style="padding: 60px 20px; text-align: center;"
-      >
-        <.icon name="hero-document-text" class="size-12 text-muted empty-state-icon" />
-        <div class="empty-state-description">
-          No prompts yet. Create your first prompt to get started.
+    <div style="display: flex; gap: 20px;">
+      <%!-- Projects sidebar --%>
+      <div style="width: 250px; flex-shrink: 0;">
+        <div class="aludel-card" style="padding: 12px;">
+          <div style="font-weight: 600; font-size: 13px; margin-bottom: 12px; color: var(--text-secondary);">
+            PROJECTS
+          </div>
+
+          <%!-- All prompts option --%>
+          <button
+            phx-click="clear_project"
+            style={"cursor: pointer; width: 100%; text-align: left; padding: 8px; border-radius: 6px; background: none; border: none; font-size: 14px; display: flex; align-items: center; gap: 8px; #{if !@selected_project_id, do: "background-color: var(--bg-secondary); font-weight: 500;", else: ""}"}
+          >
+            <.icon name="hero-folder" class="size-4" />
+            <span>All Prompts</span>
+          </button>
+
+          <%!-- Projects list --%>
+          <div :for={project <- @projects} style="margin-top: 4px;">
+            <button
+              phx-click="select_project"
+              phx-value-project_id={project.id}
+              style={"cursor: pointer; width: 100%; text-align: left; padding: 8px; border-radius: 6px; background: none; border: none; font-size: 14px; display: flex; align-items: center; gap: 8px; #{if @selected_project_id == project.id, do: "background-color: var(--bg-secondary); font-weight: 500;", else: ""}"}
+            >
+              <.icon name="hero-folder" class="size-4" />
+              <span style="flex: 1;">{project.name}</span>
+              <span
+                :if={project.prompts != []}
+                style="font-size: 12px; color: var(--text-secondary);"
+              >
+                {length(project.prompts)}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
       <%!-- Prompts list --%>
-      <div :for={prompt <- @prompts} class="aludel-card">
-        <div style="display: flex; justify-content: space-between; align-items: start;">
-          <.link
-            navigate={aludel_path("prompts/#{prompt.id}")}
-            style="flex: 1; text-decoration: none;"
-          >
-            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
-              {prompt.name}
-            </h3>
-            <p
-              :if={prompt.description}
-              style="color: var(--text-secondary); margin: 0 0 8px 0; font-size: 14px;"
-            >
-              {prompt.description}
-            </p>
-            <div
-              :if={prompt.tags && prompt.tags != []}
-              style="display: flex; gap: 6px; flex-wrap: wrap;"
-            >
-              <span :for={tag <- prompt.tags} class="tag">
-                {tag}
-              </span>
-            </div>
-          </.link>
-          <div style="display: flex; gap: 8px;">
+      <div id="prompts" style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+        <div
+          :if={@prompts == []}
+          class="aludel-card"
+          style="padding: 60px 20px; text-align: center;"
+        >
+          <.icon name="hero-document-text" class="size-12 text-muted empty-state-icon" />
+          <div class="empty-state-description">
+            No prompts yet. Create your first prompt to get started.
+          </div>
+        </div>
+
+        <%!-- Prompts cards --%>
+        <div :for={prompt <- @prompts} class="aludel-card">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
             <.link
               navigate={aludel_path("prompts/#{prompt.id}")}
-              class="button-primary"
-              style="font-size: 13px; padding: 6px 12px;"
+              style="flex: 1; text-decoration: none;"
             >
-              View
+              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+                {prompt.name}
+              </h3>
+              <p
+                :if={prompt.description}
+                style="color: var(--text-secondary); margin: 0 0 8px 0; font-size: 14px;"
+              >
+                {prompt.description}
+              </p>
+              <div
+                :if={prompt.tags && prompt.tags != []}
+                style="display: flex; gap: 6px; flex-wrap: wrap;"
+              >
+                <span :for={tag <- prompt.tags} class="tag">
+                  {tag}
+                </span>
+              </div>
             </.link>
+            <div style="display: flex; gap: 8px;">
+              <.link
+                navigate={aludel_path("prompts/#{prompt.id}")}
+                class="button-primary"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                View
+              </.link>
+              <.link
+                navigate={aludel_path("prompts/#{prompt.id}/edit")}
+                class="button-secondary"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Edit
+              </.link>
+              <button
+                phx-click={show_modal("confirm-delete-prompt-#{prompt.id}")}
+                class="button-danger"
+                style="font-size: 13px; padding: 6px 12px;"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Pagination --%>
+        <%= if @pagination.total_pages > 1 do %>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 20px;">
             <.link
-              navigate={aludel_path("prompts/#{prompt.id}/edit")}
+              :if={@pagination.page_number > 1}
+              patch={
+                aludel_path(
+                  "prompts",
+                  Map.merge(build_query_params(@search_query, @selected_tags), %{
+                    "page" => to_string(@pagination.page_number - 1),
+                    "project_id" => @selected_project_id
+                  })
+                )
+              }
               class="button-secondary"
               style="font-size: 13px; padding: 6px 12px;"
             >
-              Edit
+              Previous
             </.link>
-            <button
-              phx-click={show_modal("confirm-delete-prompt-#{prompt.id}")}
-              class="button-danger"
+
+            <span style="font-size: 14px; color: var(--text-secondary);">
+              Page {@pagination.page_number} of {@pagination.total_pages}
+            </span>
+
+            <.link
+              :if={@pagination.page_number < @pagination.total_pages}
+              patch={
+                aludel_path(
+                  "prompts",
+                  Map.merge(build_query_params(@search_query, @selected_tags), %{
+                    "page" => to_string(@pagination.page_number + 1),
+                    "project_id" => @selected_project_id
+                  })
+                )
+              }
+              class="button-secondary"
               style="font-size: 13px; padding: 6px 12px;"
             >
-              Delete
-            </button>
+              Next
+            </.link>
           </div>
-        </div>
+        <% end %>
       </div>
     </div>
 

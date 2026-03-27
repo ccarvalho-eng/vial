@@ -14,20 +14,39 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(params, _uri, socket) do
-    all_prompts = Prompts.list_prompts()
-    all_tags = extract_all_tags(all_prompts)
+    page = String.to_integer(params["page"] || "1")
+    page_size = 20
     search_query = params["search"] || ""
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
+    selected_project_id = params["project_id"]
 
-    prompts = filter_prompts(all_prompts, search_query, selected_tags)
+    projects = Prompts.list_projects_with_prompts()
+    all_prompts = Prompts.list_prompts()
+    all_tags = extract_all_tags(all_prompts)
+
+    prompts_params = %{page: page, page_size: page_size}
+
+    prompts_params =
+      if selected_project_id,
+        do: Map.put(prompts_params, :project_id, selected_project_id),
+        else: prompts_params
+
+    paginated = Prompts.list_prompts(prompts_params)
+
+    filtered_prompts =
+      filter_prompts(paginated.entries, search_query, selected_tags)
 
     socket =
       socket
       |> assign(:page_title, "Prompts")
-      |> assign(:prompts, prompts)
+      |> assign(:projects, projects)
+      |> assign(:prompts, filtered_prompts)
+      |> assign(:pagination, paginated)
       |> assign(:all_tags, all_tags)
       |> assign(:search_query, search_query)
       |> assign(:selected_tags, selected_tags)
+      |> assign(:selected_project_id, selected_project_id)
+      |> assign(:expanded_projects, Map.get(socket.assigns, :expanded_projects, []))
 
     {:noreply, socket}
   end
@@ -75,6 +94,45 @@ defmodule Aludel.Web.PromptLive.Index do
   @impl Phoenix.LiveView
   def handle_event("clear_filters", _params, socket) do
     {:noreply, push_patch(socket, to: aludel_path("prompts"))}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle_project", %{"project_id" => project_id}, socket) do
+    expanded =
+      if project_id in socket.assigns.expanded_projects do
+        List.delete(socket.assigns.expanded_projects, project_id)
+      else
+        [project_id | socket.assigns.expanded_projects]
+      end
+
+    {:noreply, assign(socket, :expanded_projects, expanded)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("select_project", %{"project_id" => project_id}, socket) do
+    {:noreply,
+     push_patch(socket,
+       to:
+         aludel_path(
+           "prompts",
+           Map.merge(
+             build_query_params(socket.assigns.search_query, socket.assigns.selected_tags),
+             %{"project_id" => project_id, "page" => "1"}
+           )
+         )
+     )}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("clear_project", _params, socket) do
+    {:noreply,
+     push_patch(socket,
+       to:
+         aludel_path(
+           "prompts",
+           build_query_params(socket.assigns.search_query, socket.assigns.selected_tags)
+         )
+     )}
   end
 
   defp filter_prompts(prompts, search_query, selected_tags) do

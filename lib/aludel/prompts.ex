@@ -6,15 +6,59 @@ defmodule Aludel.Prompts do
   import Ecto.Query
 
   alias Aludel.Prompts.Evolution
+  alias Aludel.Prompts.Project
   alias Aludel.Prompts.Prompt
   alias Aludel.Prompts.PromptVersion
 
   @doc """
   Lists all prompts in the system.
+
+  When called without params, returns all prompts as a list.
+  When called with pagination params, returns a paginated result.
+
+  ## Options
+
+    * `:page` - Page number (default: 1)
+    * `:page_size` - Number of items per page (default: 20)
+    * `:project_id` - Filter by project ID
+
   """
   @spec list_prompts() :: [Prompt.t()]
   def list_prompts do
     repo().all(Prompt)
+  end
+
+  @spec list_prompts(map()) :: %{
+          entries: [Prompt.t()],
+          page_number: integer(),
+          page_size: integer(),
+          total_entries: integer(),
+          total_pages: integer()
+        }
+  def list_prompts(params) when is_map(params) do
+    page = Map.get(params, :page, 1)
+    page_size = Map.get(params, :page_size, 20)
+    project_id = Map.get(params, :project_id)
+
+    query = from(p in Prompt, order_by: [desc: p.inserted_at])
+    query = if project_id, do: where(query, [p], p.project_id == ^project_id), else: query
+
+    total = repo().aggregate(query, :count)
+    offset = (page - 1) * page_size
+
+    entries =
+      query
+      |> limit(^page_size)
+      |> offset(^offset)
+      |> repo().all()
+
+    %{
+      entries: entries,
+      page_number: page,
+      page_size: page_size,
+      total_entries: total,
+      total_pages: ceil(total / page_size)
+    }
   end
 
   @doc """
@@ -160,6 +204,73 @@ defmodule Aludel.Prompts do
       nil -> 1
       max_version -> max_version + 1
     end
+  end
+
+  @doc """
+  Lists all projects ordered by position.
+  """
+  @spec list_projects() :: [Project.t()]
+  def list_projects do
+    Project
+    |> order_by([p], asc: p.position, asc: p.inserted_at)
+    |> repo().all()
+  end
+
+  @doc """
+  Lists all projects with prompts preloaded.
+  """
+  @spec list_projects_with_prompts() :: [Project.t()]
+  def list_projects_with_prompts do
+    Project
+    |> order_by([p], asc: p.position, asc: p.inserted_at)
+    |> preload(:prompts)
+    |> repo().all()
+  end
+
+  @doc """
+  Gets a project by ID, raising if not found.
+  """
+  @spec get_project!(binary()) :: Project.t()
+  def get_project!(id) do
+    repo().get!(Project, id)
+  end
+
+  @doc """
+  Returns a changeset for tracking project changes.
+  """
+  @spec change_project(Project.t(), map()) :: Ecto.Changeset.t()
+  def change_project(%Project{} = project, attrs \\ %{}) do
+    Project.changeset(project, attrs)
+  end
+
+  @doc """
+  Creates a new project.
+  """
+  @spec create_project(map()) :: {:ok, Project.t()} | {:error, Ecto.Changeset.t()}
+  def create_project(attrs \\ %{}) do
+    %Project{}
+    |> Project.changeset(attrs)
+    |> repo().insert()
+  end
+
+  @doc """
+  Updates an existing project.
+  """
+  @spec update_project(Project.t(), map()) ::
+          {:ok, Project.t()} | {:error, Ecto.Changeset.t()}
+  def update_project(%Project{} = project, attrs) do
+    project
+    |> Project.changeset(attrs)
+    |> repo().update()
+  end
+
+  @doc """
+  Deletes a project.
+  """
+  @spec delete_project(Project.t()) ::
+          {:ok, Project.t()} | {:error, Ecto.Changeset.t()}
+  def delete_project(%Project{} = project) do
+    repo().delete(project)
   end
 
   defp repo do
