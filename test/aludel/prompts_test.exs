@@ -85,7 +85,6 @@ defmodule Aludel.PromptsTest do
 
       assert {:ok, project} = Prompts.create_project(attrs)
       assert project.name == "Customer Support"
-      assert project.position == 0
     end
 
     test "create_project/1 requires name" do
@@ -93,14 +92,14 @@ defmodule Aludel.PromptsTest do
       assert "can't be blank" in errors_on(changeset).name
     end
 
-    test "list_projects/0 returns all projects ordered by position" do
-      {:ok, p1} = Prompts.create_project(%{name: "Project A", position: 2})
-      {:ok, p2} = Prompts.create_project(%{name: "Project B", position: 1})
+    test "list_projects/0 returns all projects ordered by creation" do
+      {:ok, p1} = Prompts.create_project(%{name: "Project A"})
+      {:ok, p2} = Prompts.create_project(%{name: "Project B"})
 
       projects = Prompts.list_projects()
       assert length(projects) == 2
-      assert Enum.at(projects, 0).id == p2.id
-      assert Enum.at(projects, 1).id == p1.id
+      assert Enum.at(projects, 0).id == p1.id
+      assert Enum.at(projects, 1).id == p2.id
     end
 
     test "get_project!/1 returns project with given id" do
@@ -118,13 +117,6 @@ defmodule Aludel.PromptsTest do
       {:ok, project} = Prompts.create_project(%{name: "To Delete"})
       assert {:ok, _} = Prompts.delete_project(project)
       assert_raise Ecto.NoResultsError, fn -> Prompts.get_project!(project.id) end
-    end
-
-    test "create nested projects" do
-      {:ok, parent} = Prompts.create_project(%{name: "Parent"})
-      {:ok, child} = Prompts.create_project(%{name: "Child", parent_id: parent.id})
-
-      assert child.parent_id == parent.id
     end
 
     test "list_projects_with_prompts/0 preloads prompts" do

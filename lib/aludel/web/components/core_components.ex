@@ -486,7 +486,7 @@ defmodule Aludel.Web.CoreComponents do
             phx-click-away={hide_modal(@id)}
             phx-window-keydown={hide_modal(@id)}
             phx-key="escape"
-            onclick="event.stopPropagation()"
+            phx-click="phx-noop"
           >
             <div id={"#{@id}-content"}>
               <div style="margin-bottom: 20px; font-size: 16px; color: var(--text-primary);">

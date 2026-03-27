@@ -207,12 +207,12 @@ defmodule Aludel.Prompts do
   end
 
   @doc """
-  Lists all projects ordered by position.
+  Lists all projects ordered by creation date.
   """
   @spec list_projects() :: [Project.t()]
   def list_projects do
     Project
-    |> order_by([p], asc: p.position, asc: p.inserted_at)
+    |> order_by([p], asc: p.inserted_at)
     |> repo().all()
   end
 
@@ -222,7 +222,7 @@ defmodule Aludel.Prompts do
   @spec list_projects_with_prompts() :: [Project.t()]
   def list_projects_with_prompts do
     Project
-    |> order_by([p], asc: p.position, asc: p.inserted_at)
+    |> order_by([p], asc: p.inserted_at)
     |> preload(:prompts)
     |> repo().all()
   end
