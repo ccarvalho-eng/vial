@@ -146,81 +146,121 @@
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
           <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Pass Rates by Prompt</h2>
         </div>
-        <div class="aludel-card" style="padding: 20px;">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <%= for rate <- @pass_rates do %>
-              <% total = (rate.total_passed || 0) + (rate.total_failed || 0) %>
-              <% pass_rate =
-                if total > 0,
-                  do: Float.round((rate.total_passed || 0) / total * 100, 1),
-                  else: 0 %>
-              <div style="display: flex; align-items: center; gap: 20px; padding: 14px 16px; background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;">
-                <div style="flex: 0 0 200px; display: flex; align-items: center; gap: 8px;">
-                  <%= cond do %>
-                    <% pass_rate >= 80 -> %>
-                      <.icon name="hero-check-badge-solid" class="size-4 text-green-600" />
-                    <% pass_rate >= 50 -> %>
-                      <.icon name="hero-exclamation-circle" class="size-4 text-yellow-600" />
-                    <% true -> %>
-                      <.icon name="hero-x-circle" class="size-4 text-red-600" />
-                  <% end %>
-                  <.link
-                    navigate={aludel_path("prompts/#{rate.prompt_id}/evolution")}
-                    style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none;"
-                  >
-                    {rate.prompt_name}
-                  </.link>
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 18px; font-weight: 600; color: var(--text-primary); white-space: nowrap;">
-                      {trunc(pass_rate)}<span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">%</span>
-                    </div>
-                    <div style="flex: 1;">
-                      <div class="progress-bar" style="height: 5px;">
-                        <div class="progress-bar-fill" style={"width: #{pass_rate}%"}></div>
-                      </div>
-                    </div>
+        <div class="aludel-card" style="padding: 0; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+              <tr>
+                <th style="text-align: left; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Prompt
+                </th>
+                <th style="text-align: center; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Pass Rate (%)
+                </th>
+                <th style="text-align: center; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Passed
+                </th>
+                <th style="text-align: center; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Failed
+                </th>
+                <th style="text-align: center; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Total
+                </th>
+                <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for rate <- @pass_rates do %>
+                <% total = (rate.total_passed || 0) + (rate.total_failed || 0) %>
+                <% pass_rate =
+                  if total > 0,
+                    do: Float.round((rate.total_passed || 0) / total * 100, 1),
+                    else: 0 %>
+                <% circle_color =
+                  cond do
+                    pass_rate >= 80 -> "rgba(16, 185, 129, 0.8)"
+                    pass_rate >= 50 -> "rgba(245, 158, 11, 0.8)"
+                    true -> "rgba(239, 68, 68, 0.8)"
+                  end %>
+                <% circle_bg =
+                  cond do
+                    pass_rate >= 80 -> "rgba(16, 185, 129, 0.1)"
+                    pass_rate >= 50 -> "rgba(245, 158, 11, 0.1)"
+                    true -> "rgba(239, 68, 68, 0.1)"
+                  end %>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 16px 20px;">
                     <.link
                       navigate={aludel_path("prompts/#{rate.prompt_id}/evolution")}
-                      class="trends-button"
-                      style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background-color: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; text-decoration: none; color: var(--text-secondary); font-size: 13px; font-weight: 600; transition: all 0.2s; white-space: nowrap;"
-                      title="View trends"
+                      style="font-size: 14px; font-weight: 600; color: var(--text-primary); text-decoration: none;"
                     >
-                      <.icon name="hero-chart-bar" class="size-4" />
-                      <span>Trends</span>
+                      {rate.prompt_name}
                     </.link>
-                  </div>
-                </div>
-                <div style="flex: 0 0 auto; display: flex; gap: 20px; padding-left: 20px; border-left: 1px solid var(--border);">
-                  <div style="text-align: center;">
-                    <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em;">
-                      Passed
+                  </td>
+                  <td style="padding: 16px 20px;">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                      <div style="position: relative; width: 56px; height: 56px;">
+                        <svg viewBox="0 0 100 100" style="transform: rotate(-90deg);">
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke={circle_bg}
+                            stroke-width="12"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke={circle_color}
+                            stroke-width="12"
+                            stroke-dasharray={
+                              "#{Float.round(pass_rate * 2.51, 1)} #{Float.round((100 - pass_rate) * 2.51, 1)}"
+                            }
+                            stroke-linecap="round"
+                            style="transition: stroke-dasharray 0.6s cubic-bezier(0.4, 0, 0.2, 1);"
+                          />
+                        </svg>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                          <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">
+                            {trunc(pass_rate)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                  </td>
+                  <td style="padding: 16px 20px; text-align: center;">
+                    <div style="font-size: 16px; font-weight: 600; color: rgba(139, 92, 246, 0.9);">
                       {rate.total_passed || 0}
                     </div>
-                  </div>
-                  <div style="text-align: center;">
-                    <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em;">
-                      Failed
-                    </div>
-                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                  </td>
+                  <td style="padding: 16px 20px; text-align: center;">
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-secondary);">
                       {rate.total_failed || 0}
                     </div>
-                  </div>
-                  <div style="text-align: center;">
-                    <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em;">
-                      Total
-                    </div>
-                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                  </td>
+                  <td style="padding: 16px 20px; text-align: center;">
+                    <div style="font-size: 14px; font-weight: 500; color: var(--text-muted);">
                       {total}
                     </div>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-          </div>
+                  </td>
+                  <td style="padding: 16px 20px; text-align: right;">
+                    <.link
+                      navigate={aludel_path("prompts/#{rate.prompt_id}/evolution")}
+                      class="button-secondary"
+                      style="font-size: 13px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;"
+                    >
+                      <.icon name="hero-chart-bar" class="size-4" />
+                      Trends
+                    </.link>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
         </div>
       </div>
     <% end %>
