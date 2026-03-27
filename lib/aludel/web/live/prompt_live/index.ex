@@ -178,6 +178,11 @@ defmodule Aludel.Web.PromptLive.Index do
      |> push_patch(to: aludel_path("prompts"))}
   end
 
+  @impl Phoenix.LiveView
+  def handle_event("phx-noop", _params, socket) do
+    {:noreply, socket}
+  end
+
   defp filter_prompts(prompts, search_query, selected_tags) do
     prompts
     |> filter_by_search(search_query)
