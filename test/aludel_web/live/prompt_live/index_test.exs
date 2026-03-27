@@ -9,7 +9,7 @@ defmodule Aludel.Web.PromptLive.IndexTest do
 
     {:ok, view, _html} = live(conn, "/prompts")
 
-    assert has_element?(view, "#prompts")
+    assert has_element?(view, "table")
     assert render(view) =~ "Test Prompt"
   end
 

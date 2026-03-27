@@ -5,13 +5,22 @@
         <.icon name="hero-document-text" class="size-7 text-muted" />
         <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Prompts</h1>
       </div>
-      <.link navigate={aludel_path("prompts/new")} class="button-primary">
-        <.icon name="hero-plus" class="size-4" /> New Prompt
-      </.link>
+      <div style="display: flex; gap: 8px;">
+        <button
+          phx-click={show_modal("new-project-modal")}
+          class="button-secondary"
+          style="font-size: 13px; padding: 6px 12px;"
+        >
+          <.icon name="hero-folder-plus" class="size-4" /> New Project
+        </button>
+        <.link navigate={aludel_path("prompts/new")} class="button-primary">
+          <.icon name="hero-plus" class="size-4" /> New Prompt
+        </.link>
+      </div>
     </div>
 
-    <%!-- Search and Filter - only show if there are prompts --%>
-    <%= if @prompts != [] || @search_query != "" || @selected_tags != [] do %>
+    <%!-- Search and Filter --%>
+    <%= if @prompts != [] || @projects != [] || @search_query != "" || @selected_tags != [] do %>
       <div style="margin-bottom: 20px;">
         <.form for={%{}} phx-submit="search" phx-change="search">
           <input
@@ -51,81 +60,313 @@
       </div>
     <% end %>
 
-    <div id="prompts" style="display: flex; flex-direction: column; gap: 16px;">
-      <div
-        :if={@prompts == []}
-        class="aludel-card"
-        style="padding: 60px 20px; text-align: center;"
-      >
-        <.icon name="hero-document-text" class="size-12 text-muted empty-state-icon" />
-        <div class="empty-state-description">
-          No prompts yet. Create your first prompt to get started.
-        </div>
-      </div>
-
-      <%!-- Prompts list --%>
-      <div :for={prompt <- @prompts} class="aludel-card">
-        <div style="display: flex; justify-content: space-between; align-items: start;">
-          <.link
-            navigate={aludel_path("prompts/#{prompt.id}")}
-            style="flex: 1; text-decoration: none;"
-          >
-            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
-              {prompt.name}
-            </h3>
-            <p
-              :if={prompt.description}
-              style="color: var(--text-secondary); margin: 0 0 8px 0; font-size: 14px;"
-            >
-              {prompt.description}
-            </p>
-            <div
-              :if={prompt.tags && prompt.tags != []}
-              style="display: flex; gap: 6px; flex-wrap: wrap;"
-            >
-              <span :for={tag <- prompt.tags} class="tag">
-                {tag}
-              </span>
-            </div>
-          </.link>
-          <div style="display: flex; gap: 8px;">
-            <.link
-              navigate={aludel_path("prompts/#{prompt.id}")}
-              class="button-primary"
-              style="font-size: 13px; padding: 6px 12px;"
-            >
-              View
-            </.link>
-            <.link
-              navigate={aludel_path("prompts/#{prompt.id}/edit")}
-              class="button-secondary"
-              style="font-size: 13px; padding: 6px 12px;"
-            >
-              Edit
-            </.link>
-            <button
-              phx-click={show_modal("confirm-delete-prompt-#{prompt.id}")}
-              class="button-danger"
-              style="font-size: 13px; padding: 6px 12px;"
-            >
-              Delete
-            </button>
+    <%!-- File Explorer Table --%>
+    <div class="aludel-card" style="padding: 0; overflow: hidden;">
+      <%= if @projects == [] && @prompts == [] do %>
+        <div style="padding: 60px 20px; text-align: center;">
+          <.icon name="hero-document-text" class="size-12 text-muted empty-state-icon" />
+          <div class="empty-state-description">
+            No prompts yet. Create your first prompt or project to get started.
           </div>
         </div>
-      </div>
+      <% else %>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+            <tr>
+              <th style="text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
+                NAME
+              </th>
+              <th style="text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
+                DESCRIPTION
+              </th>
+              <th style="text-align: right; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary); width: 200px;">
+                ACTIONS
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <%!-- Render projects (folders) and their prompts --%>
+            <%= for project <- @projects do %>
+              <%!-- Project Row --%>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 16px;">
+                  <div
+                    style="display: flex; align-items: center; gap: 8px; cursor: pointer;"
+                    phx-click="toggle_project"
+                    phx-value-project_id={project.id}
+                  >
+                    <.icon
+                      name={
+                        if project.id in @expanded_projects,
+                          do: "hero-chevron-down",
+                          else: "hero-chevron-right"
+                      }
+                      class="size-4 text-muted"
+                    />
+                    <span style="color: #f59e0b;">
+                      <.icon name="hero-folder" class="size-5" />
+                    </span>
+                    <span style="font-weight: 500;">{project.name}</span>
+                    <span style="font-size: 12px; color: var(--text-secondary);">
+                      ({length(project.prompts)})
+                    </span>
+                  </div>
+                </td>
+                <td style="padding: 12px 16px; color: var(--text-secondary); font-size: 14px;">
+                  Project
+                </td>
+                <td style="padding: 12px 16px; text-align: right;">
+                  <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <.link
+                      navigate={aludel_path("prompts/new", %{"project_id" => project.id})}
+                      class="button-secondary"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      <.icon name="hero-plus" class="size-3" /> New Prompt
+                    </.link>
+                    <button
+                      phx-click={show_modal("edit-project-modal-#{project.id}")}
+                      class="button-secondary"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      phx-click={show_modal("delete-project-modal-#{project.id}")}
+                      class="button-danger"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <%!-- Project's Prompts (shown when expanded) --%>
+              <%= if project.id in @expanded_projects do %>
+                <%= for prompt <- project.prompts do %>
+                  <tr style="border-bottom: 1px solid var(--border); background-color: var(--bg-tertiary);">
+                    <td style="padding: 12px 16px 12px 48px;">
+                      <.link
+                        navigate={aludel_path("prompts/#{prompt.id}")}
+                        style="display: flex; align-items: center; gap: 8px; text-decoration: none;"
+                      >
+                        <.icon name="hero-document-text" class="size-4 text-muted" />
+                        <span>{prompt.name}</span>
+                      </.link>
+                    </td>
+                    <td style="padding: 12px 16px; color: var(--text-secondary); font-size: 14px;">
+                      {prompt.description || "—"}
+                    </td>
+                    <td style="padding: 12px 16px; text-align: right;">
+                      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <.link
+                          navigate={aludel_path("prompts/#{prompt.id}")}
+                          class="button-primary"
+                          style="font-size: 13px; padding: 6px 12px;"
+                        >
+                          View
+                        </.link>
+                        <.link
+                          navigate={aludel_path("prompts/#{prompt.id}/edit")}
+                          class="button-secondary"
+                          style="font-size: 13px; padding: 6px 12px;"
+                        >
+                          Edit
+                        </.link>
+                        <button
+                          phx-click={show_modal("confirm-delete-prompt-#{prompt.id}")}
+                          class="button-danger"
+                          style="font-size: 13px; padding: 6px 12px;"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              <% end %>
+            <% end %>
+
+            <%!-- Prompts without a project --%>
+            <%= for prompt <- Enum.filter(@prompts, &is_nil(&1.project_id)) do %>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 16px;">
+                  <.link
+                    navigate={aludel_path("prompts/#{prompt.id}")}
+                    style="display: flex; align-items: center; gap: 8px; text-decoration: none;"
+                  >
+                    <.icon name="hero-document-text" class="size-5 text-muted" />
+                    <span>{prompt.name}</span>
+                  </.link>
+                </td>
+                <td style="padding: 12px 16px; color: var(--text-secondary); font-size: 14px;">
+                  {prompt.description || "—"}
+                </td>
+                <td style="padding: 12px 16px; text-align: right;">
+                  <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <.link
+                      navigate={aludel_path("prompts/#{prompt.id}")}
+                      class="button-primary"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      View
+                    </.link>
+                    <.link
+                      navigate={aludel_path("prompts/#{prompt.id}/edit")}
+                      class="button-secondary"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      Edit
+                    </.link>
+                    <button
+                      phx-click={show_modal("confirm-delete-prompt-#{prompt.id}")}
+                      class="button-danger"
+                      style="font-size: 13px; padding: 6px 12px;"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
     </div>
 
-    <%!-- Modals outside cards --%>
+    <%!-- Pagination --%>
+    <%= if @pagination.total_pages > 1 do %>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 20px;">
+        <.link
+          :if={@pagination.page_number > 1}
+          patch={
+            aludel_path(
+              "prompts",
+              Map.merge(build_query_params(@search_query, @selected_tags), %{
+                "page" => to_string(@pagination.page_number - 1),
+                "project_id" => @selected_project_id
+              })
+            )
+          }
+          class="button-secondary"
+          style="font-size: 13px; padding: 6px 12px;"
+        >
+          Previous
+        </.link>
+
+        <span style="font-size: 14px; color: var(--text-secondary);">
+          Page {@pagination.page_number} of {@pagination.total_pages}
+        </span>
+
+        <.link
+          :if={@pagination.page_number < @pagination.total_pages}
+          patch={
+            aludel_path(
+              "prompts",
+              Map.merge(build_query_params(@search_query, @selected_tags), %{
+                "page" => to_string(@pagination.page_number + 1),
+                "project_id" => @selected_project_id
+              })
+            )
+          }
+          class="button-secondary"
+          style="font-size: 13px; padding: 6px 12px;"
+        >
+          Next
+        </.link>
+      </div>
+    <% end %>
+
+    <%!-- New Project Modal --%>
+    <.modal id="new-project-modal" on_confirm={JS.dispatch("submit", to: "#new-project-form")}>
+      <div style="margin-bottom: 16px;">
+        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">New Project</h3>
+        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+          Create a new project to organize your prompts.
+        </p>
+      </div>
+
+      <.form
+        for={%{}}
+        id="new-project-form"
+        phx-submit="create_project"
+        onsubmit="setTimeout(() => this.reset(), 100)"
+      >
+        <div style="margin-bottom: 16px;">
+          <label for="project_name">Project Name</label>
+          <input type="text" name="project[name]" id="project_name" required phx-click-stop />
+        </div>
+      </.form>
+
+      <:confirm>Create Project</:confirm>
+      <:cancel>Cancel</:cancel>
+    </.modal>
+
+    <%!-- Edit/Delete Project Modals --%>
+    <%= for project <- @projects do %>
+      <.modal
+        id={"edit-project-modal-#{project.id}"}
+        on_confirm={JS.dispatch("submit", to: "#edit-project-form-#{project.id}")}
+      >
+        <div style="margin-bottom: 16px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">Edit Project</h3>
+        </div>
+
+        <.form for={%{}} id={"edit-project-form-#{project.id}"} phx-submit="update_project">
+          <input type="hidden" name="project[id]" value={project.id} />
+
+          <div style="margin-bottom: 16px;">
+            <label for={"project_name_#{project.id}"}>Project Name</label>
+            <input
+              type="text"
+              name="project[name]"
+              id={"project_name_#{project.id}"}
+              value={project.name}
+              required
+              phx-click-stop
+            />
+          </div>
+        </.form>
+
+        <:confirm>Update Project</:confirm>
+        <:cancel>Cancel</:cancel>
+      </.modal>
+
+      <.modal
+        id={"delete-project-modal-#{project.id}"}
+        on_confirm={JS.push("delete_project", value: %{id: project.id})}
+      >
+        <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+          <.icon name="hero-exclamation-triangle" class="size-6 text-red-600 flex-shrink-0" />
+          <div>
+            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
+              Delete Project
+            </h3>
+            <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+              Are you sure you want to delete "<strong style="color: var(--text-primary);">{project.name}</strong>"?
+              <%= if project.prompts != [] do %>
+                <br /><br />
+                <strong>Warning:</strong>
+                This project contains {length(project.prompts)} prompt(s).
+                They will not be deleted, but will be moved to "No Project".
+              <% end %>
+            </p>
+          </div>
+        </div>
+        <:confirm>Delete Project</:confirm>
+        <:cancel>Cancel</:cancel>
+      </.modal>
+    <% end %>
+
+    <%!-- Delete Prompt Modals --%>
     <.modal
       :for={prompt <- @prompts}
       id={"confirm-delete-prompt-#{prompt.id}"}
       on_confirm={JS.push("delete", value: %{id: prompt.id})}
     >
       <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
-        <.icon
-          name="hero-exclamation-triangle"
-          class="size-6 text-red-600 flex-shrink-0"
-        />
+        <.icon name="hero-exclamation-triangle" class="size-6 text-red-600 flex-shrink-0" />
         <div>
           <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">
             Delete Prompt

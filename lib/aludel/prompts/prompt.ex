@@ -11,7 +11,7 @@ defmodule Aludel.Prompts.Prompt do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(name)a
-  @optional_fields ~w(description tags)a
+  @optional_fields ~w(description tags project_id)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -21,6 +21,7 @@ defmodule Aludel.Prompts.Prompt do
     field :description, :string
     field :tags, {:array, :string}, default: []
 
+    belongs_to :project, Aludel.Prompts.Project
     has_many :versions, Aludel.Prompts.PromptVersion
 
     timestamps(type: :utc_datetime)

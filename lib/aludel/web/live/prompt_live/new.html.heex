@@ -26,6 +26,16 @@
               <.input field={@form[:tags]} type="text" placeholder="elixir, langchain, ai" />
             </div>
 
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_project_id">Project (optional)</label>
+              <.input
+                field={@form[:project_id]}
+                type="select"
+                prompt="No Project"
+                options={Enum.map(@projects, &{&1.name, &1.id})}
+              />
+            </div>
+
             <div>
               <label for="prompt_template">Template</label>
               <.input
@@ -85,6 +95,16 @@
             <div style="margin-bottom: 16px;">
               <label for="prompt_tags">Tags (comma-separated)</label>
               <.input field={@form[:tags]} type="text" placeholder="elixir, langchain, ai" />
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label for="prompt_project_id">Project (optional)</label>
+              <.input
+                field={@form[:project_id]}
+                type="select"
+                prompt="No Project"
+                options={Enum.map(@projects, &{&1.name, &1.id})}
+              />
             </div>
 
             <div>

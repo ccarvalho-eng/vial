@@ -78,4 +78,92 @@ defmodule Aludel.PromptsTest do
       assert length(metrics) == 1
     end
   end
+
+  describe "projects" do
+    test "create_project/1 creates a project with valid attributes" do
+      attrs = %{name: "Customer Support"}
+
+      assert {:ok, project} = Prompts.create_project(attrs)
+      assert project.name == "Customer Support"
+    end
+
+    test "create_project/1 requires name" do
+      assert {:error, changeset} = Prompts.create_project(%{})
+      assert "can't be blank" in errors_on(changeset).name
+    end
+
+    test "list_projects/0 returns all projects ordered by creation" do
+      {:ok, p1} = Prompts.create_project(%{name: "Project A"})
+      {:ok, p2} = Prompts.create_project(%{name: "Project B"})
+
+      projects = Prompts.list_projects()
+      assert length(projects) == 2
+      assert Enum.at(projects, 0).id == p1.id
+      assert Enum.at(projects, 1).id == p2.id
+    end
+
+    test "get_project!/1 returns project with given id" do
+      {:ok, project} = Prompts.create_project(%{name: "Test Project"})
+      assert Prompts.get_project!(project.id).name == "Test Project"
+    end
+
+    test "update_project/2 updates project" do
+      {:ok, project} = Prompts.create_project(%{name: "Old Name"})
+      assert {:ok, updated} = Prompts.update_project(project, %{name: "New Name"})
+      assert updated.name == "New Name"
+    end
+
+    test "delete_project/1 deletes project" do
+      {:ok, project} = Prompts.create_project(%{name: "To Delete"})
+      assert {:ok, _} = Prompts.delete_project(project)
+      assert_raise Ecto.NoResultsError, fn -> Prompts.get_project!(project.id) end
+    end
+
+    test "list_projects_with_prompts/0 preloads prompts" do
+      {:ok, project} = Prompts.create_project(%{name: "Test Project"})
+
+      {:ok, _prompt} =
+        Prompts.create_prompt(%{name: "Test Prompt", project_id: project.id})
+
+      projects = Prompts.list_projects_with_prompts()
+      project_with_prompts = Enum.find(projects, &(&1.id == project.id))
+
+      assert length(project_with_prompts.prompts) == 1
+    end
+  end
+
+  describe "pagination" do
+    test "list_prompts/1 returns paginated results" do
+      {:ok, project} = Prompts.create_project(%{name: "Test"})
+
+      for i <- 1..15 do
+        Prompts.create_prompt(%{
+          name: "Prompt #{i}",
+          project_id: project.id
+        })
+      end
+
+      page1 = Prompts.list_prompts(%{page: 1, page_size: 10})
+      assert length(page1.entries) == 10
+      assert page1.page_number == 1
+      assert page1.total_entries == 15
+      assert page1.total_pages == 2
+
+      page2 = Prompts.list_prompts(%{page: 2, page_size: 10})
+      assert length(page2.entries) == 5
+      assert page2.page_number == 2
+    end
+
+    test "list_prompts/1 filters by project_id" do
+      {:ok, project1} = Prompts.create_project(%{name: "Project 1"})
+      {:ok, project2} = Prompts.create_project(%{name: "Project 2"})
+
+      Prompts.create_prompt(%{name: "P1 Prompt", project_id: project1.id})
+      Prompts.create_prompt(%{name: "P2 Prompt", project_id: project2.id})
+
+      results = Prompts.list_prompts(%{project_id: project1.id})
+      assert length(results.entries) == 1
+      assert hd(results.entries).name == "P1 Prompt"
+    end
+  end
 end
