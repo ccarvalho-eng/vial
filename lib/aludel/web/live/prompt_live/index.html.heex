@@ -290,7 +290,7 @@
       <.form for={%{}} id="new-project-form" phx-submit="create_project">
         <div style="margin-bottom: 16px;">
           <label for="project_name">Project Name</label>
-          <input type="text" name="project[name]" id="project_name" required />
+          <input type="text" name="project[name]" id="project_name" required phx-click-stop />
         </div>
       </.form>
 
@@ -319,6 +319,7 @@
               id={"project_name_#{project.id}"}
               value={project.name}
               required
+              phx-click-stop
             />
           </div>
         </.form>
