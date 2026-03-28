@@ -503,4 +503,65 @@ defmodule Aludel.EvalsTest do
       assert suite_run.failed == 1
     end
   end
+
+  describe "test_case_documents" do
+    test "create_test_case_document/1 creates a document" do
+      test_case = test_case_fixture()
+
+      attrs = %{
+        test_case_id: test_case.id,
+        filename: "doc.pdf",
+        content_type: "application/pdf",
+        data: <<1, 2, 3>>,
+        size_bytes: 3
+      }
+
+      assert {:ok, document} = Evals.create_test_case_document(attrs)
+      assert document.test_case_id == test_case.id
+      assert document.filename == "doc.pdf"
+      assert document.content_type == "application/pdf"
+    end
+
+    test "delete_test_case_document/1 deletes a document" do
+      test_case = test_case_fixture()
+
+      {:ok, document} =
+        Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "doc.pdf",
+          content_type: "application/pdf",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      assert {:ok, _deleted} = Evals.delete_test_case_document(document)
+    end
+
+    test "get_test_case_with_documents!/1 preloads documents" do
+      test_case = test_case_fixture()
+
+      {:ok, _doc1} =
+        Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "doc1.pdf",
+          content_type: "application/pdf",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      {:ok, _doc2} =
+        Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "doc2.pdf",
+          content_type: "application/pdf",
+          data: <<4, 5, 6>>,
+          size_bytes: 3
+        })
+
+      loaded = Evals.get_test_case_with_documents!(test_case.id)
+
+      refute match?(%Ecto.Association.NotLoaded{}, loaded.documents)
+      assert length(loaded.documents) == 2
+    end
+  end
 end
