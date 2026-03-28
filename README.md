@@ -16,7 +16,7 @@
 
 Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output quality, latency, token usage, and cost in real-time.
 
-<img width="1347" height="958" alt="Screenshot" src="https://github.com/user-attachments/assets/4dc92aec-9cd0-4c1e-bae2-5f915d171181" />
+<img alt="Screenshot" src="https://github.com/user-attachments/assets/4dc92aec-9cd0-4c1e-bae2-5f915d171181" />
 
 ---
 
