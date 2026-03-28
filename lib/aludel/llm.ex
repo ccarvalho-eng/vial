@@ -12,6 +12,11 @@ defmodule Aludel.LLM do
   - Cost estimation
   """
 
+  @type document_input :: %{
+          data: binary(),
+          content_type: String.t()
+        }
+
   @type llm_result :: %{
           output: String.t(),
           input_tokens: non_neg_integer(),
@@ -31,12 +36,14 @@ defmodule Aludel.LLM do
           | {:network_error, term()}
 
   @doc """
-  Calls an LLM provider with a prompt and returns structured result.
+  Calls an LLM provider with a prompt and optional documents.
 
   ## Parameters
     - provider: Provider configuration struct
     - prompt: Text prompt to send to the LLM
-    - opts: Additional options (reserved for future use)
+    - opts: Additional options
+      - :documents - List of document maps with :data and
+        :content_type
 
   ## Returns
     - `{:ok, result}` with output, tokens, latency, and cost
@@ -44,8 +51,17 @@ defmodule Aludel.LLM do
 
   ## Examples
 
-      iex> provider = %Provider{provider: :openai, model: "gpt-4o"}
+      iex> provider = %Provider{provider: :openai,
+      ...>   model: "gpt-4o"}
       iex> {:ok, result} = LLM.call(provider, "Hello world")
+      iex> is_binary(result.output)
+      true
+
+      iex> provider = %Provider{provider: :openai,
+      ...>   model: "gpt-4o"}
+      iex> doc = %{data: <<...>>, content_type: "image/png"}
+      iex> {:ok, result} = LLM.call(provider,
+      ...>   "Describe image", documents: [doc])
       iex> is_binary(result.output)
       true
   """
