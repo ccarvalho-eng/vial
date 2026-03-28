@@ -126,10 +126,9 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
 
       {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
-      assert has_element?(
-               view,
-               "[phx-click='delete_test_case'][phx-value-id='#{test_case.id}']"
-             )
+      # Delete button now opens a confirmation modal
+      assert has_element?(view, "button", "Delete")
+      assert has_element?(view, "#confirm-delete-test-case-#{test_case.id}")
     end
   end
 end

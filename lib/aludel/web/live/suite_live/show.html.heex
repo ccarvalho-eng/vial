@@ -129,9 +129,7 @@
                           <span style="flex: 1; truncate;">{doc.filename}</span>
                           <button
                             type="button"
-                            phx-click="delete_document"
-                            phx-value-doc-id={doc.id}
-                            phx-value-id={test_case.id}
+                            phx-click={show_modal("confirm-delete-document-#{doc.id}")}
                             style="border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; padding: 4px 8px; border-radius: 4px; font-weight: 600; transition: all 0.15s ease;"
                             onmouseover="this.style.background='#dc2626'; this.style.color='white';"
                             onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='#dc2626';"
@@ -292,8 +290,7 @@
                       Edit
                     </button>
                     <button
-                      phx-click="delete_test_case"
-                      phx-value-id={test_case.id}
+                      phx-click={show_modal("confirm-delete-test-case-#{test_case.id}")}
                       style="padding: 6px 14px; font-size: 13px; border: 1px solid rgba(220, 38, 38, 0.3); background: rgba(220, 38, 38, 0.05); color: #dc2626; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.15s ease;"
                       onmouseover="this.style.background='#dc2626'; this.style.borderColor='#dc2626'; this.style.color='white';"
                       onmouseout="this.style.background='rgba(220, 38, 38, 0.05)'; this.style.borderColor='rgba(220, 38, 38, 0.3)'; this.style.color='#dc2626';"
@@ -533,4 +530,46 @@
       <% end %>
     </div>
   </div>
+
+  <%!-- Delete Confirmation Modals --%>
+  <.modal
+    :for={test_case <- @suite.test_cases}
+    id={"confirm-delete-test-case-#{test_case.id}"}
+    on_confirm={JS.push("delete_test_case", value: %{id: test_case.id})}
+  >
+    <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+      <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(220, 38, 38, 0.1); display: flex; align-items: center; justify-content: center;">
+        <span class="hero-exclamation-triangle size-5" style="color: #dc2626;"></span>
+      </div>
+      <div style="flex: 1;">
+        <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">Delete Test Case</h3>
+        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+          Are you sure you want to delete this test case? This action cannot be undone.
+        </p>
+      </div>
+    </div>
+    <:confirm>Delete Test Case</:confirm>
+    <:cancel>Cancel</:cancel>
+  </.modal>
+
+  <%= for test_case <- @suite.test_cases, doc <- test_case.documents do %>
+    <.modal
+      id={"confirm-delete-document-#{doc.id}"}
+      on_confirm={JS.push("delete_document", value: %{"doc-id": doc.id, id: test_case.id})}
+    >
+      <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+        <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(220, 38, 38, 0.1); display: flex; align-items: center; justify-content: center;">
+          <span class="hero-exclamation-triangle size-5" style="color: #dc2626;"></span>
+        </div>
+        <div style="flex: 1;">
+          <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">Delete Document</h3>
+          <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+            Are you sure you want to delete "<strong>{doc.filename}</strong>"? This action cannot be undone.
+          </p>
+        </div>
+      </div>
+      <:confirm>Delete Document</:confirm>
+      <:cancel>Cancel</:cancel>
+    </.modal>
+  <% end %>
 </Layouts.app>
