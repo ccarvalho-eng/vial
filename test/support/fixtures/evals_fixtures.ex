@@ -55,4 +55,21 @@ defmodule Aludel.EvalsFixtures do
 
     suite_run
   end
+
+  def test_case_document_fixture(attrs \\ %{}) do
+    test_case = if Map.has_key?(attrs, :test_case_id), do: nil, else: test_case_fixture()
+
+    {:ok, document} =
+      attrs
+      |> Enum.into(%{
+        test_case_id: test_case && test_case.id,
+        filename: "sample.pdf",
+        content_type: "application/pdf",
+        data: <<37, 80, 68, 70>>,
+        size_bytes: 1024
+      })
+      |> Aludel.Evals.create_test_case_document()
+
+    document
+  end
 end
