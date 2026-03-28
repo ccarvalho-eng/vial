@@ -5,6 +5,11 @@ defmodule Aludel.DocumentConverter do
   Currently supports:
   - PDF → PNG (first page only, 150 DPI)
 
+  ## Usage
+
+  PDF-to-image conversion is only used for Ollama vision models. OpenAI and
+  Anthropic vision models accept PDFs directly in their APIs.
+
   ## Requirements
 
   Requires ImageMagick v7+ to be installed:
