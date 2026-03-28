@@ -17,7 +17,42 @@ alias Aludel.Evals
 # Create default providers if they don't exist
 case Providers.list_providers() do
   [] ->
-    {:ok, _vision_provider} =
+    # OpenAI Providers
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "OpenAI GPT-4o",
+        provider: :openai,
+        model: "gpt-4o",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "OpenAI GPT-4o Mini",
+        provider: :openai,
+        model: "gpt-4o-mini",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    # Anthropic Providers
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "Anthropic Claude Sonnet 4.5",
+        provider: :anthropic,
+        model: "claude-sonnet-4-5-20250929",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "Anthropic Claude Haiku 4.5",
+        provider: :anthropic,
+        model: "claude-haiku-4-5-20251001",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    # Ollama Providers
+    {:ok, _} =
       Providers.create_provider(%{
         name: "Ollama Llava (Vision)",
         provider: :ollama,
@@ -25,7 +60,7 @@ case Providers.list_providers() do
         config: %{"temperature" => 0.7, "max_tokens" => 1000}
       })
 
-    {:ok, _text_provider} =
+    {:ok, _} =
       Providers.create_provider(%{
         name: "Ollama Llama 2",
         provider: :ollama,
@@ -33,7 +68,10 @@ case Providers.list_providers() do
         config: %{"temperature" => 0.7, "max_tokens" => 1000}
       })
 
-    IO.puts("✓ Created Ollama providers (llava for vision, llama2 for text)")
+    IO.puts("✓ Created 6 default providers:")
+    IO.puts("  - OpenAI: GPT-4o, GPT-4o Mini")
+    IO.puts("  - Anthropic: Claude Sonnet 4.5, Claude Haiku 4.5")
+    IO.puts("  - Ollama: Llava (vision), Llama 2 (text)")
 
   _ ->
     IO.puts("→ Providers already exist, skipping")
