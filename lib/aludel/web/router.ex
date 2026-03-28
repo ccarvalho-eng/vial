@@ -69,7 +69,6 @@ defmodule Aludel.Web.Router do
 
           live "/suites", Aludel.Web.SuiteLive.Index, :index, route_opts
           live "/suites/new", Aludel.Web.SuiteLive.New, :new, route_opts
-          live "/suites/:id/edit", Aludel.Web.SuiteLive.New, :edit, route_opts
           live "/suites/:id", Aludel.Web.SuiteLive.Show, :show, route_opts
 
           live "/providers", Aludel.Web.ProviderLive.Index, :index, route_opts
