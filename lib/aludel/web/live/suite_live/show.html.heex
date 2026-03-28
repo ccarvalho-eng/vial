@@ -181,7 +181,7 @@
                       <%= for doc <- test_case.documents do %>
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px;">
                           <span class="hero-document size-3"></span>
-                          <span style="flex: 1; truncate;">{doc.filename}</span>
+                          <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{doc.filename}</span>
                           <button
                             type="button"
                             phx-click={show_modal("confirm-delete-document-#{doc.id}")}

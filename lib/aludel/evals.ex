@@ -443,7 +443,13 @@ defmodule Aludel.Evals do
   end
 
   defp evaluate_assertion(output, %{"type" => "regex", "value" => pattern}) do
-    {Regex.match?(~r/#{pattern}/, output), nil}
+    case Regex.compile(pattern) do
+      {:ok, regex} ->
+        {Regex.match?(regex, output), nil}
+
+      {:error, _} ->
+        {false, nil}
+    end
   end
 
   defp evaluate_assertion(output, %{"type" => "exact_match", "value" => value}) do
@@ -467,7 +473,7 @@ defmodule Aludel.Evals do
     case Jason.decode(cleaned_output) do
       {:ok, json} ->
         actual_value = get_in(json, String.split(field, "."))
-        passed = to_string(actual_value) == to_string(expected)
+        passed = compare_json_values(actual_value, expected)
         {passed, actual_value}
 
       {:error, _} ->
@@ -478,6 +484,17 @@ defmodule Aludel.Evals do
   # Fallback for unknown assertion types
   defp evaluate_assertion(_output, _assertion) do
     {false, nil}
+  end
+
+  # Safely compare JSON values without crashing on maps/lists
+  defp compare_json_values(actual, expected) when is_map(actual) or is_list(actual) do
+    # For complex types, compare as JSON strings
+    Jason.encode!(actual) == Jason.encode!(expected)
+  end
+
+  defp compare_json_values(actual, expected) do
+    # For scalars (string, number, boolean, nil), convert to string
+    to_string(actual) == to_string(expected)
   end
 
   # Test Case Document functions
