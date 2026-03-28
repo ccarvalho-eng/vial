@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/images/logo.png?v=2" alt="Aludel Logo" width="400"/>
+  <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="400"/>
 
   ## LLM Eval Workbench
 
@@ -16,7 +16,7 @@
 
 Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output quality, latency, token usage, and cost in real-time.
 
-<img width="1347" height="958" alt="Screenshot 2026-03-26 at 23 41 16" src="https://github.com/user-attachments/assets/4dc92aec-9cd0-4c1e-bae2-5f915d171181" />
+<img width="1347" height="958" alt="Screenshot" src="https://github.com/user-attachments/assets/4dc92aec-9cd0-4c1e-bae2-5f915d171181" />
 
 ---
 
