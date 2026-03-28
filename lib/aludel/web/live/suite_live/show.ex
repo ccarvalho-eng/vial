@@ -57,9 +57,12 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_event("edit_test_case", %{"id" => id}, socket) do
+    test_case = Evals.get_test_case!(id)
+
     socket =
       socket
       |> assign(:editing_test_case_id, id)
+      |> assign(:editing_assertions, test_case.assertions)
       |> allow_upload(:documents,
         accept: ~w(.pdf .png .jpg .jpeg .csv .json .txt),
         max_entries: 5,
@@ -71,7 +74,12 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_event("cancel_edit", _params, socket) do
-    {:noreply, assign(socket, :editing_test_case_id, nil)}
+    socket =
+      socket
+      |> assign(:editing_test_case_id, nil)
+      |> assign(:editing_assertions, nil)
+
+    {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
@@ -162,6 +170,7 @@ defmodule Aludel.Web.SuiteLive.Show do
          socket
          |> assign(:suite, suite)
          |> assign(:editing_test_case_id, nil)
+         |> assign(:editing_assertions, nil)
          |> put_flash(:info, flash_msg)}
 
       {:error, _changeset} ->
@@ -170,34 +179,16 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("add_assertion", %{"id" => id}, socket) do
-    test_case = Evals.get_test_case!(id)
-    new_assertions = test_case.assertions ++ [%{"type" => "contains", "value" => ""}]
-
-    case Evals.update_test_case(test_case, %{assertions: new_assertions}) do
-      {:ok, _} ->
-        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
-        {:noreply, assign(socket, :suite, suite)}
-
-      {:error, _} ->
-        {:noreply, socket}
-    end
+  def handle_event("add_assertion", %{"id" => _id}, socket) do
+    new_assertions = socket.assigns.editing_assertions ++ [%{"type" => "contains", "value" => ""}]
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
   end
 
   @impl Phoenix.LiveView
-  def handle_event("remove_assertion", %{"index" => index_str, "id" => id}, socket) do
-    test_case = Evals.get_test_case!(id)
+  def handle_event("remove_assertion", %{"index" => index_str, "id" => _id}, socket) do
     index = String.to_integer(index_str)
-    new_assertions = List.delete_at(test_case.assertions, index)
-
-    case Evals.update_test_case(test_case, %{assertions: new_assertions}) do
-      {:ok, _} ->
-        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
-        {:noreply, assign(socket, :suite, suite)}
-
-      {:error, _} ->
-        {:noreply, socket}
-    end
+    new_assertions = List.delete_at(socket.assigns.editing_assertions, index)
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
   end
 
   @impl Phoenix.LiveView

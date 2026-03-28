@@ -171,7 +171,7 @@
                           +
                         </button>
                       </div>
-                      <%= for {assertion, idx} <- Enum.with_index(test_case.assertions) do %>
+                      <%= for {assertion, idx} <- Enum.with_index(@editing_assertions) do %>
                         <div
                           id={"assertion-#{idx}"}
                           style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);"
