@@ -68,7 +68,7 @@ defmodule Aludel.Evals do
   def get_suite_with_test_cases_and_prompt!(id) do
     Suite
     |> repo().get!(id)
-    |> repo().preload([:test_cases, :prompt])
+    |> repo().preload(test_cases: :documents, prompt: [])
   end
 
   @doc """

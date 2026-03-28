@@ -81,6 +81,24 @@ defmodule Aludel.EvalsTest do
 
       assert %Ecto.Changeset{} = changeset
     end
+
+    test "get_suite_with_test_cases_and_prompt!/1 preloads documents" do
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      {:ok, _doc} =
+        Aludel.Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "test.pdf",
+          content_type: "application/pdf",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      loaded = Aludel.Evals.get_suite_with_test_cases_and_prompt!(suite.id)
+      assert [test_case] = loaded.test_cases
+      assert [%Aludel.Evals.TestCaseDocument{filename: "test.pdf"}] = test_case.documents
+    end
   end
 
   describe "test_cases" do
