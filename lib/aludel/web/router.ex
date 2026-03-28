@@ -54,6 +54,7 @@ defmodule Aludel.Web.Router do
           get "/js-:md5", Aludel.Web.Assets, :js, as: :aludel_web_asset
           get "/fonts/*path", Aludel.Web.Assets, :font, as: :aludel_web_font
           get "/icons/*path", Aludel.Web.Assets, :icon, as: :aludel_web_icon
+          get "/images/*path", Aludel.Web.Assets, :image, as: :aludel_web_image
 
           live "/", Aludel.Web.DashboardLive, :index, route_opts
 

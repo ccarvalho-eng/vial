@@ -1454,3 +1454,8 @@ a:has(.aludel-card) .aludel-card:hover {
   border-right: 5px solid transparent;
   border-bottom: 5px solid var(--bg-secondary);
 }
+
+/* Provider Icons - Improve visibility in dark mode */
+[data-theme="dark"] .provider-icon-ollama {
+  filter: invert(1) brightness(0.9);
+}

@@ -51,6 +51,11 @@ defmodule Aludel.Web.Assets do
     serve_static(conn, Path.join(["icons" | normalize_path(path)]), "image/svg+xml")
   end
 
+  def call(conn, :image) do
+    %{"path" => path} = conn.params
+    serve_static(conn, Path.join(["images" | normalize_path(path)]), "image/svg+xml")
+  end
+
   defp serve_asset(conn, type, requested_md5, content, content_type) do
     # Validate hash matches to prevent cache poisoning
     if valid_md5?(requested_md5) and requested_md5 == current_hash(type) do

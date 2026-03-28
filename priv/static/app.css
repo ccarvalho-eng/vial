@@ -3125,6 +3125,9 @@ a:has(.aludel-card) .aludel-card:hover {
   border-right: 5px solid transparent;
   border-bottom: 5px solid var(--bg-secondary);
 }
+[data-theme="dark"] .provider-icon-ollama {
+  filter: invert(1) brightness(0.9);
+}
 @layer base {
   :root:has( .modal-open, .modal[open], .modal:target, .modal-toggle:checked, .drawer:not([class*="drawer-open"]) > .drawer-toggle:checked ) {
     overflow: hidden;
