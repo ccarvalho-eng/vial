@@ -334,9 +334,7 @@ defmodule Aludel.LLM do
 
     content =
       if documents != [] and vision_model?(:ollama, provider.model) do
-        # Convert PDFs to images for vision models
-        converted_docs = Enum.map(documents, &convert_pdf_to_image/1)
-        build_vision_content(prompt, converted_docs)
+        build_vision_content(prompt, documents)
       else
         prompt
       end
@@ -389,72 +387,4 @@ defmodule Aludel.LLM do
         0.0
     end
   end
-
-  defp convert_pdf_to_image(%{content_type: "application/pdf", data: pdf_data}) do
-    # Create temp files for PDF and PNG conversion with unique IDs
-    unique_id = :erlang.unique_integer([:positive, :monotonic])
-    pdf_path = System.tmp_dir!() |> Path.join("temp_#{unique_id}.pdf")
-    png_path = System.tmp_dir!() |> Path.join("temp_#{unique_id}.png")
-
-    try do
-      # Write PDF to temp file
-      File.write!(pdf_path, pdf_data)
-
-      # Convert PDF to PNG using ImageMagick
-      # -density 150: good quality for text
-      # -flatten: merge layers
-      # [0]: only first page
-      case System.cmd(
-             "magick",
-             [
-               "-density",
-               "150",
-               pdf_path <> "[0]",
-               "-flatten",
-               png_path
-             ],
-             stderr_to_stdout: true,
-             # 30 second timeout to prevent hanging
-             timeout: 30_000
-           ) do
-        {_output, 0} ->
-          # Read converted PNG
-          png_data = File.read!(png_path)
-          %{data: png_data, content_type: "image/png"}
-
-        {error_output, exit_code} ->
-          require Logger
-
-          Logger.error("ImageMagick conversion failed with code #{exit_code}: #{error_output}")
-
-          raise "PDF to image conversion failed: #{error_output}"
-      end
-    catch
-      :exit, {:timeout, _} ->
-        require Logger
-        Logger.error("ImageMagick conversion timed out after 30 seconds")
-        raise "PDF to image conversion timed out after 30 seconds"
-    after
-      # Clean up temp files and log any cleanup failures
-      case File.rm(pdf_path) do
-        :ok ->
-          :ok
-
-        {:error, reason} ->
-          require Logger
-          Logger.warning("Failed to delete temp PDF file #{pdf_path}: #{inspect(reason)}")
-      end
-
-      case File.rm(png_path) do
-        :ok ->
-          :ok
-
-        {:error, reason} ->
-          require Logger
-          Logger.warning("Failed to delete temp PNG file #{png_path}: #{inspect(reason)}")
-      end
-    end
-  end
-
-  defp convert_pdf_to_image(doc), do: doc
 end
