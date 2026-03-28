@@ -7,12 +7,16 @@ defmodule Aludel.DocumentConverter do
 
   ## Usage
 
-  PDF-to-image conversion is only used for Ollama vision models. OpenAI and
-  Anthropic vision models accept PDFs directly in their APIs.
+  PDF-to-image conversion is only used for:
+  - **Ollama**: Vision models require image formats
+
+  Modern LLM providers accept PDFs natively:
+  - **Anthropic Claude 4.5+**: Supports PDFs via document API
+  - **OpenAI**: Accepts PDFs directly via file input API
 
   ## Requirements
 
-  Requires ImageMagick v7+ to be installed:
+  Requires ImageMagick v7+ to be installed (only needed for Ollama):
   - macOS: `brew install imagemagick`
   - Ubuntu/Debian: `apt-get install imagemagick`
   - Docker: Install in runtime image

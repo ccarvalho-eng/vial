@@ -113,9 +113,9 @@ mix phx.server
 
 Ollama runs locally and requires no API keys.
 
-### 7. Install ImageMagick (for Ollama document upload)
+### 7. Install ImageMagick (for Ollama PDF support)
 
-If you want to test evaluation suites with PDF documents using **Ollama vision models**, install ImageMagick v7+:
+If you want to test evaluation suites with PDF documents using **Ollama** vision models, install ImageMagick v7+:
 
 ```bash
 # macOS
@@ -128,7 +128,7 @@ sudo apt-get install imagemagick
 magick -version
 ```
 
-**Note:** PDF-to-image conversion is only required for Ollama vision models. OpenAI and Anthropic vision models accept PDFs directly in their APIs. When using Ollama, PDFs are converted to PNG (first page only, 150 DPI) before being sent to the model.
+**Note:** PDF-to-image conversion is only required for **Ollama** vision models. **OpenAI** and **Anthropic Claude 4.5+** accept PDFs directly in their APIs without conversion. For Ollama, PDFs are converted to PNG (first page only, 150 DPI) before being sent to the model.
 
 ### 8. Seed demo data (optional)
 

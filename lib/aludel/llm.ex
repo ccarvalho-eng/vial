@@ -198,13 +198,22 @@ defmodule Aludel.LLM do
     [text_part | image_parts]
   end
 
-  defp build_anthropic_vision_content(prompt, documents) do
+  defp build_anthropic_document_content(prompt, documents) do
+    # Claude 4.5+ supports both documents (PDFs) and images natively
     text_content = %{"type" => "text", "text" => prompt}
 
-    image_contents =
+    doc_contents =
       Enum.map(documents, fn doc ->
+        # Use "document" type for PDFs, "image" type for images
+        content_type =
+          if doc.content_type == "application/pdf" do
+            "document"
+          else
+            "image"
+          end
+
         %{
-          "type" => "image",
+          "type" => content_type,
           "source" => %{
             "type" => "base64",
             "media_type" => doc.content_type,
@@ -213,7 +222,7 @@ defmodule Aludel.LLM do
         }
       end)
 
-    [text_content | image_contents]
+    [text_content | doc_contents]
   end
 
   defp decode_openai_response_body(%{body: body} = response) when is_binary(body) do
@@ -280,7 +289,7 @@ defmodule Aludel.LLM do
 
     content =
       if documents != [] and vision_model?(:anthropic, provider.model) do
-        build_anthropic_vision_content(prompt, documents)
+        build_anthropic_document_content(prompt, documents)
       else
         prompt
       end
