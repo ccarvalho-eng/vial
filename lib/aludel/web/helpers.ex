@@ -44,18 +44,6 @@ defmodule Aludel.Web.Helpers do
     end
   end
 
-  defp encode_params([]), do: []
-
-  defp encode_params(params) do
-    for {key, value} <- params do
-      if is_list(value) do
-        {key, Enum.join(value, ",")}
-      else
-        {key, value}
-      end
-    end
-  end
-
   @doc """
   Returns the icon path for a provider type.
   """
@@ -65,6 +53,20 @@ defmodule Aludel.Web.Helpers do
       :anthropic -> "/images/anthropic-icon.svg"
       :ollama -> "/images/ollama-icon.svg"
       _ -> nil
+    end
+  end
+
+  # Private functions
+
+  defp encode_params([]), do: []
+
+  defp encode_params(params) do
+    for {key, value} <- params do
+      if is_list(value) do
+        {key, Enum.join(value, ",")}
+      else
+        {key, value}
+      end
     end
   end
 end

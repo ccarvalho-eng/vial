@@ -11,27 +11,6 @@ defmodule Aludel.Web.Layouts do
   # and other static content.
   embed_templates "layouts/*"
 
-  defp asset_path(conn, asset) when asset in [:css, :js] do
-    hash = Aludel.Web.Assets.current_hash(asset)
-
-    {_dash, _routing, meta} = conn.private.phoenix_live_view
-
-    prefix = get_in(meta, [:extra, :session, Access.elem(2), Access.at(0)])
-
-    path =
-      case prefix do
-        "/" -> "/#{asset}-#{hash}"
-        "" -> "/#{asset}-#{hash}"
-        _ -> "#{prefix}/#{asset}-#{hash}"
-      end
-
-    Phoenix.VerifiedRoutes.unverified_path(
-      conn,
-      conn.private.phoenix_router,
-      path
-    )
-  end
-
   @doc """
   Renders your app layout.
 
@@ -87,29 +66,6 @@ defmodule Aludel.Web.Layouts do
     </main>
 
     <.flash_group flash={@flash} />
-    """
-  end
-
-  # Renders a navigation link with active state detection
-  attr :href, :string, required: true
-  attr :current_path, :string, default: ""
-  slot :inner_block, required: true
-
-  defp nav_link(assigns) do
-    active =
-      if assigns.current_path == assigns.href or
-           String.starts_with?(assigns.current_path, assigns.href <> "/") do
-        "active"
-      else
-        ""
-      end
-
-    assigns = assign(assigns, :active, active)
-
-    ~H"""
-    <a href={@href} class={"aludel-nav-link #{@active}"}>
-      {render_slot(@inner_block)}
-    </a>
     """
   end
 
@@ -197,6 +153,52 @@ defmodule Aludel.Web.Layouts do
         <.icon name="hero-moon" class="size-4" />
       </button>
     </div>
+    """
+  end
+
+  # Private functions
+
+  defp asset_path(conn, asset) when asset in [:css, :js] do
+    hash = Aludel.Web.Assets.current_hash(asset)
+
+    {_dash, _routing, meta} = conn.private.phoenix_live_view
+
+    prefix = get_in(meta, [:extra, :session, Access.elem(2), Access.at(0)])
+
+    path =
+      case prefix do
+        "/" -> "/#{asset}-#{hash}"
+        "" -> "/#{asset}-#{hash}"
+        _ -> "#{prefix}/#{asset}-#{hash}"
+      end
+
+    Phoenix.VerifiedRoutes.unverified_path(
+      conn,
+      conn.private.phoenix_router,
+      path
+    )
+  end
+
+  # Renders a navigation link with active state detection
+  attr :href, :string, required: true
+  attr :current_path, :string, default: ""
+  slot :inner_block, required: true
+
+  defp nav_link(assigns) do
+    active =
+      if assigns.current_path == assigns.href or
+           String.starts_with?(assigns.current_path, assigns.href <> "/") do
+        "active"
+      else
+        ""
+      end
+
+    assigns = assign(assigns, :active, active)
+
+    ~H"""
+    <a href={@href} class={"aludel-nav-link #{@active}"}>
+      {render_slot(@inner_block)}
+    </a>
     """
   end
 end

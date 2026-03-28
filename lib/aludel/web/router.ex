@@ -79,12 +79,6 @@ defmodule Aludel.Web.Router do
     end
   end
 
-  defp expand_alias({:__aliases__, _, _} = alias_ast, env) do
-    Macro.expand(alias_ast, %{env | function: {:aludel_dashboard, 2}})
-  end
-
-  defp expand_alias(other, _env), do: other
-
   @doc false
   def __options__(prefix, opts) do
     opts = Keyword.merge(@default_opts, opts)
@@ -145,6 +139,14 @@ defmodule Aludel.Web.Router do
       }
     }
   end
+
+  # Private functions
+
+  defp expand_alias({:__aliases__, _, _} = alias_ast, env) do
+    Macro.expand(alias_ast, %{env | function: {:aludel_dashboard, 2}})
+  end
+
+  defp expand_alias(other, _env), do: other
 
   defp expand_csp_nonce_keys(nil), do: %{img: nil, style: nil, script: nil}
   defp expand_csp_nonce_keys(key) when is_atom(key), do: %{img: key, style: key, script: key}

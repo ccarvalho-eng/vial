@@ -275,16 +275,6 @@ defmodule Aludel.Web.CoreComponents do
     """
   end
 
-  # Helper used by inputs to generate form errors
-  defp error(assigns) do
-    ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
-      {render_slot(@inner_block)}
-    </p>
-    """
-  end
-
   @doc """
   Renders a header with title.
   """
@@ -591,5 +581,17 @@ defmodule Aludel.Web.CoreComponents do
   """
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+  end
+
+  # Private functions
+
+  # Helper used by inputs to generate form errors
+  defp error(assigns) do
+    ~H"""
+    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
+      <.icon name="hero-exclamation-circle" class="size-5" />
+      {render_slot(@inner_block)}
+    </p>
+    """
   end
 end

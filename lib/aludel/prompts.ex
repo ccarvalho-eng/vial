@@ -194,18 +194,6 @@ defmodule Aludel.Prompts do
     Evolution.get_metrics(prompt_id)
   end
 
-  defp get_next_version_number(prompt_id) do
-    query =
-      from v in PromptVersion,
-        where: v.prompt_id == ^prompt_id,
-        select: max(v.version)
-
-    case repo().one(query) do
-      nil -> 1
-      max_version -> max_version + 1
-    end
-  end
-
   @doc """
   Lists all projects ordered by creation date.
   """
@@ -271,6 +259,20 @@ defmodule Aludel.Prompts do
           {:ok, Project.t()} | {:error, Ecto.Changeset.t()}
   def delete_project(%Project{} = project) do
     repo().delete(project)
+  end
+
+  # Private functions
+
+  defp get_next_version_number(prompt_id) do
+    query =
+      from v in PromptVersion,
+        where: v.prompt_id == ^prompt_id,
+        select: max(v.version)
+
+    case repo().one(query) do
+      nil -> 1
+      max_version -> max_version + 1
+    end
   end
 
   defp repo do

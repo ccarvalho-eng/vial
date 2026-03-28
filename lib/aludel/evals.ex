@@ -340,6 +340,40 @@ defmodule Aludel.Evals do
     })
   end
 
+  # Test Case Document functions
+
+  @doc """
+  Creates a test case document.
+  """
+  @spec create_test_case_document(map()) ::
+          {:ok, TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
+  def create_test_case_document(attrs \\ %{}) do
+    %Aludel.Evals.TestCaseDocument{}
+    |> Aludel.Evals.TestCaseDocument.changeset(attrs)
+    |> repo().insert()
+  end
+
+  @doc """
+  Deletes a test case document.
+  """
+  @spec delete_test_case_document(Aludel.Evals.TestCaseDocument.t()) ::
+          {:ok, Aludel.Evals.TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
+  def delete_test_case_document(%Aludel.Evals.TestCaseDocument{} = document) do
+    repo().delete(document)
+  end
+
+  @doc """
+  Gets a test case with documents preloaded.
+  """
+  @spec get_test_case_with_documents!(binary()) :: TestCase.t()
+  def get_test_case_with_documents!(id) do
+    TestCase
+    |> repo().get!(id)
+    |> repo().preload(:documents)
+  end
+
+  # Private functions
+
   defp execute_test_case(test_case, version, provider) do
     test_case = ensure_documents_loaded(test_case)
     rendered_prompt = render_template(version.template, test_case.variable_values)
@@ -495,38 +529,6 @@ defmodule Aludel.Evals do
   defp compare_json_values(actual, expected) do
     # For scalars (string, number, boolean, nil), convert to string
     to_string(actual) == to_string(expected)
-  end
-
-  # Test Case Document functions
-
-  @doc """
-  Creates a test case document.
-  """
-  @spec create_test_case_document(map()) ::
-          {:ok, TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
-  def create_test_case_document(attrs \\ %{}) do
-    %Aludel.Evals.TestCaseDocument{}
-    |> Aludel.Evals.TestCaseDocument.changeset(attrs)
-    |> repo().insert()
-  end
-
-  @doc """
-  Deletes a test case document.
-  """
-  @spec delete_test_case_document(Aludel.Evals.TestCaseDocument.t()) ::
-          {:ok, Aludel.Evals.TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
-  def delete_test_case_document(%Aludel.Evals.TestCaseDocument{} = document) do
-    repo().delete(document)
-  end
-
-  @doc """
-  Gets a test case with documents preloaded.
-  """
-  @spec get_test_case_with_documents!(binary()) :: TestCase.t()
-  def get_test_case_with_documents!(id) do
-    TestCase
-    |> repo().get!(id)
-    |> repo().preload(:documents)
   end
 
   defp repo do
