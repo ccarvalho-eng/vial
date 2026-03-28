@@ -458,7 +458,94 @@ case Prompts.list_prompts() do
           ]
         })
 
-        IO.puts("✓ Created 3 sample evaluation suites with test cases")
+        # Suite 4: Document Evaluation Suite (Invoice Processing)
+        {:ok, invoice_prompt} =
+          Prompts.create_prompt(%{
+            name: "Invoice Data Extraction",
+            description: "Extracts structured data from invoice documents",
+            tags: ["document-processing", "invoice", "extraction"]
+          })
+
+        {:ok, _invoice_version} =
+          Prompts.create_prompt_version(
+            invoice_prompt,
+            """
+            You are an invoice processing assistant. Analyze the provided invoice document and extract the following information:
+
+            1. Invoice Number
+            2. Invoice Date
+            3. Due Date (if present)
+            4. Vendor/Seller Name
+            5. Customer/Buyer Name
+            6. Total Amount
+            7. Currency
+            8. Line Items (brief summary)
+
+            Format your response as a structured list. If any field is not found, state "Not found".
+
+            Be accurate and only extract information that is clearly visible in the document.
+            """
+          )
+
+        {:ok, invoice_suite} =
+          Evals.create_suite(%{
+            name: "Invoice Processing Suite",
+            description: "Tests LLM's ability to extract structured data from invoice documents",
+            prompt_id: invoice_prompt.id
+          })
+
+        # Test case 1: Invoice with all standard fields
+        {:ok, _test1} =
+          Evals.create_test_case(%{
+            suite_id: invoice_suite.id,
+            name: "Standard Invoice Extraction",
+            variable_values: %{},
+            assertions: [
+              %{
+                "type" => "contains",
+                "value" => "Invoice Number",
+                "description" => "Should identify and extract invoice number field"
+              },
+              %{
+                "type" => "contains",
+                "value" => "Total Amount",
+                "description" => "Should identify and extract total amount"
+              },
+              %{
+                "type" => "regex",
+                "value" => "\\d+\\.\\d{2}|\\$\\d+",
+                "description" => "Should contain properly formatted monetary amounts"
+              },
+              %{
+                "type" => "not_contains",
+                "value" => "cannot",
+                "description" => "Should not refuse to process the document"
+              }
+            ]
+          })
+
+        # Test case 2: Invoice missing some fields
+        {:ok, _test2} =
+          Evals.create_test_case(%{
+            suite_id: invoice_suite.id,
+            name: "Incomplete Invoice Handling",
+            variable_values: %{},
+            assertions: [
+              %{
+                "type" => "contains",
+                "value" => "Not found",
+                "description" => "Should explicitly state when fields are missing"
+              },
+              %{
+                "type" => "not_contains",
+                "value" => "guessing",
+                "description" => "Should not guess or invent missing information"
+              }
+            ]
+          })
+
+        IO.puts("✓ Created 4 sample evaluation suites with test cases")
+        IO.puts("  → Invoice Processing Suite requires document upload to run")
 
       _ ->
         IO.puts("→ Suites already exist, skipping sample suites")

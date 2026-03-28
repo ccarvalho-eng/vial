@@ -128,6 +128,16 @@ defmodule Aludel.Evals do
   end
 
   @doc """
+  Gets a single test case document.
+
+  Raises `Ecto.NoResultsError` if the document does not exist.
+  """
+  @spec get_test_case_document!(binary()) :: Aludel.Evals.TestCaseDocument.t()
+  def get_test_case_document!(id) do
+    repo().get!(Aludel.Evals.TestCaseDocument, id)
+  end
+
+  @doc """
   Returns a changeset for tracking test case changes.
   """
   @spec change_test_case(TestCase.t(), map()) :: Ecto.Changeset.t()
@@ -343,12 +353,24 @@ defmodule Aludel.Evals do
 
     case LLM.call(provider, rendered_prompt, opts) do
       {:ok, result} ->
-        passed = evaluate_assertions(result.output, test_case.assertions)
+        assertion_results =
+          Enum.map(test_case.assertions, fn assertion ->
+            passed = evaluate_assertion(result.output, assertion)
+
+            %{
+              "type" => assertion["type"],
+              "value" => assertion["value"],
+              "passed" => passed
+            }
+          end)
+
+        passed = Enum.all?(assertion_results, & &1["passed"])
 
         %{
           "test_case_id" => test_case.id,
           "passed" => passed,
           "output" => result.output,
+          "assertion_results" => assertion_results,
           "cost_usd" => result.cost_usd,
           "latency_ms" => result.latency_ms
         }
@@ -358,6 +380,7 @@ defmodule Aludel.Evals do
           "test_case_id" => test_case.id,
           "passed" => false,
           "output" => nil,
+          "assertion_results" => [],
           "cost_usd" => nil,
           "latency_ms" => nil
         }
