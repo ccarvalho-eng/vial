@@ -33,7 +33,11 @@
             </select>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button type="submit" class="button-primary" style="font-size: 13px; padding: 6px 12px;">
+            <button
+              type="submit"
+              class="button-primary"
+              style="font-size: 13px; padding: 6px 12px;"
+            >
               Save
             </button>
             <button
@@ -181,7 +185,9 @@
                       <%= for doc <- test_case.documents do %>
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px;">
                           <span class="hero-document size-3"></span>
-                          <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{doc.filename}</span>
+                          <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            {doc.filename}
+                          </span>
                           <button
                             type="button"
                             phx-click={show_modal("confirm-delete-document-#{doc.id}")}
