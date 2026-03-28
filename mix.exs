@@ -4,7 +4,7 @@ defmodule Aludel.MixProject do
   def project do
     [
       app: :aludel,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.19",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -59,7 +59,7 @@ defmodule Aludel.MixProject do
       name: "aludel",
       maintainers: ["Cristiano Carvalho"],
       licenses: ["Apache-2.0"],
-      files: ~w(lib priv/static* .formatter.exs mix.exs README* CHANGELOG* LICENSE*),
+      files: ~w(lib priv .formatter.exs mix.exs README* CHANGELOG* LICENSE*),
       links: %{
         "GitHub" => "https://github.com/ccarvalho-eng/aludel"
       }
