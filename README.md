@@ -38,7 +38,7 @@ Add Aludel to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:aludel, "~> 0.1.1"}
+    {:aludel, "~> 0.1"}
   ]
 end
 ```
