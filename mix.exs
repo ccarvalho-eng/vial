@@ -10,8 +10,6 @@ defmodule Aludel.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader],
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
@@ -26,7 +24,13 @@ defmodule Aludel.MixProject do
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
       ],
       package: package(),
-      description: "Aludel - LLM Eval Workbench for Phoenix applications"
+      description: "Aludel - LLM Eval Workbench for Phoenix applications",
+      source_url: "https://github.com/ccarvalho-eng/aludel",
+      homepage_url: "https://github.com/ccarvalho-eng/aludel",
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ]
     ]
   end
 
@@ -69,25 +73,30 @@ defmodule Aludel.MixProject do
     [
       {:phoenix, "~> 1.8.1"},
       {:phoenix_ecto, "~> 4.5"},
+      {:ecto, "~> 3.13"},
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_view, "~> 1.1.0"},
       {:lazy_html, ">= 0.1.0", only: :test},
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
+      {:esbuild, "~> 0.10", only: [:dev, :test], runtime: false},
+      {:tailwind, "~> 0.3", only: [:dev, :test], runtime: false},
       {:heroicons,
        github: "tailwindlabs/heroicons",
        tag: "v2.2.0",
        sparse: "optimized",
        app: false,
        compile: false,
-       depth: 1},
+       depth: 1,
+       only: [:dev, :test]},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:ecto_enum, "~> 1.4"},
+
+      # Documentation
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
 
       # Code quality and testing
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
