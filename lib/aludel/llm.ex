@@ -168,6 +168,24 @@ defmodule Aludel.LLM do
     [text_part | image_parts]
   end
 
+  defp build_anthropic_vision_content(prompt, documents) do
+    text_content = %{"type" => "text", "text" => prompt}
+
+    image_contents =
+      Enum.map(documents, fn doc ->
+        %{
+          "type" => "image",
+          "source" => %{
+            "type" => "base64",
+            "media_type" => doc.content_type,
+            "data" => Base.encode64(doc.data)
+          }
+        }
+      end)
+
+    [text_content | image_contents]
+  end
+
   defp decode_openai_response_body(%{body: body} = response) when is_binary(body) do
     %{response | body: Jason.decode!(body)}
   end
@@ -211,9 +229,9 @@ defmodule Aludel.LLM do
     {:error, {:api_error, status, message}}
   end
 
-  defp generate_anthropic(provider, prompt, _opts) do
+  defp generate_anthropic(provider, prompt, opts) do
     with {:ok, api_key} <- get_anthropic_api_key(),
-         {:ok, response} <- make_anthropic_request(provider, prompt, api_key) do
+         {:ok, response} <- make_anthropic_request(provider, prompt, api_key, opts) do
       parse_anthropic_response(response)
     end
   end
@@ -226,12 +244,20 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp make_anthropic_request(provider, prompt, api_key) do
+  defp make_anthropic_request(provider, prompt, api_key, opts) do
     url = "https://api.anthropic.com/v1/messages"
+    documents = Keyword.get(opts, :documents, [])
+
+    content =
+      if documents != [] and vision_model?(:anthropic, provider.model) do
+        build_anthropic_vision_content(prompt, documents)
+      else
+        prompt
+      end
 
     body = %{
       model: provider.model,
-      messages: [%{role: "user", content: prompt}],
+      messages: [%{role: "user", content: content}],
       temperature: get_in(provider.config, ["temperature"]) || 0.5,
       max_tokens: get_in(provider.config, ["max_tokens"]) || 1024
     }
