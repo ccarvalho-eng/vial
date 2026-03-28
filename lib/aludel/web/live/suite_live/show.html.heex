@@ -6,12 +6,6 @@
       <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
         {@prompt.name}
       </p>
-      <%= if @prompt.versions != [] do %>
-        <div style="margin-bottom: 24px;">
-          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Prompt Template</h3>
-          <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);"><%= List.first(@prompt.versions).template %></pre>
-        </div>
-      <% end %>
       <div style="margin-bottom: 24px;">
         <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Run Suite</h3>
         <form phx-submit="run_suite" style="display: flex; flex-direction: column; gap: 12px;">
@@ -52,6 +46,7 @@
             </select>
           </div>
           <button
+            id="run-suite-btn"
             type="submit"
             class="button-primary"
             disabled={@running}
@@ -67,123 +62,129 @@
           </button>
         </form>
       </div>
+      <%= if @prompt.versions != [] do %>
+        <div style="margin-bottom: 24px;">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Prompt Template</h3>
+          <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);"><%= List.first(@prompt.versions).template %></pre>
+        </div>
+      <% end %>
     </div>
     <%!-- Column 2: Test Cases --%>
     <div style="padding: 24px; overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--border);">
       <h2 style="margin-bottom: 16px;">Test Cases</h2>
-        <div id="test-cases" style="display: flex; flex-direction: column; gap: 16px;">
-          <%= for test_case <- @suite.test_cases do %>
-            <div class="aludel-card">
-              <%= if @editing_test_case_id == test_case.id do %>
-                <%!-- Edit Mode --%>
-                <div style="background: var(--bg-secondary); padding: 20px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <div style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></div>
-                      <h4 style="margin: 0; font-size: 14px; font-weight: 600;">Editing</h4>
-                    </div>
-                    <button
-                      phx-click="cancel_edit"
-                      class="button-secondary"
-                      style="padding: 6px 14px; font-size: 13px;"
-                    >
-                      Cancel
-                    </button>
+      <div
+        id="test-cases"
+        phx-hook="AssertionTypeToggle"
+        style="display: flex; flex-direction: column; gap: 16px;"
+      >
+        <%= for test_case <- @suite.test_cases do %>
+          <div class="aludel-card">
+            <%= if @editing_test_case_id == test_case.id do %>
+              <%!-- Edit Mode --%>
+              <div style="background: var(--bg-secondary); padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                  <div style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
                   </div>
-                  <.form
-                    for={%{}}
-                    phx-submit="save_test_case"
-                    phx-change="validate_test_case"
-                    phx-value-id={test_case.id}
-                  >
-                    <%!-- Variables, Documents, Assertions in 3 columns --%>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 16px;">
-                      <%!-- Variables Column --%>
-                      <div>
-                        <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
-                          Variables
-                        </h4>
-                        <%= if test_case.variable_values == %{} do %>
-                          <div style="color: var(--text-muted); font-size: 12px;">None</div>
-                        <% else %>
-                          <%= for {key, value} <- test_case.variable_values do %>
-                            <div style="margin-bottom: 8px;">
-                              <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px;">
-                                {key}
-                              </label>
-                              <input
-                                type="text"
-                                name={"var_value_#{key}"}
-                                value={value}
-                                style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
-                              />
-                            </div>
-                          <% end %>
-                        <% end %>
-                      </div>
-                      <%!-- Documents Column --%>
-                      <div>
-                        <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
-                          Documents
-                        </h4>
-                        <%= for doc <- test_case.documents do %>
-                          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px;">
-                            <span class="hero-document size-3"></span>
-                            <span style="flex: 1; truncate;">{doc.filename}</span>
-                            <button
-                              type="button"
-                              phx-click="delete_document"
-                              phx-value-doc-id={doc.id}
-                              phx-value-id={test_case.id}
-                              style="border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; padding: 4px 8px; border-radius: 4px; font-weight: 600; transition: all 0.15s ease;"
-                              onmouseover="this.style.background='#dc2626'; this.style.color='white';"
-                              onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='#dc2626';"
-                            >
-                              ✕
-                            </button>
+                  <h4 style="margin: 0; font-size: 14px; font-weight: 600;">Editing</h4>
+                </div>
+                <.form
+                  for={%{}}
+                  phx-submit="save_test_case"
+                  phx-change="validate_test_case"
+                  phx-value-id={test_case.id}
+                >
+                  <%!-- Variables, Documents, Assertions in 3 columns --%>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                    <%!-- Variables Column --%>
+                    <div>
+                      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+                        Variables
+                      </h4>
+                      <%= if test_case.variable_values == %{} do %>
+                        <div style="color: var(--text-muted); font-size: 12px;">None</div>
+                      <% else %>
+                        <%= for {key, value} <- test_case.variable_values do %>
+                          <div style="margin-bottom: 8px;">
+                            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px;">
+                              {key}
+                            </label>
+                            <input
+                              type="text"
+                              name={"var_value_#{key}"}
+                              value={value}
+                              style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                            />
                           </div>
                         <% end %>
-                        <label
-                          phx-drop-target={@uploads.documents.ref}
-                          style="display: block; border: 2px dashed rgba(139, 92, 246, 0.3); border-radius: 6px; padding: 16px; text-align: center; cursor: pointer; background: rgba(139, 92, 246, 0.05); transition: all 0.2s ease;"
-                        >
-                          <.live_file_input upload={@uploads.documents} class="hidden" />
-                          <div style="font-size: 14px; font-weight: 500; color: var(--accent); margin-bottom: 4px;">
-                            + Upload Document
-                          </div>
-                          <div style="font-size: 11px; color: var(--text-muted);">
-                            PDF, PNG, JPG, CSV, JSON, TXT • Max 10MB • Up to 5 files
-                          </div>
-                        </label>
-                        <%= for entry <- @uploads.documents.entries do %>
-                          <div style="font-size: 12px; color: #10b981; margin-top: 4px;">
-                            {entry.client_name}
-                          </div>
-                        <% end %>
-                      </div>
-                      <%!-- Assertions Column --%>
-                      <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                          <h4 style="font-size: 13px; font-weight: 600; margin: 0;">
-                            Assertions
-                          </h4>
+                      <% end %>
+                    </div>
+                    <%!-- Documents Column --%>
+                    <div>
+                      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+                        Documents
+                      </h4>
+                      <%= for doc <- test_case.documents do %>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px;">
+                          <span class="hero-document size-3"></span>
+                          <span style="flex: 1; truncate;">{doc.filename}</span>
                           <button
                             type="button"
-                            phx-click="add_assertion"
+                            phx-click="delete_document"
+                            phx-value-doc-id={doc.id}
                             phx-value-id={test_case.id}
-                            style="font-size: 12px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer;"
+                            style="border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; padding: 4px 8px; border-radius: 4px; font-weight: 600; transition: all 0.15s ease;"
+                            onmouseover="this.style.background='#dc2626'; this.style.color='white';"
+                            onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='#dc2626';"
                           >
-                            +
+                            ✕
                           </button>
                         </div>
-                        <%= for {assertion, idx} <- Enum.with_index(test_case.assertions) do %>
-                          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
+                      <% end %>
+                      <label
+                        phx-drop-target={@uploads.documents.ref}
+                        style="display: block; border: 2px dashed rgba(139, 92, 246, 0.3); border-radius: 6px; padding: 16px; text-align: center; cursor: pointer; background: rgba(139, 92, 246, 0.05); transition: all 0.2s ease;"
+                      >
+                        <.live_file_input upload={@uploads.documents} class="hidden" />
+                        <div style="font-size: 14px; font-weight: 500; color: var(--accent); margin-bottom: 4px;">
+                          + Upload Document
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted);">
+                          PDF, PNG, JPG, CSV, JSON, TXT • Max 10MB • Up to 5 files
+                        </div>
+                      </label>
+                      <%= for entry <- @uploads.documents.entries do %>
+                        <div style="font-size: 12px; color: #10b981; margin-top: 4px;">
+                          {entry.client_name}
+                        </div>
+                      <% end %>
+                    </div>
+                    <%!-- Assertions Column --%>
+                    <div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h4 style="font-size: 13px; font-weight: 600; margin: 0;">
+                          Assertions
+                        </h4>
+                        <button
+                          type="button"
+                          phx-click="add_assertion"
+                          phx-value-id={test_case.id}
+                          style="font-size: 12px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer;"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <%= for {assertion, idx} <- Enum.with_index(test_case.assertions) do %>
+                        <div
+                          id={"assertion-#{idx}"}
+                          style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);"
+                        >
+                          <div style="display: flex; gap: 8px; align-items: center;">
                             <select
                               name={"assertion_type_#{idx}"}
-                              style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px; width: 90px; flex-shrink: 0;"
+                              style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px; width: 110px; flex-shrink: 0;"
                             >
                               <option value="contains" selected={assertion["type"] == "contains"}>
-                                has
+                                contains
                               </option>
                               <option value="regex" selected={assertion["type"] == "regex"}>
                                 regex
@@ -194,239 +195,342 @@
                               >
                                 exact
                               </option>
+                              <option
+                                value="json_field"
+                                selected={assertion["type"] == "json_field"}
+                              >
+                                json field
+                              </option>
                             </select>
-                            <input
-                              type="text"
-                              name={"assertion_value_#{idx}"}
-                              value={assertion["value"]}
-                              placeholder="assertion value"
-                              style="flex: 1; padding: 12px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px; min-height: 44px;"
-                            />
                             <button
                               type="button"
                               phx-click="remove_assertion"
                               phx-value-index={idx}
                               phx-value-id={test_case.id}
-                              style="padding: 10px 12px; border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; flex-shrink: 0; border-radius: 6px; font-weight: 600; transition: all 0.15s ease;"
+                              style="padding: 6px 10px; border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; flex-shrink: 0; border-radius: 4px; font-weight: 600; transition: all 0.15s ease;"
                               onmouseover="this.style.background='#dc2626'; this.style.color='white';"
                               onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='#dc2626';"
                             >
                               ✕
                             </button>
                           </div>
-                        <% end %>
-                      </div>
-                    </div>
-                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                      <button type="button" phx-click="cancel_edit" class="button-secondary">
-                        Cancel
-                      </button>
-                      <button type="submit" class="button-primary">Save</button>
-                    </div>
-                  </.form>
-                </div>
-              <% else %>
-                <%!-- Display Mode --%>
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                      <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent) 0%, rgba(139, 92, 246, 0.7) 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);">
-                        {Enum.find_index(@suite.test_cases, &(&1.id == test_case.id)) + 1}
-                      </div>
-                      <h4 style="margin: 0; font-size: 15px; font-weight: 600;">Test Case</h4>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                      <button
-                        phx-click="edit_test_case"
-                        phx-value-id={test_case.id}
-                        class="button-secondary"
-                        style="padding: 6px 14px; font-size: 13px;"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        phx-click="delete_test_case"
-                        phx-value-id={test_case.id}
-                        style="padding: 6px 14px; font-size: 13px; border: 1px solid rgba(220, 38, 38, 0.3); background: rgba(220, 38, 38, 0.05); color: #dc2626; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.15s ease;"
-                        onmouseover="this.style.background='#dc2626'; this.style.borderColor='#dc2626'; this.style.color='white';"
-                        onmouseout="this.style.background='rgba(220, 38, 38, 0.05)'; this.style.borderColor='rgba(220, 38, 38, 0.3)'; this.style.color='#dc2626';"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                    <%!-- Variables --%>
-                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-                        <span class="hero-variable size-4" style="color: var(--accent);"></span>
-                        <h4 style="font-size: 12px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">
-                          Variables
-                        </h4>
-                      </div>
-                      <%= if test_case.variable_values == %{} do %>
-                        <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">
-                          No variables
-                        </div>
-                      <% else %>
-                        <%= for {key, value} <- test_case.variable_values do %>
-                          <div style="font-size: 13px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px;">
-                            <span style="font-weight: 600; color: var(--accent);">{key}:</span>
-                            <span style="color: var(--text-primary);">{value}</span>
+                          <%!-- JSON field inputs --%>
+                          <div
+                            id={"json-fields-#{idx}"}
+                            style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
+                          >
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                              <label style="font-size: 11px; color: var(--text-muted);">
+                                Field path (e.g., "user.name"):
+                              </label>
+                              <input
+                                type="text"
+                                name={"assertion_field_#{idx}"}
+                                value={assertion["field"] || ""}
+                                placeholder="invoice_number"
+                                style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                              />
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                              <label style="font-size: 11px; color: var(--text-muted);">
+                                Expected value:
+                              </label>
+                              <input
+                                type="text"
+                                name={"assertion_expected_#{idx}"}
+                                value={assertion["expected"] || ""}
+                                placeholder="INV-001"
+                                style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                              />
+                            </div>
                           </div>
-                        <% end %>
-                      <% end %>
-                    </div>
-                    <%!-- Documents --%>
-                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-                        <span class="hero-document size-4" style="color: var(--accent);"></span>
-                        <h4 style="font-size: 12px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">
-                          Documents
-                        </h4>
-                      </div>
-                      <%= if test_case.documents == [] do %>
-                        <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">
-                          No documents
-                        </div>
-                      <% else %>
-                        <%= for doc <- test_case.documents do %>
-                          <div style="font-size: 13px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px; display: flex; align-items: center; gap: 6px;">
-                            <span class="hero-document size-3" style="color: var(--accent);"></span>
-                            <span style="color: var(--text-primary);">{doc.filename}</span>
+                          <%!-- Regular assertion value input --%>
+                          <div
+                            id={"value-field-#{idx}"}
+                            style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
+                          >
+                            <label style="font-size: 11px; color: var(--text-muted);">
+                              Value to match:
+                            </label>
+                            <input
+                              type="text"
+                              name={"assertion_value_#{idx}"}
+                              value={assertion["value"] || ""}
+                              placeholder="text to find"
+                              style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                            />
                           </div>
-                        <% end %>
-                      <% end %>
-                    </div>
-                    <%!-- Assertions --%>
-                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-                        <span class="hero-check-circle size-4" style="color: var(--accent);"></span>
-                        <h4 style="font-size: 12px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">
-                          Assertions
-                        </h4>
-                      </div>
-                      <%= if test_case.assertions == [] do %>
-                        <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">
-                          No assertions
                         </div>
-                      <% else %>
-                        <%= for assertion <- test_case.assertions do %>
-                          <div style="font-size: 13px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px;">
-                            <span style="font-weight: 600; color: var(--accent);">{assertion["type"]}:</span>
-                            <span style="font-family: monospace; color: var(--text-primary);">{assertion["value"]}</span>
-                          </div>
-                        <% end %>
                       <% end %>
                     </div>
                   </div>
+                  <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" phx-click="cancel_edit" class="button-secondary">
+                      Cancel
+                    </button>
+                    <button type="submit" class="button-primary">Save</button>
+                  </div>
+                </.form>
+              </div>
+            <% else %>
+              <%!-- Display Mode --%>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent) 0%, rgba(139, 92, 246, 0.7) 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);">
+                      {Enum.find_index(@suite.test_cases, &(&1.id == test_case.id)) + 1}
+                    </div>
+                    <h4 style="margin: 0; font-size: 15px; font-weight: 600;">Test Case</h4>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button
+                      phx-click="edit_test_case"
+                      phx-value-id={test_case.id}
+                      class="button-secondary"
+                      style="padding: 6px 14px; font-size: 13px;"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      phx-click="delete_test_case"
+                      phx-value-id={test_case.id}
+                      style="padding: 6px 14px; font-size: 13px; border: 1px solid rgba(220, 38, 38, 0.3); background: rgba(220, 38, 38, 0.05); color: #dc2626; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.15s ease;"
+                      onmouseover="this.style.background='#dc2626'; this.style.borderColor='#dc2626'; this.style.color='white';"
+                      onmouseout="this.style.background='rgba(220, 38, 38, 0.05)'; this.style.borderColor='rgba(220, 38, 38, 0.3)'; this.style.color='#dc2626';"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                  <%!-- Variables --%>
+                  <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                      <span class="hero-variable size-4" style="color: var(--accent);"></span>
+                      <h4 style="font-size: 12px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">
+                        Variables
+                      </h4>
+                    </div>
+                    <%= if test_case.variable_values == %{} do %>
+                      <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">
+                        No variables
+                      </div>
+                    <% else %>
+                      <%= for {key, value} <- test_case.variable_values do %>
+                        <div style="font-size: 13px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px;">
+                          <span style="font-weight: 600; color: var(--accent);">{key}:</span>
+                          <span style="color: var(--text-primary);">{value}</span>
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+                  <%!-- Documents --%>
+                  <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                      <span class="hero-document size-4" style="color: var(--accent);"></span>
+                      <h4 style="font-size: 12px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">
+                        Documents
+                      </h4>
+                    </div>
+                    <%= if test_case.documents == [] do %>
+                      <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">
+                        No documents
+                      </div>
+                    <% else %>
+                      <%= for doc <- test_case.documents do %>
+                        <div style="font-size: 13px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px; display: flex; align-items: center; gap: 6px;">
+                          <span class="hero-document size-3" style="color: var(--accent);"></span>
+                          <span style="color: var(--text-primary); flex: 1;">{doc.filename}</span>
+                          <span style="color: var(--text-muted); font-size: 11px;">
+                            {doc.size_bytes} bytes
+                          </span>
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+                  <%!-- Assertions --%>
+                  <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                      <span class="hero-check-circle size-4" style="color: var(--accent);"></span>
+                      <h4 style="font-size: 12px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">
+                        Assertions
+                      </h4>
+                    </div>
+                    <%= if test_case.assertions == [] do %>
+                      <div style="color: var(--text-muted); font-size: 13px; font-style: italic;">
+                        No assertions
+                      </div>
+                    <% else %>
+                      <%= for assertion <- test_case.assertions do %>
+                        <div style="font-size: 13px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px;">
+                          <%= if assertion["type"] == "json_field" do %>
+                            <div style="margin-bottom: 2px;">
+                              <span style="font-weight: 600; color: var(--accent);">
+                                json field:
+                              </span>
+                            </div>
+                            <div style="font-size: 12px; padding-left: 8px;">
+                              <span style="color: var(--text-secondary);">field:</span>
+                              <span style="font-family: monospace; color: var(--text-primary);">
+                                {assertion["field"]}
+                              </span>
+                            </div>
+                            <div style="font-size: 12px; padding-left: 8px;">
+                              <span style="color: var(--text-secondary);">expected:</span>
+                              <span style="font-family: monospace; color: var(--text-primary);">
+                                {assertion["expected"]}
+                              </span>
+                            </div>
+                          <% else %>
+                            <span style="font-weight: 600; color: var(--accent);">
+                              {assertion["type"]}:
+                            </span>
+                            <span style="font-family: monospace; color: var(--text-primary);">
+                              {assertion["value"]}
+                            </span>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
     </div>
     <%!-- Column 3: Results --%>
     <div style="padding: 24px; overflow-y: auto; overflow-x: hidden;">
       <h2 style="margin-bottom: 16px;">Results</h2>
-        <%= if @running do %>
-          <div class="aludel-card" style="padding: 24px; text-align: center;">
-            <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; margin-bottom: 16px;">
-            </div>
-            <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 8px;">
-              Executing test cases against the LLM...
-            </div>
-            <div style="font-size: 12px; color: var(--text-muted);">
-              This may take a few moments depending on the number of test cases.
-            </div>
+      <%= if @running do %>
+        <div class="aludel-card" style="padding: 24px; text-align: center;">
+          <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; margin-bottom: 16px;">
           </div>
-        <% end %>
-        <%= if @suite_runs != [] do %>
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <%= for suite_run <- @suite_runs do %>
-              <div class="aludel-card">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                  <div>
-                    <div style="font-weight: 600; margin-bottom: 4px;">
-                      v{suite_run.prompt_version.version} @ {suite_run.provider.name}
-                    </div>
-                    <div style="color: var(--text-secondary); font-size: 13px;">
-                      {relative_time(suite_run.inserted_at)}
-                    </div>
+          <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 8px;">
+            Executing test cases against the LLM...
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted);">
+            This may take a few moments depending on the number of test cases.
+          </div>
+        </div>
+      <% end %>
+      <%= if @suite_runs != [] do %>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <%= for suite_run <- @suite_runs do %>
+            <div class="aludel-card">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 4px;">
+                    v{suite_run.prompt_version.version} @ {suite_run.provider.name}
                   </div>
-                  <div style="text-align: right;">
-                    <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">
-                      Passed: {suite_run.passed} | Failed: {suite_run.failed}
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-muted);">
-                      {suite_run.passed + suite_run.failed} test cases
-                    </div>
+                  <div style="color: var(--text-secondary); font-size: 13px;">
+                    {relative_time(suite_run.inserted_at)}
                   </div>
                 </div>
-                <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
-                  <%= for result <- suite_run.results do %>
-                    <div style="margin-bottom: 12px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); overflow: hidden;">
-                      <%= if result["assertion_results"] && result["assertion_results"] != [] do %>
-                        <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                          <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
-                            Assertions
-                          </div>
-                          <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                              <tr style="border-bottom: 1px solid var(--border);">
+                <div style="text-align: right;">
+                  <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 4px;">
+                    Passed: {suite_run.passed} | Failed: {suite_run.failed}
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-muted);">
+                    {suite_run.passed + suite_run.failed} test cases
+                  </div>
+                </div>
+              </div>
+              <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
+                <%= for result <- suite_run.results do %>
+                  <div style="margin-bottom: 12px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); overflow: hidden;">
+                    <%= if result["assertion_results"] && result["assertion_results"] != [] do %>
+                      <div style="padding: 12px; border-bottom: 1px solid var(--border);">
+                        <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
+                          Assertions
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse;">
+                          <thead>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                              <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; width: 60px;">
+                                Match
+                              </th>
+                              <%= if Enum.any?(result["assertion_results"], & &1["type"] == "json_field") do %>
                                 <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
-                                  Status
+                                  Field
                                 </th>
+                                <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+                                  Expected
+                                </th>
+                                <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+                                  Actual
+                                </th>
+                              <% else %>
                                 <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
                                   Type
                                 </th>
                                 <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
                                   Value
                                 </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <%= for assertion <- result["assertion_results"] do %>
-                                <tr style="border-bottom: 1px solid var(--border-muted);">
-                                  <td style="padding: 8px; width: 60px;">
-                                    <span style={"display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-weight: 600; font-size: 12px; background: #{if assertion["passed"], do: "rgba(16, 185, 129, 0.1)", else: "rgba(248, 81, 73, 0.1)"}; color: #{if assertion["passed"], do: "#10b981", else: "#f85149"}"}>
-                                      {if assertion["passed"], do: "✓", else: "✗"}
-                                    </span>
+                              <% end %>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <%= for assertion <- result["assertion_results"] do %>
+                              <tr style="border-bottom: 1px solid var(--border-muted);">
+                                <td style="padding: 8px;">
+                                  <span style={"display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-weight: 600; font-size: 12px; background: #{if assertion["passed"], do: "rgba(16, 185, 129, 0.1)", else: "rgba(248, 81, 73, 0.1)"}; color: #{if assertion["passed"], do: "#10b981", else: "#f85149"}"}>
+                                    {if assertion["passed"], do: "✓", else: "✗"}
+                                  </span>
+                                </td>
+                                <%= if assertion["type"] == "json_field" do %>
+                                  <td style="padding: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 500; font-family: monospace;">
+                                    {assertion["value"]["field"]}
                                   </td>
+                                  <td style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary);">
+                                    {assertion["value"]["expected"]}
+                                  </td>
+                                  <td style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary);">
+                                    {assertion["actual_value"] || "N/A"}
+                                  </td>
+                                <% else %>
                                   <td style="padding: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 500;">
                                     {assertion["type"]}
                                   </td>
-                                  <td style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary);">
+                                  <td
+                                    style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary);"
+                                    colspan="2"
+                                  >
                                     {assertion["value"]}
                                   </td>
-                                </tr>
-                              <% end %>
-                            </tbody>
-                          </table>
-                        </div>
-                      <% end %>
-                      <div style={"padding: 14px; background: #{if result["passed"], do: "rgba(16, 185, 129, 0.05)", else: "rgba(248, 81, 73, 0.05)"}"}>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                          <span style={"font-weight: 600; font-size: 13px; color: #{if result["passed"], do: "#10b981", else: "#f85149"}"}>
-                            {if result["passed"], do: "✓ Output", else: "✗ Output"}
-                          </span>
-                        </div>
-                        <pre style="font-size: 12px; margin: 0; white-space: pre-wrap; color: var(--text-primary); line-height: 1.5;">{result["output"]}</pre>
+                                <% end %>
+                              </tr>
+                            <% end %>
+                          </tbody>
+                        </table>
                       </div>
+                    <% end %>
+                    <div style={"padding: 14px; background: #{if result["passed"], do: "rgba(16, 185, 129, 0.05)", else: "rgba(248, 81, 73, 0.05)"}"}>
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span style={"font-weight: 600; font-size: 13px; color: #{if result["passed"], do: "#10b981", else: "#f85149"}"}>
+                          {if result["passed"], do: "✓ Output", else: "✗ Output"}
+                        </span>
+                      </div>
+                      <pre style="font-size: 12px; margin: 0; white-space: pre-wrap; color: var(--text-primary); line-height: 1.5;">{result["output"]}</pre>
                     </div>
-                  <% end %>
-                </div>
+                  </div>
+                <% end %>
               </div>
-            <% end %>
-          </div>
-        <% else %>
-          <%= if not @running do %>
-            <div class="aludel-card" style="padding: 32px; text-align: center; color: var(--text-muted);">
-              <div style="font-size: 14px; margin-bottom: 8px;">No results yet</div>
-              <div style="font-size: 12px;">Run the suite to see results here</div>
             </div>
           <% end %>
+        </div>
+      <% else %>
+        <%= if not @running do %>
+          <div
+            class="aludel-card"
+            style="padding: 32px; text-align: center; color: var(--text-muted);"
+          >
+            <div style="font-size: 14px; margin-bottom: 8px;">No results yet</div>
+            <div style="font-size: 12px;">Run the suite to see results here</div>
+          </div>
         <% end %>
+      <% end %>
     </div>
   </div>
 </Layouts.app>

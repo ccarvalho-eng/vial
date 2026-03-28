@@ -355,13 +355,27 @@ defmodule Aludel.Evals do
       {:ok, result} ->
         assertion_results =
           Enum.map(test_case.assertions, fn assertion ->
-            passed = evaluate_assertion(result.output, assertion)
+            {passed, actual_value} = evaluate_assertion(result.output, assertion)
 
-            %{
+            base_result = %{
               "type" => assertion["type"],
-              "value" => assertion["value"],
               "passed" => passed
             }
+
+            # For json_field, store field and expected separately, plus actual value
+            base_result =
+              if assertion["type"] == "json_field" do
+                base_result
+                |> Map.put("value", %{
+                  "field" => assertion["field"],
+                  "expected" => assertion["expected"]
+                })
+                |> Map.put("actual_value", actual_value)
+              else
+                Map.put(base_result, "value", assertion["value"])
+              end
+
+            base_result
           end)
 
         passed = Enum.all?(assertion_results, & &1["passed"])
@@ -375,11 +389,38 @@ defmodule Aludel.Evals do
           "latency_ms" => result.latency_ms
         }
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        error_message =
+          case reason do
+            :missing_api_key ->
+              "Missing API key"
+
+            {:auth_error, msg} ->
+              "Authentication error: #{msg}"
+
+            {:rate_limit, retry_after} ->
+              "Rate limit exceeded#{if retry_after, do: ", retry after #{retry_after}s", else: ""}"
+
+            {:invalid_request, msg} ->
+              "Invalid request: #{msg}"
+
+            {:api_error, status, msg} ->
+              "API error (#{status}): #{msg}"
+
+            {:network_error, err} ->
+              "Network error: #{inspect(err)}"
+
+            other when is_binary(other) ->
+              other
+
+            other ->
+              "Error: #{inspect(other)}"
+          end
+
         %{
           "test_case_id" => test_case.id,
           "passed" => false,
-          "output" => nil,
+          "output" => error_message,
           "assertion_results" => [],
           "cost_usd" => nil,
           "latency_ms" => nil
@@ -399,26 +440,50 @@ defmodule Aludel.Evals do
     end)
   end
 
-  defp evaluate_assertions(output, assertions) do
-    Enum.all?(assertions, fn assertion ->
-      evaluate_assertion(output, assertion)
-    end)
-  end
-
   defp evaluate_assertion(output, %{"type" => "contains", "value" => value}) do
-    String.contains?(output, value)
+    {String.contains?(output, value), nil}
   end
 
   defp evaluate_assertion(output, %{"type" => "not_contains", "value" => value}) do
-    !String.contains?(output, value)
+    {!String.contains?(output, value), nil}
   end
 
   defp evaluate_assertion(output, %{"type" => "regex", "value" => pattern}) do
-    Regex.match?(~r/#{pattern}/, output)
+    {Regex.match?(~r/#{pattern}/, output), nil}
   end
 
   defp evaluate_assertion(output, %{"type" => "exact_match", "value" => value}) do
-    output == value
+    {output == value, nil}
+  end
+
+  defp evaluate_assertion(output, %{
+         "type" => "json_field",
+         "field" => field,
+         "expected" => expected
+       }) do
+    # Strip markdown code blocks if present (e.g., ```json ... ```)
+    cleaned_output =
+      output
+      |> String.trim()
+      |> String.replace(~r/^```json\s*/i, "")
+      |> String.replace(~r/^```\s*/, "")
+      |> String.replace(~r/```\s*$/, "")
+      |> String.trim()
+
+    case Jason.decode(cleaned_output) do
+      {:ok, json} ->
+        actual_value = get_in(json, String.split(field, "."))
+        passed = to_string(actual_value) == to_string(expected)
+        {passed, actual_value}
+
+      {:error, _} ->
+        {false, nil}
+    end
+  end
+
+  # Fallback for unknown assertion types
+  defp evaluate_assertion(_output, _assertion) do
+    {false, nil}
   end
 
   # Test Case Document functions

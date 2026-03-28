@@ -20495,6 +20495,48 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   };
 
+  // assets/js/hooks/assertion_type_toggle.js
+  var AssertionTypeToggle = {
+    mounted() {
+      this.handleToggle = this.handleToggle.bind(this);
+      this.el.addEventListener("change", this.handleToggle);
+      this.initializeFields();
+    },
+    updated() {
+      this.initializeFields();
+    },
+    destroyed() {
+      this.el.removeEventListener("change", this.handleToggle);
+    },
+    handleToggle(e) {
+      if (e.target.matches('select[name^="assertion_type_"]')) {
+        const idx = e.target.name.replace("assertion_type_", "");
+        const type = e.target.value;
+        this.toggleFields(idx, type);
+      }
+    },
+    toggleFields(idx, type) {
+      const jsonFields = document.getElementById("json-fields-" + idx);
+      const valueField = document.getElementById("value-field-" + idx);
+      if (jsonFields && valueField) {
+        if (type === "json_field") {
+          jsonFields.style.display = "flex";
+          valueField.style.display = "none";
+        } else {
+          jsonFields.style.display = "none";
+          valueField.style.display = "flex";
+        }
+      }
+    },
+    initializeFields() {
+      this.el.querySelectorAll('select[name^="assertion_type_"]').forEach((select) => {
+        const idx = select.name.replace("assertion_type_", "");
+        const type = select.value;
+        this.toggleFields(idx, type);
+      });
+    }
+  };
+
   // assets/js/app.js
   var AutoDismissFlash = {
     mounted() {
@@ -20543,7 +20585,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
   var liveSocket = new LiveSocket2(livePath, Socket, {
     transport: liveTran === "longpoll" ? LongPoll : WebSocket,
     params: { _csrf_token: csrfToken },
-    hooks: { AutoDismissFlash, EvolutionChart }
+    hooks: { AutoDismissFlash, EvolutionChart, AssertionTypeToggle }
   });
   import_topbar.default.config({ barColors: { 0: "#29d" }, shadowColor: "rgba(0, 0, 0, .3)" });
   window.addEventListener("phx:page-loading-start", (_info) => import_topbar.default.show(300));
