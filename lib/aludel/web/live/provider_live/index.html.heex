@@ -37,8 +37,16 @@
             <%= for provider <- @providers do %>
               <tr style="border-bottom: 1px solid var(--border);">
                 <td style="padding: 12px 16px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <.icon name="hero-server-stack" class="size-5 text-muted" />
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <%= if icon_path = provider_icon(provider.provider) do %>
+                      <img
+                        src={icon_path}
+                        alt={"#{provider.provider} icon"}
+                        style="width: 24px; height: 24px;"
+                      />
+                    <% else %>
+                      <.icon name="hero-server-stack" class="size-5 text-muted" />
+                    <% end %>
                     <span style="font-weight: 500;">{provider.name}</span>
                     <span class="tag">{provider.provider}</span>
                   </div>

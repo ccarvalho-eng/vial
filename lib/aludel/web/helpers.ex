@@ -55,4 +55,16 @@ defmodule Aludel.Web.Helpers do
       end
     end
   end
+
+  @doc """
+  Returns the icon path for a provider type.
+  """
+  def provider_icon(provider_type) do
+    case provider_type do
+      :openai -> "/images/openai-icon.svg"
+      :anthropic -> "/images/anthropic-icon.svg"
+      :ollama -> "/images/ollama-icon.svg"
+      _ -> nil
+    end
+  end
 end
