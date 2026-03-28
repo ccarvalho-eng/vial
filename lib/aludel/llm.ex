@@ -405,7 +405,7 @@ defmodule Aludel.LLM do
       # -flatten: merge layers
       # [0]: only first page
       case System.cmd(
-             "convert",
+             "magick",
              [
                "-density",
                "150",
@@ -429,6 +429,11 @@ defmodule Aludel.LLM do
 
           raise "PDF to image conversion failed: #{error_output}"
       end
+    catch
+      :exit, {:timeout, _} ->
+        require Logger
+        Logger.error("ImageMagick conversion timed out after 30 seconds")
+        raise "PDF to image conversion timed out after 30 seconds"
     after
       # Clean up temp files and log any cleanup failures
       case File.rm(pdf_path) do
