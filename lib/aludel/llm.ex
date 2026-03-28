@@ -27,7 +27,8 @@ defmodule Aludel.LLM do
 
   @vision_models %{
     openai: ~w(gpt-4o gpt-4o-mini gpt-4-turbo gpt-4-vision-preview),
-    anthropic: ~w(claude-3-5-sonnet claude-3-opus claude-3-sonnet claude-3-haiku),
+    anthropic:
+      ~w(claude-sonnet-4 claude-haiku-4 claude-opus-4 claude-3-5-sonnet claude-3-opus claude-3-sonnet claude-3-haiku),
     ollama: ~w(llava bakllava)
   }
 
@@ -300,6 +301,13 @@ defmodule Aludel.LLM do
       temperature: get_in(provider.config, ["temperature"]) || 0.5,
       max_tokens: get_in(provider.config, ["max_tokens"]) || 1024
     }
+
+    # Debug logging
+    require Logger
+
+    Logger.debug(
+      "Anthropic request - Model: #{provider.model}, Documents: #{length(documents)}, Content types: #{inspect(Enum.map(documents, & &1.content_type))}"
+    )
 
     headers = [
       {"x-api-key", api_key},
