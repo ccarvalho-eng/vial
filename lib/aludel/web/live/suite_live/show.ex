@@ -22,6 +22,7 @@ defmodule Aludel.Web.SuiteLive.Show do
     suite = Evals.get_suite_with_test_cases_and_prompt!(id)
     prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
     providers = Providers.list_providers()
+    all_prompts = Prompts.list_prompts()
 
     # Load existing suite runs
     suite_runs = Evals.list_suite_runs_for_suite_with_associations(id)
@@ -35,6 +36,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:page_title, suite.name)
       |> assign(:suite, suite)
       |> assign(:prompt, prompt)
+      |> assign(:all_prompts, all_prompts)
       |> assign(:providers, providers)
       |> assign(:suite_runs, suite_runs)
       |> assign(:running, false)
@@ -163,45 +165,86 @@ defmodule Aludel.Web.SuiteLive.Show do
 
     case Evals.update_test_case(test_case, attrs) do
       {:ok, _test_case} ->
-        # Handle uploaded documents
-        uploaded_files =
+        # Handle uploaded documents and collect results
+        {successful_uploads, failed_uploads} =
           consume_uploaded_entries(socket, :documents, fn %{path: path}, entry ->
             {:ok, data} = File.read(path)
 
             # Validate file content matches claimed type
             case validate_file_content(data, entry.client_type) do
               :ok ->
-                {:ok, _doc} =
-                  Evals.create_test_case_document(%{
-                    test_case_id: test_case.id,
-                    filename: entry.client_name,
-                    content_type: entry.client_type,
-                    data: data,
-                    size_bytes: entry.client_size
-                  })
+                case Evals.create_test_case_document(%{
+                       test_case_id: test_case.id,
+                       filename: entry.client_name,
+                       content_type: entry.client_type,
+                       data: data,
+                       size_bytes: entry.client_size
+                     }) do
+                  {:ok, _doc} ->
+                    {:ok, {:success, entry.client_name}}
 
-                {:ok, entry.client_name}
+                  {:error, _changeset} ->
+                    {:ok, {:failed, entry.client_name, "Database error"}}
+                end
 
               {:error, reason} ->
-                {:postpone, reason}
+                {:ok, {:failed, entry.client_name, reason}}
             end
+          end)
+          |> Enum.split_with(fn
+            {:success, _} -> true
+            _ -> false
           end)
 
         suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
 
-        flash_msg =
-          if uploaded_files == [] do
-            "Test case updated successfully"
-          else
-            "Test case updated with #{length(uploaded_files)} document(s)"
+        socket =
+          socket
+          |> assign(:suite, suite)
+          |> assign(:editing_test_case_id, nil)
+          |> assign(:editing_assertions, nil)
+
+        # Build appropriate flash message based on results
+        socket =
+          cond do
+            # All uploads failed
+            failed_uploads != [] and successful_uploads == [] ->
+              failed_files =
+                Enum.map_join(failed_uploads, ", ", fn {:failed, name, reason} ->
+                  "#{name} (#{reason})"
+                end)
+
+              put_flash(
+                socket,
+                :error,
+                "Test case updated but document uploads failed: #{failed_files}"
+              )
+
+            # Some uploads failed
+            failed_uploads != [] ->
+              failed_count = length(failed_uploads)
+              success_count = length(successful_uploads)
+
+              put_flash(
+                socket,
+                :warning,
+                "Test case updated with #{success_count} document(s), but #{failed_count} failed validation"
+              )
+
+            # All uploads succeeded
+            successful_uploads != [] ->
+              put_flash(
+                socket,
+                :info,
+                "Test case updated with #{length(successful_uploads)} document(s)"
+              )
+
+            # No uploads
+            true ->
+              put_flash(socket, :info, "Test case updated successfully")
           end
 
-        {:noreply,
-         socket
-         |> assign(:suite, suite)
-         |> assign(:editing_test_case_id, nil)
-         |> assign(:editing_assertions, nil)
-         |> put_flash(:info, flash_msg)}
+        {:noreply, socket}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to update test case")}
@@ -344,8 +387,8 @@ defmodule Aludel.Web.SuiteLive.Show do
       {"image/png", <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, _::binary>>} ->
         :ok
 
-      # JPEG files
-      {"image/jpeg", <<0xFF, 0xD8, 0xFF, _::binary>>} ->
+      # JPEG files (accept common MIME variants)
+      {ct, <<0xFF, 0xD8, 0xFF, _::binary>>} when ct in ["image/jpeg", "image/jpg"] ->
         :ok
 
       # JSON (starts with { or [)
