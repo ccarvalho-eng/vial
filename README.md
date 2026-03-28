@@ -113,7 +113,24 @@ mix phx.server
 
 Ollama runs locally and requires no API keys.
 
-### 7. Seed demo data (optional)
+### 7. Install ImageMagick (for document upload)
+
+If you want to test evaluation suites with PDF documents, install ImageMagick v7+:
+
+```bash
+# macOS
+brew install imagemagick
+
+# Ubuntu/Debian
+sudo apt-get install imagemagick
+
+# Check installation
+magick -version
+```
+
+**Note:** Only PDF-to-image conversion is currently supported. PDFs are converted to PNG (first page only) before being sent to vision models.
+
+### 8. Seed demo data (optional)
 
 ```bash
 mix aludel.seed
