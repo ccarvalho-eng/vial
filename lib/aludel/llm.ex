@@ -25,6 +25,12 @@ defmodule Aludel.LLM do
           cost_usd: float()
         }
 
+  @vision_models %{
+    openai: ~w(gpt-4o gpt-4o-mini gpt-4-turbo gpt-4-vision-preview),
+    anthropic: ~w(claude-3-5-sonnet claude-3-opus claude-3-sonnet claude-3-haiku),
+    ollama: ~w(llava bakllava)
+  }
+
   alias Aludel.Providers.Provider
 
   @type error_reason ::
@@ -97,9 +103,14 @@ defmodule Aludel.LLM do
 
   # Private implementation functions
 
-  defp generate_openai(provider, prompt, _opts) do
+  defp vision_model?(provider, model) do
+    models = Map.get(@vision_models, provider, [])
+    Enum.any?(models, &String.starts_with?(model, &1))
+  end
+
+  defp generate_openai(provider, prompt, opts) do
     with {:ok, api_key} <- get_openai_api_key(),
-         {:ok, response} <- make_openai_request(provider, prompt, api_key) do
+         {:ok, response} <- make_openai_request(provider, prompt, api_key, opts) do
       parse_openai_response(response)
     end
   end
@@ -112,12 +123,20 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp make_openai_request(provider, prompt, api_key) do
+  defp make_openai_request(provider, prompt, api_key, opts) do
     url = "https://api.openai.com/v1/chat/completions"
+    documents = Keyword.get(opts, :documents, [])
+
+    content =
+      if documents != [] and vision_model?(:openai, provider.model) do
+        build_vision_content(prompt, documents)
+      else
+        prompt
+      end
 
     body = %{
       model: provider.model,
-      messages: [%{role: "user", content: prompt}],
+      messages: [%{role: "user", content: content}],
       temperature: get_in(provider.config, ["temperature"]) || 0.7,
       max_tokens: get_in(provider.config, ["max_tokens"]) || 1000
     }
@@ -131,6 +150,22 @@ defmodule Aludel.LLM do
       {:ok, response} -> {:ok, decode_openai_response_body(response)}
       {:error, reason} -> {:error, {:network_error, reason}}
     end
+  end
+
+  defp build_vision_content(prompt, documents) do
+    text_part = %{type: "text", text: prompt}
+
+    image_parts =
+      Enum.map(documents, fn doc ->
+        %{
+          type: "image_url",
+          image_url: %{
+            url: "data:#{doc.content_type};base64,#{Base.encode64(doc.data)}"
+          }
+        }
+      end)
+
+    [text_part | image_parts]
   end
 
   defp decode_openai_response_body(%{body: body} = response) when is_binary(body) do
