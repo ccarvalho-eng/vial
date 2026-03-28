@@ -22,7 +22,7 @@ Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output 
 - **Multi-provider comparison** — Run the same prompt across providers side-by-side. Track latency, token usage, and cost per run.
 - **Prompt management** — Version-controlled templates with `{{variable}}` interpolation. Every edit creates an immutable new version. Supports tags and descriptions.
 - **Evolution tracking** — Visualize prompt version performance over time. Track pass rates, cost, and latency trends across versions and providers.
-- **Evaluation suites** — Automated test cases with `contains`, `regex`, and `exact_match` assertions. Track pass rates and catch regressions over time.
+- **Evaluation suites** — Visual test case editor with document attachments (PDF, images, CSV, JSON, TXT). Automated assertions including `contains`, `regex`, `exact_match`, and `json_field`. Track pass rates and catch regressions over time.
 - **Dashboard** — Live metrics as runs execute: cost trends, latency, and per-provider performance.
 
 ---
@@ -207,7 +207,7 @@ ollama pull llama3  # or: mistral, codellama
 mix run priv/repo/seeds.exs
 ```
 
-Seeds create a default Ollama provider, 3 sample prompts, and 3 evaluation suites.
+Seeds create providers for Ollama, OpenAI, and Anthropic, along with 3 sample prompts and 3 evaluation suites with document attachments.
 
 ---
 
