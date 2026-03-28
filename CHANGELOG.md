@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] - 2026-03-28
+
+### Added
+- Visual test case editor with inline editing of variables and assertions
+- File attachment support for test cases (PDF, PNG, JPEG, JSON, CSV, TXT)
+- Document support for evaluation suites across OpenAI, Anthropic, and Ollama
+- JSON field assertion type for validating structured LLM outputs
+- Inline editing for suite name and prompt on suite show page
+- OpenAI GPT-4o and Anthropic Claude 4.5 providers in seed data
+
+### Changed
+- Improved suite index with more prominent edit actions
+
+### Fixed
+- Claude 4.x model support for vision/document capabilities
+
 ## [0.1.6] - 2026-03-28
 
 ### Changed
