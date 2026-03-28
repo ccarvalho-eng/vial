@@ -24,6 +24,8 @@ import {Socket, LongPoll} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import {EvolutionChart} from "./hooks/evolution_chart"
+// Hook for toggling assertion input fields based on type
+import {AssertionTypeToggle} from "./hooks/assertion_type_toggle"
 
 // Auto-dismiss flash messages after 5 seconds
 const AutoDismissFlash = {
@@ -86,7 +88,7 @@ const livePath = document.querySelector("meta[name='live-path']").getAttribute("
 const liveSocket = new LiveSocket(livePath, Socket, {
   transport: liveTran === "longpoll" ? LongPoll : WebSocket,
   params: {_csrf_token: csrfToken},
-  hooks: {AutoDismissFlash, EvolutionChart},
+  hooks: {AutoDismissFlash, EvolutionChart, AssertionTypeToggle},
 })
 
 // Show progress bar on live navigation and form submits

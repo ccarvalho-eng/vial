@@ -102,10 +102,20 @@ defmodule Aludel.Web.SuiteLive.Show do
 
     assertions =
       Enum.map(assertion_indices, fn idx ->
-        %{
-          "type" => params["assertion_type_#{idx}"],
-          "value" => params["assertion_value_#{idx}"]
-        }
+        type = params["assertion_type_#{idx}"]
+
+        if type == "json_field" do
+          %{
+            "type" => type,
+            "field" => params["assertion_field_#{idx}"],
+            "expected" => params["assertion_expected_#{idx}"]
+          }
+        else
+          %{
+            "type" => type,
+            "value" => params["assertion_value_#{idx}"]
+          }
+        end
       end)
 
     attrs = %{
@@ -120,16 +130,23 @@ defmodule Aludel.Web.SuiteLive.Show do
           consume_uploaded_entries(socket, :documents, fn %{path: path}, entry ->
             {:ok, data} = File.read(path)
 
-            {:ok, _doc} =
-              Evals.create_test_case_document(%{
-                test_case_id: test_case.id,
-                filename: entry.client_name,
-                content_type: entry.client_type,
-                data: data,
-                size_bytes: entry.client_size
-              })
+            # Validate file content matches claimed type
+            case validate_file_content(data, entry.client_type) do
+              :ok ->
+                {:ok, _doc} =
+                  Evals.create_test_case_document(%{
+                    test_case_id: test_case.id,
+                    filename: entry.client_name,
+                    content_type: entry.client_type,
+                    data: data,
+                    size_bytes: entry.client_size
+                  })
 
-            {:ok, entry.client_name}
+                {:ok, entry.client_name}
+
+              {:error, reason} ->
+                {:postpone, reason}
+            end
           end)
 
         suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
@@ -221,24 +238,29 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_event("run_suite", _params, socket) do
-    # Use the stored selections instead of params
-    version_id = socket.assigns.selected_version_id
-    provider_id = socket.assigns.selected_provider_id
+    # Prevent concurrent runs
+    if socket.assigns.running do
+      {:noreply, put_flash(socket, :error, "Suite is already running")}
+    else
+      # Use the stored selections instead of params
+      version_id = socket.assigns.selected_version_id
+      provider_id = socket.assigns.selected_provider_id
 
-    # Start async execution
-    pid = self()
-    suite_id = socket.assigns.suite.id
+      # Start async execution
+      pid = self()
+      suite_id = socket.assigns.suite.id
 
-    Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
-      version = Prompts.get_prompt_version!(version_id)
-      provider = Providers.get_provider!(provider_id)
-      suite = Evals.get_suite_with_test_cases!(suite_id)
+      Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
+        version = Prompts.get_prompt_version!(version_id)
+        provider = Providers.get_provider!(provider_id)
+        suite = Evals.get_suite_with_test_cases!(suite_id)
 
-      result = Evals.execute_suite(suite, version, provider)
-      send(pid, {:suite_completed, result})
-    end)
+        result = Evals.execute_suite(suite, version, provider)
+        send(pid, {:suite_completed, result})
+      end)
 
-    {:noreply, assign(socket, :running, true)}
+      {:noreply, assign(socket, :running, true)}
+    end
   end
 
   @impl Phoenix.LiveView
@@ -287,8 +309,44 @@ defmodule Aludel.Web.SuiteLive.Show do
     end
   end
 
-  defp error_to_string(:too_large), do: "File too large (max 10MB)"
-  defp error_to_string(:not_accepted), do: "File type not accepted"
-  defp error_to_string(:too_many_files), do: "Too many files (max 5)"
-  defp error_to_string(err), do: "Upload error: #{inspect(err)}"
+  # Validate file content matches claimed MIME type using magic bytes
+  defp validate_file_content(data, content_type) do
+    # Check magic bytes (file signatures) for common types
+    magic_bytes = :binary.part(data, 0, min(byte_size(data), 8))
+
+    case {content_type, magic_bytes} do
+      # PDF files start with %PDF
+      {"application/pdf", <<"%PDF", _::binary>>} ->
+        :ok
+
+      # PNG files
+      {"image/png", <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, _::binary>>} ->
+        :ok
+
+      # JPEG files
+      {"image/jpeg", <<0xFF, 0xD8, 0xFF, _::binary>>} ->
+        :ok
+
+      # JSON (starts with { or [)
+      {"application/json", <<char, _::binary>>} when char in [?{, ?\[, 32, 9, 10, 13] ->
+        # Validate it's actually valid JSON
+        case Jason.decode(data) do
+          {:ok, _} -> :ok
+          {:error, _} -> {:error, "Invalid JSON file"}
+        end
+
+      # CSV and TXT - allow any text content (no reliable magic bytes)
+      {ct, _} when ct in ["text/csv", "text/plain"] ->
+        # Just verify it's valid UTF-8
+        if String.valid?(data) do
+          :ok
+        else
+          {:error, "File is not valid UTF-8 text"}
+        end
+
+      # Mismatch between claimed type and actual content
+      {claimed, _} ->
+        {:error, "File content does not match type #{claimed}"}
+    end
+  end
 end
