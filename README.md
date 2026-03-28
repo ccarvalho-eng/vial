@@ -2,7 +2,8 @@
   <img src="assets/images/logo.png?v=2" alt="Aludel Logo" width="400"/>
 
   ## LLM Eval Workbench
-  
+
+  [![Hex.pm](https://img.shields.io/hexpm/v/aludel.svg)](https://hex.pm/packages/aludel)
   [![CI](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml)
   [![Security](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml)
   [![codecov](https://codecov.io/gh/ccarvalho-eng/aludel/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/aludel)
@@ -40,7 +41,7 @@ Add Aludel to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:aludel, github: "ccarvalho-eng/aludel"}
+    {:aludel, "~> 0.1.1"}
   ]
 end
 ```
