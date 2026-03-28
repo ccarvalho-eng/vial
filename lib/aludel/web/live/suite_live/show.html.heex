@@ -2,10 +2,65 @@
   <div style="display: grid; grid-template-columns: 400px 1fr 1fr; height: calc(100vh - 60px); overflow-x: hidden; overflow-y: hidden;">
     <%!-- Column 1: Prompt & Controls --%>
     <div style="padding: 24px; overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--border);">
-      <h1 style="font-size: 24px; margin-bottom: 8px;">{@suite.name}</h1>
-      <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
-        {@prompt.name}
-      </p>
+      <%= if @editing_suite_metadata do %>
+        <form phx-submit="save_suite_metadata" style="margin-bottom: 24px;">
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
+              Suite Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={@suite.name}
+              required
+              style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
+            />
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
+              Prompt
+            </label>
+            <select
+              name="prompt_id"
+              required
+              style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
+            >
+              <%= for prompt <- Aludel.Prompts.list_prompts() do %>
+                <option value={prompt.id} selected={prompt.id == @suite.prompt_id}>
+                  {prompt.name}
+                </option>
+              <% end %>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="submit" class="button-primary" style="font-size: 13px; padding: 6px 12px;">
+              Save
+            </button>
+            <button
+              type="button"
+              phx-click="cancel_edit_suite_metadata"
+              class="button-secondary"
+              style="font-size: 13px; padding: 6px 12px;"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      <% else %>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <h1 style="font-size: 24px; margin: 0;">{@suite.name}</h1>
+          <button
+            phx-click="edit_suite_metadata"
+            style="border: none; background: none; cursor: pointer; color: var(--text-secondary); padding: 4px;"
+            title="Edit suite details"
+          >
+            <span class="hero-pencil-square size-5"></span>
+          </button>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
+          {@prompt.name}
+        </p>
+      <% end %>
       <div style="margin-bottom: 24px;">
         <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Run Suite</h3>
         <form phx-submit="run_suite" style="display: flex; flex-direction: column; gap: 12px;">

@@ -41,8 +41,38 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:selected_version_id, default_version_id)
       |> assign(:selected_provider_id, default_provider_id)
       |> assign(:editing_test_case_id, nil)
+      |> assign(:editing_suite_metadata, false)
 
     {:noreply, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("edit_suite_metadata", _params, socket) do
+    {:noreply, assign(socket, :editing_suite_metadata, true)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("cancel_edit_suite_metadata", _params, socket) do
+    {:noreply, assign(socket, :editing_suite_metadata, false)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("save_suite_metadata", %{"name" => name, "prompt_id" => prompt_id}, socket) do
+    case Evals.update_suite(socket.assigns.suite, %{name: name, prompt_id: prompt_id}) do
+      {:ok, suite} ->
+        prompt = Prompts.get_prompt_with_versions!(prompt_id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> assign(:prompt, prompt)
+         |> assign(:page_title, name)
+         |> assign(:editing_suite_metadata, false)
+         |> put_flash(:info, "Suite updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update suite")}
+    end
   end
 
   @impl Phoenix.LiveView
