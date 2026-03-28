@@ -1,17 +1,14 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="400"/>
-
-  ## LLM Eval Workbench
-
-  [![Hex.pm](https://img.shields.io/hexpm/v/aludel.svg)](https://hex.pm/packages/aludel)
-  [![CI](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml)
-  [![Security](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml/badge.svg)](https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml)
-  [![codecov](https://codecov.io/gh/ccarvalho-eng/aludel/branch/main/graph/badge.svg)](https://codecov.io/gh/ccarvalho-eng/aludel)
-
-  <br/>
-
-  *From medieval Latin, derived from Arabic al-uthāl — a vessel for sublimation, where matter is refined through stages.*
-  *Like jinn answering invocation, LLMs respond to prompts; here, their nature is revealed, tested, and distilled.*
+  <h2>LLM Eval Workbench</h2>
+  <p>
+    <a href="https://hex.pm/packages/aludel"><img src="https://img.shields.io/hexpm/v/aludel.svg" alt="Hex.pm"/></a>
+    <a href="https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml"><img src="https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+    <a href="https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml"><img src="https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml/badge.svg" alt="Security"/></a>
+    <a href="https://codecov.io/gh/ccarvalho-eng/aludel"><img src="https://codecov.io/gh/ccarvalho-eng/aludel/branch/main/graph/badge.svg" alt="codecov"/></a>
+  </p>
+  <p><em>From medieval Latin, derived from Arabic al-uthāl — a vessel for sublimation, where matter is refined through stages.</em><br/>
+  <em>Like jinn answering invocation, LLMs respond to prompts; here, their nature is revealed, tested, and distilled.</em></p>
 </div>
 
 Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output quality, latency, token usage, and cost in real-time.
