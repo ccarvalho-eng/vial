@@ -274,7 +274,7 @@ defmodule Aludel.Evals do
   @spec execute_suite(Suite.t(), PromptVersion.t(), Provider.t()) ::
           {:ok, SuiteRun.t()} | {:error, term()}
   def execute_suite(%Suite{} = suite, %PromptVersion{} = version, %Provider{} = provider) do
-    suite = repo().preload(suite, :test_cases)
+    suite = repo().preload(suite, test_cases: :documents)
 
     {results, metrics} =
       Enum.map_reduce(
@@ -331,9 +331,17 @@ defmodule Aludel.Evals do
   end
 
   defp execute_test_case(test_case, version, provider) do
+    test_case = ensure_documents_loaded(test_case)
     rendered_prompt = render_template(version.template, test_case.variable_values)
 
-    case LLM.call(provider, rendered_prompt) do
+    documents =
+      Enum.map(test_case.documents, fn doc ->
+        %{data: doc.data, content_type: doc.content_type}
+      end)
+
+    opts = if documents != [], do: [documents: documents], else: []
+
+    case LLM.call(provider, rendered_prompt, opts) do
       {:ok, result} ->
         passed = evaluate_assertions(result.output, test_case.assertions)
 
@@ -355,6 +363,12 @@ defmodule Aludel.Evals do
         }
     end
   end
+
+  defp ensure_documents_loaded(%TestCase{documents: %Ecto.Association.NotLoaded{}} = test_case) do
+    repo().preload(test_case, :documents)
+  end
+
+  defp ensure_documents_loaded(%TestCase{} = test_case), do: test_case
 
   defp render_template(template, variables) do
     Enum.reduce(variables, template, fn {key, value}, acc ->

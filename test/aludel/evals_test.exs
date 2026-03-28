@@ -582,4 +582,35 @@ defmodule Aludel.EvalsTest do
       assert length(loaded.documents) == 2
     end
   end
+
+  describe "execute_suite with documents" do
+    import Aludel.PromptsFixtures
+    import Aludel.ProvidersFixtures
+
+    test "passes documents to LLM.call" do
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      {:ok, _doc} =
+        Aludel.Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "test.png",
+          content_type: "image/png",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Describe {{input}}")
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o"
+        })
+
+      assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
+      assert suite_run.passed + suite_run.failed > 0
+    end
+  end
 end
