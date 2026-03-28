@@ -130,7 +130,7 @@ defmodule Aludel.LLM do
 
     content =
       if documents != [] and vision_model?(:openai, provider.model) do
-        build_vision_content(prompt, documents)
+        build_openai_file_content(prompt, documents)
       else
         prompt
       end
@@ -153,7 +153,36 @@ defmodule Aludel.LLM do
     end
   end
 
+  defp build_openai_file_content(prompt, documents) do
+    # OpenAI's new file input format (supports PDFs, images, etc.)
+    text_part = %{type: "text", text: prompt}
+
+    file_parts =
+      Enum.map(documents, fn doc ->
+        # Generate a reasonable filename based on content type
+        extension =
+          case doc.content_type do
+            "application/pdf" -> "pdf"
+            "image/png" -> "png"
+            "image/jpeg" -> "jpg"
+            "image/jpg" -> "jpg"
+            _ -> "file"
+          end
+
+        %{
+          type: "file",
+          file: %{
+            filename: "document.#{extension}",
+            file_data: "data:#{doc.content_type};base64,#{Base.encode64(doc.data)}"
+          }
+        }
+      end)
+
+    [text_part | file_parts]
+  end
+
   defp build_vision_content(prompt, documents) do
+    # Legacy format for Ollama (using image_url)
     text_part = %{type: "text", text: prompt}
 
     image_parts =
