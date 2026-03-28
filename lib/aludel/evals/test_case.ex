@@ -28,6 +28,7 @@ defmodule Aludel.Evals.TestCase do
     field :assertions, {:array, :map}
 
     belongs_to :suite, Aludel.Evals.Suite
+    has_many :documents, Aludel.Evals.TestCaseDocument, on_delete: :delete_all
 
     timestamps(type: :utc_datetime)
   end

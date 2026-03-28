@@ -59,4 +59,25 @@ defmodule Aludel.Evals.TestCaseTest do
       assert "can't be blank" in errors_on(changeset).assertions
     end
   end
+
+  describe "associations" do
+    test "has_many documents" do
+      test_case = test_case_fixture()
+
+      {:ok, doc} =
+        %Aludel.Evals.TestCaseDocument{}
+        |> Aludel.Evals.TestCaseDocument.changeset(%{
+          test_case_id: test_case.id,
+          filename: "test.pdf",
+          content_type: "application/pdf",
+          data: <<1, 2, 3>>,
+          size_bytes: 100
+        })
+        |> Repo.insert()
+
+      loaded = Repo.preload(test_case, :documents)
+      assert [%Aludel.Evals.TestCaseDocument{id: doc_id}] = loaded.documents
+      assert doc_id == doc.id
+    end
+  end
 end
