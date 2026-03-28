@@ -409,12 +409,6 @@ defmodule Aludel.Evals do
 
             {:network_error, err} ->
               "Network error: #{inspect(err)}"
-
-            other when is_binary(other) ->
-              other
-
-            other ->
-              "Error: #{inspect(other)}"
           end
 
         %{
