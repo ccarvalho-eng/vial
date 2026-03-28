@@ -47,19 +47,19 @@
           </div>
         </form>
       <% else %>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-          <h1 style="font-size: 24px; margin: 0;">{@suite.name}</h1>
+        <div style="margin-bottom: 24px;">
+          <h1 style="font-size: 24px; margin: 0 0 8px 0;">{@suite.name}</h1>
+          <p style="color: var(--text-secondary); margin: 0 0 12px 0; font-size: 14px;">
+            {@prompt.name}
+          </p>
           <button
             phx-click="edit_suite_metadata"
-            style="border: none; background: none; cursor: pointer; color: var(--text-secondary); padding: 4px;"
-            title="Edit suite details"
+            class="button-secondary"
+            style="font-size: 13px; padding: 6px 12px; width: 100%;"
           >
-            <span class="hero-pencil-square size-5"></span>
+            Edit Suite Details
           </button>
         </div>
-        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
-          {@prompt.name}
-        </p>
       <% end %>
       <div style="margin-bottom: 24px;">
         <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Run Suite</h3>
