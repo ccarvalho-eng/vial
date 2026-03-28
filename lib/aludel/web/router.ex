@@ -69,7 +69,6 @@ defmodule Aludel.Web.Router do
 
           live "/suites", Aludel.Web.SuiteLive.Index, :index, route_opts
           live "/suites/new", Aludel.Web.SuiteLive.New, :new, route_opts
-          live "/suites/:id/edit", Aludel.Web.SuiteLive.New, :edit, route_opts
           live "/suites/:id", Aludel.Web.SuiteLive.Show, :show, route_opts
 
           live "/providers", Aludel.Web.ProviderLive.Index, :index, route_opts
@@ -79,12 +78,6 @@ defmodule Aludel.Web.Router do
       end
     end
   end
-
-  defp expand_alias({:__aliases__, _, _} = alias_ast, env) do
-    Macro.expand(alias_ast, %{env | function: {:aludel_dashboard, 2}})
-  end
-
-  defp expand_alias(other, _env), do: other
 
   @doc false
   def __options__(prefix, opts) do
@@ -146,6 +139,14 @@ defmodule Aludel.Web.Router do
       }
     }
   end
+
+  # Private functions
+
+  defp expand_alias({:__aliases__, _, _} = alias_ast, env) do
+    Macro.expand(alias_ast, %{env | function: {:aludel_dashboard, 2}})
+  end
+
+  defp expand_alias(other, _env), do: other
 
   defp expand_csp_nonce_keys(nil), do: %{img: nil, style: nil, script: nil}
   defp expand_csp_nonce_keys(key) when is_atom(key), do: %{img: key, style: key, script: key}

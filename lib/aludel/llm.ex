@@ -12,6 +12,11 @@ defmodule Aludel.LLM do
   - Cost estimation
   """
 
+  @type document_input :: %{
+          data: binary(),
+          content_type: String.t()
+        }
+
   @type llm_result :: %{
           output: String.t(),
           input_tokens: non_neg_integer(),
@@ -20,7 +25,15 @@ defmodule Aludel.LLM do
           cost_usd: float()
         }
 
+  @vision_models %{
+    openai: ~w(gpt-4o gpt-4o-mini gpt-4-turbo gpt-4-vision-preview),
+    anthropic:
+      ~w(claude-sonnet-4 claude-haiku-4 claude-opus-4 claude-3-5-sonnet claude-3-opus claude-3-sonnet claude-3-haiku),
+    ollama: ~w(llava bakllava)
+  }
+
   alias Aludel.Providers.Provider
+  alias Aludel.DocumentConverter
 
   @type error_reason ::
           :missing_api_key
@@ -31,12 +44,14 @@ defmodule Aludel.LLM do
           | {:network_error, term()}
 
   @doc """
-  Calls an LLM provider with a prompt and returns structured result.
+  Calls an LLM provider with a prompt and optional documents.
 
   ## Parameters
     - provider: Provider configuration struct
     - prompt: Text prompt to send to the LLM
-    - opts: Additional options (reserved for future use)
+    - opts: Additional options
+      - :documents - List of document maps with :data and
+        :content_type
 
   ## Returns
     - `{:ok, result}` with output, tokens, latency, and cost
@@ -44,8 +59,17 @@ defmodule Aludel.LLM do
 
   ## Examples
 
-      iex> provider = %Provider{provider: :openai, model: "gpt-4o"}
+      iex> provider = %Provider{provider: :openai,
+      ...>   model: "gpt-4o"}
       iex> {:ok, result} = LLM.call(provider, "Hello world")
+      iex> is_binary(result.output)
+      true
+
+      iex> provider = %Provider{provider: :openai,
+      ...>   model: "gpt-4o"}
+      iex> doc = %{data: <<...>>, content_type: "image/png"}
+      iex> {:ok, result} = LLM.call(provider,
+      ...>   "Describe image", documents: [doc])
       iex> is_binary(result.output)
       true
   """
@@ -81,9 +105,14 @@ defmodule Aludel.LLM do
 
   # Private implementation functions
 
-  defp generate_openai(provider, prompt, _opts) do
+  defp vision_model?(provider, model) do
+    models = Map.get(@vision_models, provider, [])
+    Enum.any?(models, &String.starts_with?(model, &1))
+  end
+
+  defp generate_openai(provider, prompt, opts) do
     with {:ok, api_key} <- get_openai_api_key(),
-         {:ok, response} <- make_openai_request(provider, prompt, api_key) do
+         {:ok, response} <- make_openai_request(provider, prompt, api_key, opts) do
       parse_openai_response(response)
     end
   end
@@ -96,12 +125,20 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp make_openai_request(provider, prompt, api_key) do
+  defp make_openai_request(provider, prompt, api_key, opts) do
     url = "https://api.openai.com/v1/chat/completions"
+    documents = Keyword.get(opts, :documents, [])
+
+    content =
+      if documents != [] and vision_model?(:openai, provider.model) do
+        build_openai_file_content(prompt, documents)
+      else
+        prompt
+      end
 
     body = %{
       model: provider.model,
-      messages: [%{role: "user", content: prompt}],
+      messages: [%{role: "user", content: content}],
       temperature: get_in(provider.config, ["temperature"]) || 0.7,
       max_tokens: get_in(provider.config, ["max_tokens"]) || 1000
     }
@@ -115,6 +152,78 @@ defmodule Aludel.LLM do
       {:ok, response} -> {:ok, decode_openai_response_body(response)}
       {:error, reason} -> {:error, {:network_error, reason}}
     end
+  end
+
+  defp build_openai_file_content(prompt, documents) do
+    # OpenAI's new file input format (supports PDFs, images, etc.)
+    text_part = %{type: "text", text: prompt}
+
+    file_parts =
+      Enum.map(documents, fn doc ->
+        # Generate a reasonable filename based on content type
+        extension =
+          case doc.content_type do
+            "application/pdf" -> "pdf"
+            "image/png" -> "png"
+            "image/jpeg" -> "jpg"
+            "image/jpg" -> "jpg"
+            _ -> "file"
+          end
+
+        %{
+          type: "file",
+          file: %{
+            filename: "document.#{extension}",
+            file_data: "data:#{doc.content_type};base64,#{Base.encode64(doc.data)}"
+          }
+        }
+      end)
+
+    [text_part | file_parts]
+  end
+
+  defp build_vision_content(prompt, documents) do
+    # Legacy format for Ollama (using image_url)
+    text_part = %{type: "text", text: prompt}
+
+    image_parts =
+      Enum.map(documents, fn doc ->
+        %{
+          type: "image_url",
+          image_url: %{
+            url: "data:#{doc.content_type};base64,#{Base.encode64(doc.data)}"
+          }
+        }
+      end)
+
+    [text_part | image_parts]
+  end
+
+  defp build_anthropic_document_content(prompt, documents) do
+    # Claude 4.5+ supports both documents (PDFs) and images natively
+    text_content = %{"type" => "text", "text" => prompt}
+
+    doc_contents =
+      Enum.map(documents, fn doc ->
+        # Use "document" type for PDFs, "image" type for images
+        content_type =
+          if doc.content_type == "application/pdf" do
+            "document"
+          else
+            "image"
+          end
+
+        %{
+          "type" => content_type,
+          "source" => %{
+            "type" => "base64",
+            "media_type" => doc.content_type,
+            "data" => Base.encode64(doc.data)
+          }
+        }
+      end)
+
+    [text_content | doc_contents]
   end
 
   defp decode_openai_response_body(%{body: body} = response) when is_binary(body) do
@@ -160,9 +269,9 @@ defmodule Aludel.LLM do
     {:error, {:api_error, status, message}}
   end
 
-  defp generate_anthropic(provider, prompt, _opts) do
+  defp generate_anthropic(provider, prompt, opts) do
     with {:ok, api_key} <- get_anthropic_api_key(),
-         {:ok, response} <- make_anthropic_request(provider, prompt, api_key) do
+         {:ok, response} <- make_anthropic_request(provider, prompt, api_key, opts) do
       parse_anthropic_response(response)
     end
   end
@@ -175,15 +284,30 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp make_anthropic_request(provider, prompt, api_key) do
+  defp make_anthropic_request(provider, prompt, api_key, opts) do
     url = "https://api.anthropic.com/v1/messages"
+    documents = Keyword.get(opts, :documents, [])
+
+    content =
+      if documents != [] and vision_model?(:anthropic, provider.model) do
+        build_anthropic_document_content(prompt, documents)
+      else
+        prompt
+      end
 
     body = %{
       model: provider.model,
-      messages: [%{role: "user", content: prompt}],
+      messages: [%{role: "user", content: content}],
       temperature: get_in(provider.config, ["temperature"]) || 0.5,
       max_tokens: get_in(provider.config, ["max_tokens"]) || 1024
     }
+
+    # Debug logging
+    require Logger
+
+    Logger.debug(
+      "Anthropic request - Model: #{provider.model}, Documents: #{length(documents)}, Content types: #{inspect(Enum.map(documents, & &1.content_type))}"
+    )
 
     headers = [
       {"x-api-key", api_key},
@@ -249,15 +373,37 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp generate_ollama(provider, prompt, _opts) do
+  defp generate_ollama(provider, prompt, opts) do
     # Ollama provides OpenAI-compatible API at /v1/chat/completions
     # Using direct Req since req_llm requires API key validation
     url = "http://localhost:11434/v1/chat/completions"
+    documents = Keyword.get(opts, :documents, [])
+
+    content =
+      if documents != [] and vision_model?(:ollama, provider.model) do
+        # Convert PDFs to images for vision models
+        converted_docs =
+          Enum.map(documents, fn doc ->
+            case DocumentConverter.pdf_to_image(doc) do
+              {:ok, converted} ->
+                converted
+
+              {:error, reason} ->
+                require Logger
+                Logger.error("Failed to convert document: #{inspect(reason)}")
+                doc
+            end
+          end)
+
+        build_vision_content(prompt, converted_docs)
+      else
+        prompt
+      end
 
     body = %{
       model: provider.model,
       messages: [
-        %{role: "user", content: prompt}
+        %{role: "user", content: content}
       ],
       stream: false,
       temperature: get_in(provider.config, ["temperature"]) || 0.8
@@ -276,10 +422,10 @@ defmodule Aludel.LLM do
          }}
 
       {:ok, %{status: status, body: body}} ->
-        {:error, "Ollama API error: #{status} - #{inspect(body)}"}
+        {:error, {:api_error, status, inspect(body)}}
 
       {:error, reason} ->
-        {:error, "Failed to connect to Ollama: #{inspect(reason)}"}
+        {:error, {:network_error, reason}}
     end
   end
 

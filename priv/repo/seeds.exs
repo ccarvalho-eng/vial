@@ -17,7 +17,50 @@ alias Aludel.Evals
 # Create default providers if they don't exist
 case Providers.list_providers() do
   [] ->
-    {:ok, _provider1} =
+    # OpenAI Providers
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "OpenAI GPT-4o",
+        provider: :openai,
+        model: "gpt-4o",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "OpenAI GPT-4o Mini",
+        provider: :openai,
+        model: "gpt-4o-mini",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    # Anthropic Providers
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "Anthropic Claude Sonnet 4.5",
+        provider: :anthropic,
+        model: "claude-sonnet-4-5-20250929",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "Anthropic Claude Haiku 4.5",
+        provider: :anthropic,
+        model: "claude-haiku-4-5-20251001",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    # Ollama Providers
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "Ollama Llava (Vision)",
+        provider: :ollama,
+        model: "llava",
+        config: %{"temperature" => 0.7, "max_tokens" => 1000}
+      })
+
+    {:ok, _} =
       Providers.create_provider(%{
         name: "Ollama Llama 2",
         provider: :ollama,
@@ -25,15 +68,10 @@ case Providers.list_providers() do
         config: %{"temperature" => 0.7, "max_tokens" => 1000}
       })
 
-    {:ok, _provider2} =
-      Providers.create_provider(%{
-        name: "OpenAI GPT-3.5",
-        provider: :openai,
-        model: "gpt-3.5-turbo",
-        config: %{"temperature" => 0.7, "max_tokens" => 1000}
-      })
-
-    IO.puts("✓ Created default providers")
+    IO.puts("✓ Created 6 default providers:")
+    IO.puts("  - OpenAI: GPT-4o, GPT-4o Mini")
+    IO.puts("  - Anthropic: Claude Sonnet 4.5, Claude Haiku 4.5")
+    IO.puts("  - Ollama: Llava (vision), Llama 2 (text)")
 
   _ ->
     IO.puts("→ Providers already exist, skipping")
@@ -458,7 +496,92 @@ case Prompts.list_prompts() do
           ]
         })
 
-        IO.puts("✓ Created 3 sample evaluation suites with test cases")
+        # Suite 4: Document Evaluation Suite (Invoice Processing)
+        {:ok, invoice_prompt} =
+          Prompts.create_prompt(%{
+            name: "Invoice Data Extraction",
+            description: "Extracts structured data from invoice documents",
+            tags: ["document-processing", "invoice", "extraction"]
+          })
+
+        {:ok, _invoice_version} =
+          Prompts.create_prompt_version(
+            invoice_prompt,
+            """
+            You are an invoice processing assistant. Carefully read ALL text in the provided invoice image and extract key information.
+
+            IMPORTANT: Look at the image carefully and read every text field. Extract the exact values you see.
+
+            Return ONLY a valid JSON object (no markdown, no explanations) with these exact fields:
+            - invoice_number: The invoice/receipt number (look for "Invoice #", "Receipt #", etc.)
+            - invoice_date: The invoice/issue date (look for "Date", "Invoice Date", etc.)
+            - due_date: The payment due date (look for "Due Date", "Payment Due", etc. - use null if not found)
+            - vendor_name: The company/business name issuing the invoice (usually at the top)
+            - customer_name: The customer/client name (look for "Bill To", "Customer", etc.)
+            - total_amount: The final total amount as a number without currency symbol
+            - currency: The currency code (USD, EUR, etc. - look for $ or currency symbols)
+
+            Example valid response:
+            {"invoice_number": "INV-3337", "invoice_date": "January 25, 2016", "due_date": "January 31, 2016", "vendor_name": "DEMO - Sliced Invoices", "customer_name": "Test Business", "total_amount": "93.50", "currency": "USD"}
+
+            Read the image carefully and extract the exact text values. Return only the JSON, nothing else.
+            """
+          )
+
+        {:ok, invoice_suite} =
+          Evals.create_suite(%{
+            name: "Invoice Processing Suite",
+            description: "Tests LLM's ability to extract structured data from invoice documents",
+            prompt_id: invoice_prompt.id
+          })
+
+        # Test case: Extract invoice fields as JSON
+        {:ok, _test1} =
+          Evals.create_test_case(%{
+            suite_id: invoice_suite.id,
+            name: "Extract Sliced Invoice Data",
+            variable_values: %{},
+            assertions: [
+              %{
+                "type" => "json_field",
+                "field" => "invoice_number",
+                "expected" => "INV-3337"
+              },
+              %{
+                "type" => "json_field",
+                "field" => "vendor_name",
+                "expected" => "DEMO - Sliced Invoices"
+              },
+              %{
+                "type" => "json_field",
+                "field" => "customer_name",
+                "expected" => "Test Business"
+              },
+              %{
+                "type" => "json_field",
+                "field" => "invoice_date",
+                "expected" => "January 25, 2016"
+              },
+              %{
+                "type" => "json_field",
+                "field" => "due_date",
+                "expected" => "January 31, 2016"
+              },
+              %{
+                "type" => "json_field",
+                "field" => "total_amount",
+                "expected" => "93.50"
+              },
+              %{
+                "type" => "json_field",
+                "field" => "currency",
+                "expected" => "USD"
+              }
+            ]
+          })
+
+        IO.puts("✓ Created 4 sample evaluation suites with test cases")
+        IO.puts("  → Invoice Processing Suite requires document upload to run")
 
       _ ->
         IO.puts("→ Suites already exist, skipping sample suites")

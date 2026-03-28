@@ -17,3 +17,7 @@ config :aludel_dash, AludelDash.Endpoint,
   debug_errors: true,
   secret_key_base: "LOCAL_DEV_SECRET_PLEASE_CHANGE_IN_PROD",
   watchers: []
+
+config :aludel, :llm,
+  openai_api_key: System.get_env("OPENAI_API_KEY"),
+  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")

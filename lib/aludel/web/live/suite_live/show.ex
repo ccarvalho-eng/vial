@@ -9,6 +9,7 @@ defmodule Aludel.Web.SuiteLive.Show do
   use Aludel.Web, :live_view
 
   alias Aludel.Evals
+  alias Aludel.FileValidation
   alias Aludel.Prompts
   alias Aludel.Providers
 
@@ -22,6 +23,7 @@ defmodule Aludel.Web.SuiteLive.Show do
     suite = Evals.get_suite_with_test_cases_and_prompt!(id)
     prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
     providers = Providers.list_providers()
+    all_prompts = Prompts.list_prompts()
 
     # Load existing suite runs
     suite_runs = Evals.list_suite_runs_for_suite_with_associations(id)
@@ -35,13 +37,45 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:page_title, suite.name)
       |> assign(:suite, suite)
       |> assign(:prompt, prompt)
+      |> assign(:all_prompts, all_prompts)
       |> assign(:providers, providers)
       |> assign(:suite_runs, suite_runs)
       |> assign(:running, false)
       |> assign(:selected_version_id, default_version_id)
       |> assign(:selected_provider_id, default_provider_id)
+      |> assign(:editing_test_case_id, nil)
+      |> assign(:editing_suite_metadata, false)
 
     {:noreply, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("edit_suite_metadata", _params, socket) do
+    {:noreply, assign(socket, :editing_suite_metadata, true)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("cancel_edit_suite_metadata", _params, socket) do
+    {:noreply, assign(socket, :editing_suite_metadata, false)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("save_suite_metadata", %{"name" => name, "prompt_id" => prompt_id}, socket) do
+    case Evals.update_suite(socket.assigns.suite, %{name: name, prompt_id: prompt_id}) do
+      {:ok, suite} ->
+        prompt = Prompts.get_prompt_with_versions!(prompt_id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> assign(:prompt, prompt)
+         |> assign(:page_title, name)
+         |> assign(:editing_suite_metadata, false)
+         |> put_flash(:info, "Suite updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update suite")}
+    end
   end
 
   @impl Phoenix.LiveView
@@ -55,25 +89,243 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
+  def handle_event("edit_test_case", %{"id" => id}, socket) do
+    test_case = Evals.get_test_case!(id)
+
+    socket =
+      socket
+      |> assign(:editing_test_case_id, id)
+      |> assign(:editing_assertions, test_case.assertions)
+      |> allow_upload(:documents,
+        accept: ~w(.pdf .png .jpg .jpeg .csv .json .txt),
+        max_entries: 5,
+        max_file_size: 10_000_000
+      )
+
+    {:noreply, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("cancel_edit", _params, socket) do
+    socket =
+      socket
+      |> assign(:editing_test_case_id, nil)
+      |> assign(:editing_assertions, nil)
+
+    {:noreply, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("validate_test_case", _params, socket) do
+    # This event is needed for LiveView uploads to work
+    {:noreply, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("save_test_case", params, socket) do
+    id = params["id"]
+    test_case = Evals.get_test_case!(id)
+
+    # Parse variables from params
+    variables =
+      params
+      |> Enum.filter(fn {k, _v} -> String.starts_with?(k, "var_value_") end)
+      |> Enum.map(fn {"var_value_" <> key, value} -> {key, value} end)
+      |> Map.new()
+
+    # Parse assertions from params
+    assertion_indices =
+      params
+      |> Map.keys()
+      |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
+      |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
+      |> Enum.sort()
+
+    assertions =
+      Enum.map(assertion_indices, fn idx ->
+        type = params["assertion_type_#{idx}"]
+
+        if type == "json_field" do
+          %{
+            "type" => type,
+            "field" => params["assertion_field_#{idx}"],
+            "expected" => params["assertion_expected_#{idx}"]
+          }
+        else
+          %{
+            "type" => type,
+            "value" => params["assertion_value_#{idx}"]
+          }
+        end
+      end)
+
+    attrs = %{
+      variable_values: variables,
+      assertions: assertions
+    }
+
+    case Evals.update_test_case(test_case, attrs) do
+      {:ok, _test_case} ->
+        # Handle uploaded documents and collect results
+        {successful_uploads, failed_uploads} =
+          consume_uploaded_entries(socket, :documents, fn %{path: path}, entry ->
+            {:ok, data} = File.read(path)
+
+            # Validate file content matches claimed type
+            case FileValidation.validate(data, entry.client_type) do
+              :ok ->
+                case Evals.create_test_case_document(%{
+                       test_case_id: test_case.id,
+                       filename: entry.client_name,
+                       content_type: entry.client_type,
+                       data: data,
+                       size_bytes: entry.client_size
+                     }) do
+                  {:ok, _doc} ->
+                    {:ok, {:success, entry.client_name}}
+
+                  {:error, _changeset} ->
+                    {:ok, {:failed, entry.client_name, "Database error"}}
+                end
+
+              {:error, reason} ->
+                {:ok, {:failed, entry.client_name, reason}}
+            end
+          end)
+          |> Enum.split_with(fn
+            {:success, _} -> true
+            _ -> false
+          end)
+
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        socket =
+          socket
+          |> assign(:suite, suite)
+          |> assign(:editing_test_case_id, nil)
+          |> assign(:editing_assertions, nil)
+
+        # Build appropriate flash message based on results
+        socket =
+          cond do
+            # All uploads failed
+            failed_uploads != [] and successful_uploads == [] ->
+              failed_files =
+                Enum.map_join(failed_uploads, ", ", fn {:failed, name, reason} ->
+                  "#{name} (#{reason})"
+                end)
+
+              put_flash(
+                socket,
+                :error,
+                "Test case updated but document uploads failed: #{failed_files}"
+              )
+
+            # Some uploads failed
+            failed_uploads != [] ->
+              failed_count = length(failed_uploads)
+              success_count = length(successful_uploads)
+
+              put_flash(
+                socket,
+                :warning,
+                "Test case updated with #{success_count} document(s), but #{failed_count} failed validation"
+              )
+
+            # All uploads succeeded
+            successful_uploads != [] ->
+              put_flash(
+                socket,
+                :info,
+                "Test case updated with #{length(successful_uploads)} document(s)"
+              )
+
+            # No uploads
+            true ->
+              put_flash(socket, :info, "Test case updated successfully")
+          end
+
+        {:noreply, socket}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update test case")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("add_assertion", %{"id" => _id}, socket) do
+    new_assertions = socket.assigns.editing_assertions ++ [%{"type" => "contains", "value" => ""}]
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("remove_assertion", %{"index" => index_str, "id" => _id}, socket) do
+    index = String.to_integer(index_str)
+    new_assertions = List.delete_at(socket.assigns.editing_assertions, index)
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("delete_document", %{"doc-id" => doc_id, "id" => _test_case_id}, socket) do
+    document = Evals.get_test_case_document!(doc_id)
+
+    case Evals.delete_test_case_document(document) do
+      {:ok, _} ->
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> put_flash(:info, "Document deleted successfully")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to delete document")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("delete_test_case", %{"id" => id}, socket) do
+    test_case = Evals.get_test_case!(id)
+
+    case Evals.delete_test_case(test_case) do
+      {:ok, _} ->
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> put_flash(:info, "Test case deleted successfully")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to delete test case")}
+    end
+  end
+
+  @impl Phoenix.LiveView
   def handle_event("run_suite", _params, socket) do
-    # Use the stored selections instead of params
-    version_id = socket.assigns.selected_version_id
-    provider_id = socket.assigns.selected_provider_id
+    # Prevent concurrent runs
+    if socket.assigns.running do
+      {:noreply, put_flash(socket, :error, "Suite is already running")}
+    else
+      # Use the stored selections instead of params
+      version_id = socket.assigns.selected_version_id
+      provider_id = socket.assigns.selected_provider_id
 
-    # Start async execution
-    pid = self()
-    suite_id = socket.assigns.suite.id
+      # Start async execution
+      pid = self()
+      suite_id = socket.assigns.suite.id
 
-    Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
-      version = Prompts.get_prompt_version!(version_id)
-      provider = Providers.get_provider!(provider_id)
-      suite = Evals.get_suite_with_test_cases!(suite_id)
+      Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
+        version = Prompts.get_prompt_version!(version_id)
+        provider = Providers.get_provider!(provider_id)
+        suite = Evals.get_suite_with_test_cases!(suite_id)
 
-      result = Evals.execute_suite(suite, version, provider)
-      send(pid, {:suite_completed, result})
-    end)
+        result = Evals.execute_suite(suite, version, provider)
+        send(pid, {:suite_completed, result})
+      end)
 
-    {:noreply, assign(socket, :running, true)}
+      {:noreply, assign(socket, :running, true)}
+    end
   end
 
   @impl Phoenix.LiveView

@@ -1459,3 +1459,13 @@ a:has(.aludel-card) .aludel-card:hover {
 [data-theme="dark"] .provider-icon-ollama {
   filter: invert(1) brightness(0.9);
 }
+
+/* Pulse animation for edit mode indicator */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

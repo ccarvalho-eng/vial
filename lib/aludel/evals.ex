@@ -8,6 +8,7 @@ defmodule Aludel.Evals do
   alias Aludel.Evals.Suite
   alias Aludel.Evals.SuiteRun
   alias Aludel.Evals.TestCase
+  alias Aludel.Evals.TestCaseDocument
   alias Aludel.LLM
   alias Aludel.Prompts.PromptVersion
   alias Aludel.Providers.Provider
@@ -67,7 +68,7 @@ defmodule Aludel.Evals do
   def get_suite_with_test_cases_and_prompt!(id) do
     Suite
     |> repo().get!(id)
-    |> repo().preload([:test_cases, :prompt])
+    |> repo().preload(test_cases: :documents, prompt: [])
   end
 
   @doc """
@@ -124,6 +125,16 @@ defmodule Aludel.Evals do
   @spec get_test_case!(binary()) :: TestCase.t()
   def get_test_case!(id) do
     repo().get!(TestCase, id)
+  end
+
+  @doc """
+  Gets a single test case document.
+
+  Raises `Ecto.NoResultsError` if the document does not exist.
+  """
+  @spec get_test_case_document!(binary()) :: Aludel.Evals.TestCaseDocument.t()
+  def get_test_case_document!(id) do
+    repo().get!(Aludel.Evals.TestCaseDocument, id)
   end
 
   @doc """
@@ -273,7 +284,7 @@ defmodule Aludel.Evals do
   @spec execute_suite(Suite.t(), PromptVersion.t(), Provider.t()) ::
           {:ok, SuiteRun.t()} | {:error, term()}
   def execute_suite(%Suite{} = suite, %PromptVersion{} = version, %Provider{} = provider) do
-    suite = repo().preload(suite, :test_cases)
+    suite = repo().preload(suite, test_cases: :documents)
 
     {results, metrics} =
       Enum.map_reduce(
@@ -329,31 +340,127 @@ defmodule Aludel.Evals do
     })
   end
 
+  # Test Case Document functions
+
+  @doc """
+  Creates a test case document.
+  """
+  @spec create_test_case_document(map()) ::
+          {:ok, TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
+  def create_test_case_document(attrs \\ %{}) do
+    %Aludel.Evals.TestCaseDocument{}
+    |> Aludel.Evals.TestCaseDocument.changeset(attrs)
+    |> repo().insert()
+  end
+
+  @doc """
+  Deletes a test case document.
+  """
+  @spec delete_test_case_document(Aludel.Evals.TestCaseDocument.t()) ::
+          {:ok, Aludel.Evals.TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
+  def delete_test_case_document(%Aludel.Evals.TestCaseDocument{} = document) do
+    repo().delete(document)
+  end
+
+  @doc """
+  Gets a test case with documents preloaded.
+  """
+  @spec get_test_case_with_documents!(binary()) :: TestCase.t()
+  def get_test_case_with_documents!(id) do
+    TestCase
+    |> repo().get!(id)
+    |> repo().preload(:documents)
+  end
+
+  # Private functions
+
   defp execute_test_case(test_case, version, provider) do
+    test_case = ensure_documents_loaded(test_case)
     rendered_prompt = render_template(version.template, test_case.variable_values)
 
-    case LLM.call(provider, rendered_prompt) do
+    documents =
+      Enum.map(test_case.documents, fn doc ->
+        %{data: doc.data, content_type: doc.content_type}
+      end)
+
+    opts = if documents != [], do: [documents: documents], else: []
+
+    case LLM.call(provider, rendered_prompt, opts) do
       {:ok, result} ->
-        passed = evaluate_assertions(result.output, test_case.assertions)
+        assertion_results =
+          Enum.map(test_case.assertions, fn assertion ->
+            {passed, actual_value} = evaluate_assertion(result.output, assertion)
+
+            base_result = %{
+              "type" => assertion["type"],
+              "passed" => passed
+            }
+
+            # For json_field, store field and expected separately, plus actual value
+            base_result =
+              if assertion["type"] == "json_field" do
+                base_result
+                |> Map.put("value", %{
+                  "field" => assertion["field"],
+                  "expected" => assertion["expected"]
+                })
+                |> Map.put("actual_value", actual_value)
+              else
+                Map.put(base_result, "value", assertion["value"])
+              end
+
+            base_result
+          end)
+
+        passed = Enum.all?(assertion_results, & &1["passed"])
 
         %{
           "test_case_id" => test_case.id,
           "passed" => passed,
           "output" => result.output,
+          "assertion_results" => assertion_results,
           "cost_usd" => result.cost_usd,
           "latency_ms" => result.latency_ms
         }
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        error_message =
+          case reason do
+            :missing_api_key ->
+              "Missing API key"
+
+            {:auth_error, msg} ->
+              "Authentication error: #{msg}"
+
+            {:rate_limit, retry_after} ->
+              "Rate limit exceeded#{if retry_after, do: ", retry after #{retry_after}s", else: ""}"
+
+            {:invalid_request, msg} ->
+              "Invalid request: #{msg}"
+
+            {:api_error, status, msg} ->
+              "API error (#{status}): #{msg}"
+
+            {:network_error, err} ->
+              "Network error: #{inspect(err)}"
+          end
+
         %{
           "test_case_id" => test_case.id,
           "passed" => false,
-          "output" => nil,
+          "output" => error_message,
+          "assertion_results" => [],
           "cost_usd" => nil,
           "latency_ms" => nil
         }
     end
   end
+
+  defp ensure_documents_loaded(%TestCase{documents: %Ecto.Association.NotLoaded{}} = test_case) do
+    repo().preload(test_case, :documents)
+  end
+
+  defp ensure_documents_loaded(%TestCase{} = test_case), do: test_case
 
   defp render_template(template, variables) do
     Enum.reduce(variables, template, fn {key, value}, acc ->
@@ -361,26 +468,67 @@ defmodule Aludel.Evals do
     end)
   end
 
-  defp evaluate_assertions(output, assertions) do
-    Enum.all?(assertions, fn assertion ->
-      evaluate_assertion(output, assertion)
-    end)
-  end
-
   defp evaluate_assertion(output, %{"type" => "contains", "value" => value}) do
-    String.contains?(output, value)
+    {String.contains?(output, value), nil}
   end
 
   defp evaluate_assertion(output, %{"type" => "not_contains", "value" => value}) do
-    !String.contains?(output, value)
+    {!String.contains?(output, value), nil}
   end
 
   defp evaluate_assertion(output, %{"type" => "regex", "value" => pattern}) do
-    Regex.match?(~r/#{pattern}/, output)
+    case Regex.compile(pattern) do
+      {:ok, regex} ->
+        {Regex.match?(regex, output), nil}
+
+      {:error, _} ->
+        {false, nil}
+    end
   end
 
   defp evaluate_assertion(output, %{"type" => "exact_match", "value" => value}) do
-    output == value
+    {output == value, nil}
+  end
+
+  defp evaluate_assertion(output, %{
+         "type" => "json_field",
+         "field" => field,
+         "expected" => expected
+       }) do
+    # Strip markdown code blocks if present (e.g., ```json ... ```)
+    cleaned_output =
+      output
+      |> String.trim()
+      |> String.replace(~r/^```json\s*/i, "")
+      |> String.replace(~r/^```\s*/, "")
+      |> String.replace(~r/```\s*$/, "")
+      |> String.trim()
+
+    case Jason.decode(cleaned_output) do
+      {:ok, json} ->
+        actual_value = get_in(json, String.split(field, "."))
+        passed = compare_json_values(actual_value, expected)
+        {passed, actual_value}
+
+      {:error, _} ->
+        {false, nil}
+    end
+  end
+
+  # Fallback for unknown assertion types
+  defp evaluate_assertion(_output, _assertion) do
+    {false, nil}
+  end
+
+  # Safely compare JSON values without crashing on maps/lists
+  defp compare_json_values(actual, expected) when is_map(actual) or is_list(actual) do
+    # For complex types, compare as JSON strings
+    Jason.encode!(actual) == Jason.encode!(expected)
+  end
+
+  defp compare_json_values(actual, expected) do
+    # For scalars (string, number, boolean, nil), convert to string
+    to_string(actual) == to_string(expected)
   end
 
   defp repo do

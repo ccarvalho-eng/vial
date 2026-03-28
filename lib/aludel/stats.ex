@@ -39,10 +39,6 @@ defmodule Aludel.Stats do
     {passed, failed}
   end
 
-  defp to_integer(nil), do: 0
-  defp to_integer(%Decimal{} = value), do: Decimal.to_integer(value)
-  defp to_integer(value) when is_integer(value), do: value
-
   @doc """
   Calculates success rate percentage from passed and failed counts.
   """
@@ -111,20 +107,10 @@ defmodule Aludel.Stats do
     |> Enum.take(limit)
   end
 
-  defp normalize_run(run) do
-    %{
-      id: run.id,
-      type: :run,
-      name: run.name || "Unnamed Run",
-      prompt_name:
-        run.prompt_version && run.prompt_version.prompt && run.prompt_version.prompt.name,
-      providers_count: length(run.run_results),
-      cost: calculate_run_cost(run.run_results),
-      inserted_at: run.inserted_at,
-      path: "/runs/#{run.id}"
-    }
-  end
-
+  @doc """
+  Normalizes a suite run into a common format for recent activity display.
+  """
+  @spec normalize_suite_run(SuiteRun.t()) :: map()
   def normalize_suite_run(suite_run) do
     %{
       id: suite_run.id,
@@ -144,6 +130,26 @@ defmodule Aludel.Stats do
       failed: suite_run.failed,
       inserted_at: suite_run.inserted_at,
       path: "/suites/#{suite_run.suite_id}"
+    }
+  end
+
+  # Private functions
+
+  defp to_integer(nil), do: 0
+  defp to_integer(%Decimal{} = value), do: Decimal.to_integer(value)
+  defp to_integer(value) when is_integer(value), do: value
+
+  defp normalize_run(run) do
+    %{
+      id: run.id,
+      type: :run,
+      name: run.name || "Unnamed Run",
+      prompt_name:
+        run.prompt_version && run.prompt_version.prompt && run.prompt_version.prompt.name,
+      providers_count: length(run.run_results),
+      cost: calculate_run_cost(run.run_results),
+      inserted_at: run.inserted_at,
+      path: "/runs/#{run.id}"
     }
   end
 

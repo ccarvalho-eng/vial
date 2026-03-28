@@ -7,6 +7,6 @@
   format: "txt",
   out: "",
   threshold: "low",
-  ignore: ["Config.CSP", "Config.HTTPS"],
+  ignore: ["Config.CSP", "Config.HTTPS", "Traversal.FileModule"],
   ignore_files: ["lib/aludel/web/assets.ex"]
 ]

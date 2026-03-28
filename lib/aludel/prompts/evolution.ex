@@ -30,6 +30,61 @@ defmodule Aludel.Prompts.Evolution do
     |> Enum.map(&build_version_metrics/1)
   end
 
+  @doc false
+  def calculate_avg_cost([]), do: nil
+
+  @doc false
+  def calculate_avg_cost(suite_runs) do
+    costs =
+      suite_runs
+      |> Enum.map(& &1.avg_cost_usd)
+      |> Enum.reject(&is_nil/1)
+
+    if Enum.empty?(costs) do
+      nil
+    else
+      avg = Enum.reduce(costs, Decimal.new("0"), &Decimal.add/2)
+      avg = Decimal.div(avg, Decimal.new(length(costs)))
+      Decimal.round(avg, 4)
+    end
+  end
+
+  @doc false
+  def calculate_avg_latency([]), do: nil
+
+  @doc false
+  def calculate_avg_latency(suite_runs) do
+    latencies =
+      suite_runs
+      |> Enum.map(& &1.avg_latency_ms)
+      |> Enum.reject(&is_nil/1)
+
+    if Enum.empty?(latencies) do
+      nil
+    else
+      round(Enum.sum(latencies) / length(latencies))
+    end
+  end
+
+  @doc """
+  Prepares metrics data for Chart.js visualization.
+
+  Returns map with structure:
+  - versions: list of version numbers
+  - overall: aggregated metrics across all providers
+  - by_provider: metrics grouped by provider name
+  """
+  @spec prepare_chart_data([map()]) :: map()
+  def prepare_chart_data(metrics) do
+    %{
+      versions: extract_versions(metrics),
+      overall: extract_overall_metrics(metrics),
+      by_provider: extract_provider_metrics(metrics)
+    }
+  end
+
+  # Private functions
+
   defp get_versions(prompt_id) do
     PromptVersion
     |> where([v], v.prompt_id == ^prompt_id)
@@ -74,40 +129,6 @@ defmodule Aludel.Prompts.Evolution do
     end
   end
 
-  @doc false
-  def calculate_avg_cost([]), do: nil
-
-  def calculate_avg_cost(suite_runs) do
-    costs =
-      suite_runs
-      |> Enum.map(& &1.avg_cost_usd)
-      |> Enum.reject(&is_nil/1)
-
-    if Enum.empty?(costs) do
-      nil
-    else
-      avg = Enum.reduce(costs, Decimal.new("0"), &Decimal.add/2)
-      avg = Decimal.div(avg, Decimal.new(length(costs)))
-      Decimal.round(avg, 4)
-    end
-  end
-
-  @doc false
-  def calculate_avg_latency([]), do: nil
-
-  def calculate_avg_latency(suite_runs) do
-    latencies =
-      suite_runs
-      |> Enum.map(& &1.avg_latency_ms)
-      |> Enum.reject(&is_nil/1)
-
-    if Enum.empty?(latencies) do
-      nil
-    else
-      round(Enum.sum(latencies) / length(latencies))
-    end
-  end
-
   defp build_provider_breakdown([]), do: []
 
   defp build_provider_breakdown(suite_runs) do
@@ -136,23 +157,6 @@ defmodule Aludel.Prompts.Evolution do
       }
     end)
     |> Enum.sort_by(& &1.provider_name)
-  end
-
-  @doc """
-  Prepares metrics data for Chart.js visualization.
-
-  Returns map with structure:
-  - versions: list of version numbers
-  - overall: aggregated metrics across all providers
-  - by_provider: metrics grouped by provider name
-  """
-  @spec prepare_chart_data([map()]) :: map()
-  def prepare_chart_data(metrics) do
-    %{
-      versions: extract_versions(metrics),
-      overall: extract_overall_metrics(metrics),
-      by_provider: extract_provider_metrics(metrics)
-    }
   end
 
   defp extract_versions(metrics) do

@@ -81,6 +81,24 @@ defmodule Aludel.EvalsTest do
 
       assert %Ecto.Changeset{} = changeset
     end
+
+    test "get_suite_with_test_cases_and_prompt!/1 preloads documents" do
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      {:ok, _doc} =
+        Aludel.Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "test.pdf",
+          content_type: "application/pdf",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      loaded = Aludel.Evals.get_suite_with_test_cases_and_prompt!(suite.id)
+      assert [test_case] = loaded.test_cases
+      assert [%Aludel.Evals.TestCaseDocument{filename: "test.pdf"}] = test_case.documents
+    end
   end
 
   describe "test_cases" do
@@ -501,6 +519,98 @@ defmodule Aludel.EvalsTest do
 
       assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
       assert suite_run.failed == 1
+    end
+  end
+
+  describe "test_case_documents" do
+    test "create_test_case_document/1 creates a document" do
+      test_case = test_case_fixture()
+
+      attrs = %{
+        test_case_id: test_case.id,
+        filename: "doc.pdf",
+        content_type: "application/pdf",
+        data: <<1, 2, 3>>,
+        size_bytes: 3
+      }
+
+      assert {:ok, document} = Evals.create_test_case_document(attrs)
+      assert document.test_case_id == test_case.id
+      assert document.filename == "doc.pdf"
+      assert document.content_type == "application/pdf"
+    end
+
+    test "delete_test_case_document/1 deletes a document" do
+      test_case = test_case_fixture()
+
+      {:ok, document} =
+        Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "doc.pdf",
+          content_type: "application/pdf",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      assert {:ok, _deleted} = Evals.delete_test_case_document(document)
+    end
+
+    test "get_test_case_with_documents!/1 preloads documents" do
+      test_case = test_case_fixture()
+
+      {:ok, _doc1} =
+        Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "doc1.pdf",
+          content_type: "application/pdf",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      {:ok, _doc2} =
+        Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "doc2.pdf",
+          content_type: "application/pdf",
+          data: <<4, 5, 6>>,
+          size_bytes: 3
+        })
+
+      loaded = Evals.get_test_case_with_documents!(test_case.id)
+
+      refute match?(%Ecto.Association.NotLoaded{}, loaded.documents)
+      assert length(loaded.documents) == 2
+    end
+  end
+
+  describe "execute_suite with documents" do
+    import Aludel.PromptsFixtures
+    import Aludel.ProvidersFixtures
+
+    test "passes documents to LLM.call" do
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      {:ok, _doc} =
+        Aludel.Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "test.png",
+          content_type: "image/png",
+          data: <<1, 2, 3>>,
+          size_bytes: 3
+        })
+
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Describe {{input}}")
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o"
+        })
+
+      assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
+      assert suite_run.passed + suite_run.failed > 0
     end
   end
 end

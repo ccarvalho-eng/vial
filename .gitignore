@@ -45,3 +45,6 @@ priv/plts/
 
 .DS_Store
 assets/.DS_Store
+
+# Git worktrees directory
+/.worktrees/

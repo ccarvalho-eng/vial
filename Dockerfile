@@ -63,7 +63,7 @@ RUN mix release
 FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
-  apt-get install -y --no-install-recommends ca-certificates libncurses5 libstdc++6 locales openssl \
+  apt-get install -y --no-install-recommends ca-certificates libncurses5 libstdc++6 locales openssl imagemagick ghostscript \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
