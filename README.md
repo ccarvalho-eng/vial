@@ -284,13 +284,14 @@ mix phx.server  # Starts asset watchers automatically
 
 ## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+**Quick start:**
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
 3. Commit using [conventional commits](https://www.conventionalcommits.org/)
 4. Run `mix precommit` before submitting
 5. Open a Pull Request
-
-**For changes to CSS/JS:** Make sure to rebuild assets with `mix assets.build` and recompile with `mix compile --force` before committing. Built assets in `priv/static/` are committed to git to ensure asset hashes are calculated correctly at compile time.
 
 ---
 
