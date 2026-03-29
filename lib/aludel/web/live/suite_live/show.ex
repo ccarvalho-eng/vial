@@ -45,6 +45,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:selected_provider_id, default_provider_id)
       |> assign(:editing_test_case_id, nil)
       |> assign(:editing_suite_metadata, false)
+      |> assign(:assertion_edit_mode, %{})
 
     {:noreply, socket}
   end
@@ -86,6 +87,27 @@ defmodule Aludel.Web.SuiteLive.Show do
   @impl Phoenix.LiveView
   def handle_event("select_provider", %{"provider_id" => provider_id}, socket) do
     {:noreply, assign(socket, :selected_provider_id, provider_id)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle_assertion_mode", %{"id" => id}, socket) do
+    current_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
+    new_mode = if current_mode == :visual, do: :json, else: :visual
+    new_modes = Map.put(socket.assigns.assertion_edit_mode, id, new_mode)
+    {:noreply, assign(socket, :assertion_edit_mode, new_modes)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("add_assertion", %{"id" => _id}, socket) do
+    new_assertions = socket.assigns.editing_assertions ++ [%{"type" => "contains", "value" => ""}]
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("remove_assertion", %{"index" => index_str, "id" => _id}, socket) do
+    index = String.to_integer(index_str)
+    new_assertions = List.delete_at(socket.assigns.editing_assertions, index)
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
   end
 
   @impl Phoenix.LiveView
@@ -161,7 +183,103 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> Enum.map(fn {"var_value_" <> key, value} -> {key, value} end)
       |> Map.new()
 
-    # Parse assertions from params
+    # Parse assertions based on edit mode
+    edit_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
+
+    case parse_assertions(edit_mode, params) do
+      {:ok, assertions} ->
+        attrs = %{
+          variable_values: variables,
+          assertions: assertions
+        }
+
+        update_test_case_with_attrs(socket, test_case, attrs, params)
+
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("delete_document", %{"doc-id" => doc_id, "id" => _test_case_id}, socket) do
+    document = Evals.get_test_case_document!(doc_id)
+
+    case Evals.delete_test_case_document(document) do
+      {:ok, _} ->
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> put_flash(:info, "Document deleted successfully")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to delete document")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("delete_test_case", %{"id" => id}, socket) do
+    test_case = Evals.get_test_case!(id)
+
+    case Evals.delete_test_case(test_case) do
+      {:ok, _} ->
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> put_flash(:info, "Test case deleted successfully")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to delete test case")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("run_suite", _params, socket) do
+    # Prevent concurrent runs
+    if socket.assigns.running do
+      {:noreply, put_flash(socket, :error, "Suite is already running")}
+    else
+      # Use the stored selections instead of params
+      version_id = socket.assigns.selected_version_id
+      provider_id = socket.assigns.selected_provider_id
+
+      # Start async execution
+      pid = self()
+      suite_id = socket.assigns.suite.id
+
+      Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
+        version = Prompts.get_prompt_version!(version_id)
+        provider = Providers.get_provider!(provider_id)
+        suite = Evals.get_suite_with_test_cases!(suite_id)
+
+        result = Evals.execute_suite(suite, version, provider)
+        send(pid, {:suite_completed, result})
+      end)
+
+      {:noreply, assign(socket, :running, true)}
+    end
+  end
+
+  defp parse_assertions(:json, params) do
+    case Jason.decode(params["assertions_json"] || "[]") do
+      {:ok, json_assertions} when is_list(json_assertions) ->
+        case validate_assertions(json_assertions) do
+          :ok -> {:ok, json_assertions}
+          {:error, _} = error -> error
+        end
+
+      {:ok, _} ->
+        {:error, "Invalid JSON: assertions must be a list"}
+
+      {:error, %Jason.DecodeError{}} ->
+        {:error, "Invalid JSON syntax in assertions"}
+    end
+  end
+
+  defp parse_assertions(:visual, params) do
     assertion_indices =
       params
       |> Map.keys()
@@ -187,11 +305,10 @@ defmodule Aludel.Web.SuiteLive.Show do
         end
       end)
 
-    attrs = %{
-      variable_values: variables,
-      assertions: assertions
-    }
+    {:ok, assertions}
+  end
 
+  defp update_test_case_with_attrs(socket, test_case, attrs, _params) do
     case Evals.update_test_case(test_case, attrs) do
       {:ok, _test_case} ->
         # Handle uploaded documents and collect results
@@ -281,82 +398,6 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("add_assertion", %{"id" => _id}, socket) do
-    new_assertions = socket.assigns.editing_assertions ++ [%{"type" => "contains", "value" => ""}]
-    {:noreply, assign(socket, :editing_assertions, new_assertions)}
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("remove_assertion", %{"index" => index_str, "id" => _id}, socket) do
-    index = String.to_integer(index_str)
-    new_assertions = List.delete_at(socket.assigns.editing_assertions, index)
-    {:noreply, assign(socket, :editing_assertions, new_assertions)}
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("delete_document", %{"doc-id" => doc_id, "id" => _test_case_id}, socket) do
-    document = Evals.get_test_case_document!(doc_id)
-
-    case Evals.delete_test_case_document(document) do
-      {:ok, _} ->
-        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
-
-        {:noreply,
-         socket
-         |> assign(:suite, suite)
-         |> put_flash(:info, "Document deleted successfully")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete document")}
-    end
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("delete_test_case", %{"id" => id}, socket) do
-    test_case = Evals.get_test_case!(id)
-
-    case Evals.delete_test_case(test_case) do
-      {:ok, _} ->
-        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
-
-        {:noreply,
-         socket
-         |> assign(:suite, suite)
-         |> put_flash(:info, "Test case deleted successfully")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete test case")}
-    end
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("run_suite", _params, socket) do
-    # Prevent concurrent runs
-    if socket.assigns.running do
-      {:noreply, put_flash(socket, :error, "Suite is already running")}
-    else
-      # Use the stored selections instead of params
-      version_id = socket.assigns.selected_version_id
-      provider_id = socket.assigns.selected_provider_id
-
-      # Start async execution
-      pid = self()
-      suite_id = socket.assigns.suite.id
-
-      Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
-        version = Prompts.get_prompt_version!(version_id)
-        provider = Providers.get_provider!(provider_id)
-        suite = Evals.get_suite_with_test_cases!(suite_id)
-
-        result = Evals.execute_suite(suite, version, provider)
-        send(pid, {:suite_completed, result})
-      end)
-
-      {:noreply, assign(socket, :running, true)}
-    end
-  end
-
-  @impl Phoenix.LiveView
   def handle_info({:suite_completed, {:ok, suite_run}}, socket) do
     # Suite run comes from execute_suite which returns it after insert,
     # so we need to preload associations here since it's not from a context query
@@ -407,5 +448,34 @@ defmodule Aludel.Web.SuiteLive.Show do
     |> Regex.scan(template)
     |> Enum.map(fn [_, var] -> String.trim(var) end)
     |> Enum.uniq()
+  end
+
+  defp validate_assertions(assertions) do
+    valid_types = ["contains", "not_contains", "regex", "exact_match", "json_field"]
+
+    assertions
+    |> Enum.with_index(1)
+    |> Enum.reduce_while(:ok, fn {assertion, idx}, _acc ->
+      type = Map.get(assertion, "type")
+
+      cond do
+        type not in valid_types ->
+          {:halt,
+           {:error,
+            "Invalid assertion type at index #{idx}: #{inspect(type)}. Must be one of: #{Enum.join(valid_types, ", ")}"}}
+
+        type == "json_field" and
+            (not Map.has_key?(assertion, "field") or not Map.has_key?(assertion, "expected")) ->
+          {:halt,
+           {:error,
+            "Assertion at index #{idx}: json_field type requires 'field' and 'expected' fields"}}
+
+        type != "json_field" and not Map.has_key?(assertion, "value") ->
+          {:halt, {:error, "Assertion at index #{idx}: #{type} type requires 'value' field"}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
   end
 end

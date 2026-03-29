@@ -1469,3 +1469,29 @@ a:has(.aludel-card) .aludel-card:hover {
     opacity: 0.5;
   }
 }
+
+/* JSON editor with monospace font */
+textarea.json-editor {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  tab-size: 2;
+}
+
+/* Remove assertion button */
+.remove-assertion-btn {
+  padding: 6px 10px;
+  border: none;
+  background: rgba(248, 81, 73, 0.1);
+  cursor: pointer;
+  color: #dc2626;
+  flex-shrink: 0;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.remove-assertion-btn:hover {
+  background: #dc2626;
+  color: white;
+}

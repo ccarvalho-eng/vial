@@ -16,16 +16,17 @@ export const AssertionTypeToggle = {
   },
 
   handleToggle(e) {
-    if (e.target.matches('select[name^="assertion_type_"]')) {
-      const idx = e.target.name.replace('assertion_type_', '')
-      const type = e.target.value
-      this.toggleFields(idx, type)
-    }
+    const idx = this.el.getAttribute('data-index')
+    const testCaseId = this.el.getAttribute('data-test-case-id')
+    const type = this.el.value
+    this.toggleFields(idx, testCaseId, type)
   },
 
-  toggleFields(idx, type) {
-    const jsonFields = document.getElementById('json-fields-' + idx)
-    const valueField = document.getElementById('value-field-' + idx)
+  toggleFields(idx, testCaseId, type) {
+    // Include test case ID if available to prevent collisions
+    const suffix = testCaseId ? testCaseId + '-' + idx : idx
+    const jsonFields = document.getElementById('json-fields-' + suffix)
+    const valueField = document.getElementById('value-field-' + suffix)
 
     if (jsonFields && valueField) {
       if (type === 'json_field') {
@@ -39,11 +40,11 @@ export const AssertionTypeToggle = {
   },
 
   initializeFields() {
-    // Set initial state for all assertion type selects
-    this.el.querySelectorAll('select[name^="assertion_type_"]').forEach(select => {
-      const idx = select.name.replace('assertion_type_', '')
-      const type = select.value
-      this.toggleFields(idx, type)
-    })
+    const idx = this.el.getAttribute('data-index')
+    const testCaseId = this.el.getAttribute('data-test-case-id')
+    const type = this.el.value
+    if (idx) {
+      this.toggleFields(idx, testCaseId, type)
+    }
   }
 }

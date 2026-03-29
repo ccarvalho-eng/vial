@@ -59,13 +59,6 @@ end
 # Start test repo
 Aludel.Test.Repo.start_link()
 
-# Start PubSub for tests
-{:ok, _} =
-  Supervisor.start_link(
-    [{Phoenix.PubSub, name: Aludel.PubSub}],
-    strategy: :one_for_one
-  )
-
 # Start endpoint
 Aludel.Web.Endpoint.start_link()
 
