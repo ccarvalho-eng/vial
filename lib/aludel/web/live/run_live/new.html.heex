@@ -1,18 +1,21 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div style="max-width: 800px; margin: 0 auto;">
+  <div style="max-width: 1200px; margin: 0 auto;">
     <h1>Configure Run</h1>
     <p style="margin-bottom: 24px; color: var(--text-secondary);">
       Prompt: {@prompt.name} (v{@prompt_version.version})
     </p>
 
     <.form for={@form} id="run-form" phx-submit="save">
-      <div class="aludel-card" style="margin-bottom: 24px;">
-        <h2 style="margin-bottom: 12px;">Template Preview</h2>
-        <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);">{@prompt_version.template}</pre>
-      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+        <%!-- Left column: Template Preview --%>
+        <div class="aludel-card" style="height: fit-content;">
+          <h2 style="margin-bottom: 12px;">Template Preview</h2>
+          <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);">{@prompt_version.template}</pre>
+        </div>
 
-      <div class="aludel-card" style="margin-bottom: 24px;">
-        <h2 style="margin-bottom: 16px;">Run Configuration</h2>
+        <%!-- Right column: Run Configuration --%>
+        <div class="aludel-card">
+          <h2 style="margin-bottom: 16px;">Run Configuration</h2>
 
         <div style="margin-bottom: 16px;">
           <label for="run_name">Run Name (optional)</label>
@@ -86,15 +89,16 @@
             </div>
           <% end %>
         </div>
-      </div>
 
-      <div style="display: flex; gap: 12px;">
-        <button type="submit" class="button-primary" phx-disable-with="Launching...">
-          Launch Run
-        </button>
-        <.link navigate={aludel_path("prompts/#{@prompt.id}")} class="button-secondary">
-          Cancel
-        </.link>
+        <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); justify-content: flex-end;">
+          <.link navigate={aludel_path("prompts/#{@prompt.id}")} class="button-secondary">
+            Cancel
+          </.link>
+          <button type="submit" class="button-primary" phx-disable-with="Launching...">
+            Launch Run
+          </button>
+        </div>
+        </div>
       </div>
     </.form>
   </div>
