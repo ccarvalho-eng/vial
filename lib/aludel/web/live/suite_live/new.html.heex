@@ -141,6 +141,12 @@
                             <option value="contains" selected={assertion["type"] == "contains"}>
                               contains
                             </option>
+                            <option
+                              value="not_contains"
+                              selected={assertion["type"] == "not_contains"}
+                            >
+                              not contains
+                            </option>
                             <option value="regex" selected={assertion["type"] == "regex"}>
                               regex
                             </option>
