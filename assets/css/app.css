@@ -1469,3 +1469,11 @@ a:has(.aludel-card) .aludel-card:hover {
     opacity: 0.5;
   }
 }
+
+/* JSON editor with monospace font */
+textarea.json-editor {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  tab-size: 2;
+}

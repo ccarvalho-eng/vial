@@ -234,104 +234,135 @@
                         <h4 style="font-size: 13px; font-weight: 600; margin: 0;">
                           Assertions
                         </h4>
-                        <button
-                          type="button"
-                          phx-click="add_assertion"
-                          phx-value-id={test_case.id}
-                          style="font-size: 12px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer;"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <%= for {assertion, idx} <- Enum.with_index(@editing_assertions) do %>
-                        <div
-                          id={"assertion-#{idx}"}
-                          style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);"
-                        >
-                          <div style="display: flex; gap: 8px; align-items: center;">
-                            <select
-                              name={"assertion_type_#{idx}"}
-                              style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px; width: 110px; flex-shrink: 0;"
-                            >
-                              <option value="contains" selected={assertion["type"] == "contains"}>
-                                contains
-                              </option>
-                              <option value="regex" selected={assertion["type"] == "regex"}>
-                                regex
-                              </option>
-                              <option
-                                value="exact_match"
-                                selected={assertion["type"] == "exact_match"}
-                              >
-                                exact
-                              </option>
-                              <option
-                                value="json_field"
-                                selected={assertion["type"] == "json_field"}
-                              >
-                                json field
-                              </option>
-                            </select>
+                        <div style="display: flex; gap: 6px;">
+                          <button
+                            type="button"
+                            phx-click="toggle_assertion_mode"
+                            phx-value-id={test_case.id}
+                            style="font-size: 11px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer; font-weight: 500;"
+                          >
+                            {if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual,
+                              do: "JSON",
+                              else: "Visual"}
+                          </button>
+                          <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
                             <button
                               type="button"
-                              phx-click="remove_assertion"
-                              phx-value-index={idx}
+                              phx-click="add_assertion"
                               phx-value-id={test_case.id}
-                              aria-label="Remove assertion"
-                              title="Remove assertion"
-                              style="padding: 6px 10px; border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; flex-shrink: 0; border-radius: 4px; font-weight: 600; transition: all 0.15s ease;"
-                              onmouseover="this.style.background='#dc2626'; this.style.color='white';"
-                              onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='#dc2626';"
+                              style="font-size: 12px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer;"
                             >
-                              ✕
+                              +
                             </button>
-                          </div>
-                          <%!-- JSON field inputs --%>
+                          <% end %>
+                        </div>
+                      </div>
+                      <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
+                        <%= for {assertion, idx} <- Enum.with_index(@editing_assertions) do %>
                           <div
-                            id={"json-fields-#{idx}"}
-                            style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
+                            id={"assertion-#{idx}"}
+                            style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);"
                           >
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                              <select
+                                name={"assertion_type_#{idx}"}
+                                style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px; width: 110px; flex-shrink: 0;"
+                              >
+                                <option
+                                  value="contains"
+                                  selected={assertion["type"] == "contains"}
+                                >
+                                  contains
+                                </option>
+                                <option value="regex" selected={assertion["type"] == "regex"}>
+                                  regex
+                                </option>
+                                <option
+                                  value="exact_match"
+                                  selected={assertion["type"] == "exact_match"}
+                                >
+                                  exact
+                                </option>
+                                <option
+                                  value="json_field"
+                                  selected={assertion["type"] == "json_field"}
+                                >
+                                  json field
+                                </option>
+                              </select>
+                              <button
+                                type="button"
+                                phx-click="remove_assertion"
+                                phx-value-index={idx}
+                                phx-value-id={test_case.id}
+                                aria-label="Remove assertion"
+                                title="Remove assertion"
+                                style="padding: 6px 10px; border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; flex-shrink: 0; border-radius: 4px; font-weight: 600; transition: all 0.15s ease;"
+                                onmouseover="this.style.background='#dc2626'; this.style.color='white';"
+                                onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='#dc2626';"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <%!-- JSON field inputs --%>
+                            <div
+                              id={"json-fields-#{idx}"}
+                              style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
+                            >
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Field path (e.g., "user.name"):
+                                </label>
+                                <input
+                                  type="text"
+                                  name={"assertion_field_#{idx}"}
+                                  value={assertion["field"] || ""}
+                                  placeholder="invoice_number"
+                                  style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                                />
+                              </div>
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Expected value:
+                                </label>
+                                <input
+                                  type="text"
+                                  name={"assertion_expected_#{idx}"}
+                                  value={assertion["expected"] || ""}
+                                  placeholder="INV-001"
+                                  style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                                />
+                              </div>
+                            </div>
+                            <%!-- Regular assertion value input --%>
+                            <div
+                              id={"value-field-#{idx}"}
+                              style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
+                            >
                               <label style="font-size: 11px; color: var(--text-muted);">
-                                Field path (e.g., "user.name"):
+                                Value to match:
                               </label>
                               <input
                                 type="text"
-                                name={"assertion_field_#{idx}"}
-                                value={assertion["field"] || ""}
-                                placeholder="invoice_number"
-                                style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
-                              />
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                              <label style="font-size: 11px; color: var(--text-muted);">
-                                Expected value:
-                              </label>
-                              <input
-                                type="text"
-                                name={"assertion_expected_#{idx}"}
-                                value={assertion["expected"] || ""}
-                                placeholder="INV-001"
+                                name={"assertion_value_#{idx}"}
+                                value={assertion["value"] || ""}
+                                placeholder="text to find"
                                 style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
                               />
                             </div>
                           </div>
-                          <%!-- Regular assertion value input --%>
-                          <div
-                            id={"value-field-#{idx}"}
-                            style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
-                          >
-                            <label style="font-size: 11px; color: var(--text-muted);">
-                              Value to match:
-                            </label>
-                            <input
-                              type="text"
-                              name={"assertion_value_#{idx}"}
-                              value={assertion["value"] || ""}
-                              placeholder="text to find"
-                              style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
-                            />
-                          </div>
+                        <% end %>
+                      <% else %>
+                        <textarea
+                          name="assertions_json"
+                          rows="8"
+                          placeholder='[{"type": "contains", "value": "expected text"}]'
+                          class="json-editor"
+                          id={"test_case_#{test_case.id}_assertions_json"}
+                          style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); resize: vertical;"
+                        >{Jason.encode!(@editing_assertions, pretty: true)}</textarea>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                          Types: contains, not_contains, regex, exact_match, json_field
                         </div>
                       <% end %>
                     </div>

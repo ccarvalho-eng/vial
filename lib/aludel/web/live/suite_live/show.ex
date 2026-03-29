@@ -45,6 +45,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:selected_provider_id, default_provider_id)
       |> assign(:editing_test_case_id, nil)
       |> assign(:editing_suite_metadata, false)
+      |> assign(:assertion_edit_mode, %{})
 
     {:noreply, socket}
   end
@@ -86,6 +87,14 @@ defmodule Aludel.Web.SuiteLive.Show do
   @impl Phoenix.LiveView
   def handle_event("select_provider", %{"provider_id" => provider_id}, socket) do
     {:noreply, assign(socket, :selected_provider_id, provider_id)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle_assertion_mode", %{"id" => id}, socket) do
+    current_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
+    new_mode = if current_mode == :visual, do: :json, else: :visual
+    new_modes = Map.put(socket.assigns.assertion_edit_mode, id, new_mode)
+    {:noreply, assign(socket, :assertion_edit_mode, new_modes)}
   end
 
   @impl Phoenix.LiveView
@@ -161,31 +170,42 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> Enum.map(fn {"var_value_" <> key, value} -> {key, value} end)
       |> Map.new()
 
-    # Parse assertions from params
-    assertion_indices =
-      params
-      |> Map.keys()
-      |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
-      |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
-      |> Enum.sort()
+    # Parse assertions based on edit mode
+    edit_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
 
     assertions =
-      Enum.map(assertion_indices, fn idx ->
-        type = params["assertion_type_#{idx}"]
-
-        if type == "json_field" do
-          %{
-            "type" => type,
-            "field" => params["assertion_field_#{idx}"],
-            "expected" => params["assertion_expected_#{idx}"]
-          }
-        else
-          %{
-            "type" => type,
-            "value" => params["assertion_value_#{idx}"]
-          }
+      if edit_mode == :json do
+        # Parse from JSON textarea
+        case Jason.decode(params["assertions_json"] || "[]") do
+          {:ok, json_assertions} when is_list(json_assertions) -> json_assertions
+          _ -> test_case.assertions
         end
-      end)
+      else
+        # Parse from visual form fields
+        assertion_indices =
+          params
+          |> Map.keys()
+          |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
+          |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
+          |> Enum.sort()
+
+        Enum.map(assertion_indices, fn idx ->
+          type = params["assertion_type_#{idx}"]
+
+          if type == "json_field" do
+            %{
+              "type" => type,
+              "field" => params["assertion_field_#{idx}"],
+              "expected" => params["assertion_expected_#{idx}"]
+            }
+          else
+            %{
+              "type" => type,
+              "value" => params["assertion_value_#{idx}"]
+            }
+          end
+        end)
+      end
 
     attrs = %{
       variable_values: variables,

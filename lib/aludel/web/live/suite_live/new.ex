@@ -29,18 +29,103 @@ defmodule Aludel.Web.SuiteLive.New do
         nil
       end
 
-    {:noreply, assign(socket, :selected_prompt, selected_prompt)}
+    # Extract variables from the selected prompt and update existing test cases
+    variables =
+      if selected_prompt do
+        template = List.first(selected_prompt.versions).template
+        extract_variables(template)
+      else
+        []
+      end
+
+    # Update all test cases with new variable structure
+    updated_test_cases =
+      Enum.map(socket.assigns.test_cases, fn tc ->
+        # Create a map with all variables initialized to empty strings
+        variable_values =
+          variables
+          |> Enum.map(fn var ->
+            # Keep existing value if it exists, otherwise empty string
+            {var, Map.get(tc[:variable_values] || %{}, var, "")}
+          end)
+          |> Map.new()
+
+        Map.put(tc, :variable_values, variable_values)
+      end)
+
+    socket =
+      socket
+      |> assign(:selected_prompt, selected_prompt)
+      |> assign(:test_cases, updated_test_cases)
+
+    {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
   def handle_event("add_test_case", _params, socket) do
-    test_cases = socket.assigns.test_cases ++ [%{id: generate_id()}]
+    # Extract variables from selected prompt
+    variable_values =
+      if socket.assigns.selected_prompt do
+        template = List.first(socket.assigns.selected_prompt.versions).template
+        variables = extract_variables(template)
+        Map.new(variables, fn var -> {var, ""} end)
+      else
+        %{}
+      end
+
+    new_test_case = %{
+      id: generate_id(),
+      assertions: [],
+      variable_values: variable_values
+    }
+
+    test_cases = socket.assigns.test_cases ++ [new_test_case]
     {:noreply, assign(socket, :test_cases, test_cases)}
   end
 
   @impl Phoenix.LiveView
   def handle_event("remove_test_case", %{"id" => id}, socket) do
     test_cases = Enum.reject(socket.assigns.test_cases, fn tc -> tc.id == id end)
+    {:noreply, assign(socket, :test_cases, test_cases)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle_assertion_mode", %{"id" => id}, socket) do
+    current_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
+    new_mode = if current_mode == :visual, do: :json, else: :visual
+    new_modes = Map.put(socket.assigns.assertion_edit_mode, id, new_mode)
+    {:noreply, assign(socket, :assertion_edit_mode, new_modes)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("add_assertion", %{"id" => id}, socket) do
+    test_cases =
+      Enum.map(socket.assigns.test_cases, fn tc ->
+        if tc.id == id do
+          new_assertion = %{"type" => "contains", "value" => ""}
+          %{tc | assertions: (tc[:assertions] || []) ++ [new_assertion]}
+        else
+          tc
+        end
+      end)
+
+    {:noreply, assign(socket, :test_cases, test_cases)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("remove_assertion", %{"id" => id, "index" => index_str}, socket) do
+    index = String.to_integer(index_str)
+
+    test_cases =
+      Enum.map(socket.assigns.test_cases, fn tc ->
+        if tc.id == id do
+          assertions = tc[:assertions] || []
+          %{tc | assertions: List.delete_at(assertions, index)}
+        else
+          tc
+        end
+      end)
+
     {:noreply, assign(socket, :test_cases, test_cases)}
   end
 
@@ -60,6 +145,7 @@ defmodule Aludel.Web.SuiteLive.New do
     |> assign(:prompts, prompts)
     |> assign(:test_cases, [])
     |> assign(:selected_prompt, nil)
+    |> assign(:assertion_edit_mode, %{})
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
@@ -92,6 +178,7 @@ defmodule Aludel.Web.SuiteLive.New do
     |> assign(:prompts, prompts)
     |> assign(:test_cases, test_cases)
     |> assign(:selected_prompt, selected_prompt)
+    |> assign(:assertion_edit_mode, %{})
   end
 
   defp save_suite(socket, :new, suite_params) do
@@ -138,8 +225,21 @@ defmodule Aludel.Web.SuiteLive.New do
 
     test_cases
     |> Enum.map(fn {_id, test_case_params} ->
-      variable_values = parse_json_or_empty(test_case_params["variable_values"])
-      assertions = parse_assertions(test_case_params["assertions"])
+      # Parse variables from visual form fields (var_value_*)
+      variable_values =
+        test_case_params
+        |> Enum.filter(fn {k, _v} -> String.starts_with?(k, "var_value_") end)
+        |> Enum.map(fn {"var_value_" <> key, value} -> {key, value} end)
+        |> Map.new()
+
+      # Check if assertions_json exists (JSON mode) or parse visual fields
+      assertions =
+        if test_case_params["assertions_json"] do
+          parse_assertions(test_case_params["assertions_json"])
+        else
+          # Parse from visual form fields
+          parse_visual_assertions(test_case_params)
+        end
 
       %{
         variable_values: variable_values,
@@ -170,16 +270,6 @@ defmodule Aludel.Web.SuiteLive.New do
     end
   end
 
-  defp parse_json_or_empty(nil), do: %{}
-  defp parse_json_or_empty(""), do: %{}
-
-  defp parse_json_or_empty(str) do
-    case Jason.decode(str) do
-      {:ok, map} -> map
-      _ -> %{}
-    end
-  end
-
   defp parse_assertions(nil), do: []
   defp parse_assertions(""), do: []
 
@@ -188,6 +278,40 @@ defmodule Aludel.Web.SuiteLive.New do
       {:ok, assertions} when is_list(assertions) -> assertions
       _ -> []
     end
+  end
+
+  defp parse_visual_assertions(test_case_params) do
+    # Find all assertion_type_* keys
+    assertion_indices =
+      test_case_params
+      |> Map.keys()
+      |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
+      |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
+      |> Enum.sort()
+
+    Enum.map(assertion_indices, fn idx ->
+      type = test_case_params["assertion_type_#{idx}"]
+
+      if type == "json_field" do
+        %{
+          "type" => type,
+          "field" => test_case_params["assertion_field_#{idx}"] || "",
+          "expected" => test_case_params["assertion_expected_#{idx}"] || ""
+        }
+      else
+        %{
+          "type" => type,
+          "value" => test_case_params["assertion_value_#{idx}"] || ""
+        }
+      end
+    end)
+  end
+
+  defp extract_variables(template) do
+    ~r/\{\{([^}]+)\}\}/
+    |> Regex.scan(template)
+    |> Enum.map(fn [_, var] -> String.trim(var) end)
+    |> Enum.uniq()
   end
 
   defp generate_id do
