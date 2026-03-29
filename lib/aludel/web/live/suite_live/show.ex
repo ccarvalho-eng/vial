@@ -186,14 +186,15 @@ defmodule Aludel.Web.SuiteLive.Show do
     # Parse assertions based on edit mode
     edit_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
 
-    with {:ok, assertions} <- parse_assertions(edit_mode, params) do
-      attrs = %{
-        variable_values: variables,
-        assertions: assertions
-      }
+    case parse_assertions(edit_mode, params) do
+      {:ok, assertions} ->
+        attrs = %{
+          variable_values: variables,
+          assertions: assertions
+        }
 
-      update_test_case_with_attrs(socket, test_case, attrs, params)
-    else
+        update_test_case_with_attrs(socket, test_case, attrs, params)
+
       {:error, message} ->
         {:noreply, put_flash(socket, :error, message)}
     end

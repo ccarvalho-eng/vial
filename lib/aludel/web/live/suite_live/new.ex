@@ -31,10 +31,12 @@ defmodule Aludel.Web.SuiteLive.New do
 
     # Extract variables from the selected prompt and update existing test cases
     variables =
-      with %{versions: [%{template: template} | _]} <- selected_prompt do
-        extract_variables(template)
-      else
-        _ -> []
+      case selected_prompt do
+        %{versions: [%{template: template} | _]} ->
+          extract_variables(template)
+
+        _ ->
+          []
       end
 
     # Update all test cases with new variable structure
@@ -68,11 +70,13 @@ defmodule Aludel.Web.SuiteLive.New do
   def handle_event("add_test_case", _params, socket) do
     # Extract variables from selected prompt
     variable_values =
-      with %{versions: [%{template: template} | _]} <- socket.assigns.selected_prompt do
-        variables = extract_variables(template)
-        Map.new(variables, fn var -> {var, ""} end)
-      else
-        _ -> %{}
+      case socket.assigns.selected_prompt do
+        %{versions: [%{template: template} | _]} ->
+          variables = extract_variables(template)
+          Map.new(variables, fn var -> {var, ""} end)
+
+        _ ->
+          %{}
       end
 
     new_test_case = %{
