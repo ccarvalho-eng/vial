@@ -5,6 +5,8 @@ defmodule Aludel.Web.Layouts do
   """
   use Aludel.Web, :html
 
+  alias Aludel.Web.Assets
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers
@@ -159,7 +161,7 @@ defmodule Aludel.Web.Layouts do
   # Private functions
 
   defp asset_path(conn, asset) when asset in [:css, :js] do
-    hash = Aludel.Web.Assets.current_hash(asset)
+    hash = Assets.current_hash(asset)
 
     {_dash, _routing, meta} = conn.private.phoenix_live_view
 

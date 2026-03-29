@@ -9,6 +9,10 @@ defmodule Aludel.Runs.Run do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Prompts.PromptVersion
+  alias Aludel.Runs.RunResult
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @required_fields ~w(prompt_version_id variable_values)a
@@ -21,8 +25,8 @@ defmodule Aludel.Runs.Run do
     field :name, :string
     field :variable_values, :map
 
-    belongs_to :prompt_version, Aludel.Prompts.PromptVersion
-    has_many :run_results, Aludel.Runs.RunResult
+    belongs_to(:prompt_version, PromptVersion)
+    has_many(:run_results, RunResult)
 
     timestamps(type: :utc_datetime)
   end
@@ -32,7 +36,7 @@ defmodule Aludel.Runs.Run do
 
   Validates that prompt_version_id and variable_values are present.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(run, attrs) do
     run
     |> cast(attrs, @required_fields ++ @optional_fields)

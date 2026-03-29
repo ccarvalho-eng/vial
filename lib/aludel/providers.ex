@@ -4,6 +4,7 @@ defmodule Aludel.Providers do
   """
 
   alias Aludel.Providers.Provider
+  alias Ecto.Changeset
 
   @doc """
   Lists all providers in the system.
@@ -25,7 +26,7 @@ defmodule Aludel.Providers do
   Creates a new provider.
   """
   @spec create_provider(map()) ::
-          {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Provider.t()} | {:error, Changeset.t()}
   def create_provider(attrs \\ %{}) do
     %Provider{}
     |> Provider.changeset(attrs)
@@ -36,7 +37,7 @@ defmodule Aludel.Providers do
   Updates an existing provider.
   """
   @spec update_provider(Provider.t(), map()) ::
-          {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Provider.t()} | {:error, Changeset.t()}
   def update_provider(%Provider{} = provider, attrs) do
     provider
     |> Provider.changeset(attrs)
@@ -47,7 +48,7 @@ defmodule Aludel.Providers do
   Deletes a provider.
   """
   @spec delete_provider(Provider.t()) ::
-          {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Provider.t()} | {:error, Changeset.t()}
   def delete_provider(%Provider{} = provider) do
     repo().delete(provider)
   end
@@ -55,7 +56,7 @@ defmodule Aludel.Providers do
   @doc """
   Returns a changeset for tracking provider changes.
   """
-  @spec change_provider(Provider.t(), map()) :: Ecto.Changeset.t()
+  @spec change_provider(Provider.t(), map()) :: Changeset.t()
   def change_provider(%Provider{} = provider, attrs \\ %{}) do
     Provider.changeset(provider, attrs)
   end

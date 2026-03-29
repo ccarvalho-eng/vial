@@ -6,6 +6,8 @@ defmodule Aludel.Providers.Provider do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @required_fields ~w(name provider model)a
@@ -26,7 +28,7 @@ defmodule Aludel.Providers.Provider do
   @doc """
   Changeset for creating or updating a provider.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(provider, attrs) do
     provider
     |> cast(attrs, @required_fields ++ @optional_fields)

@@ -12,6 +12,7 @@ defmodule Aludel.Web.SuiteLive.Show do
   alias Aludel.FileValidation
   alias Aludel.Prompts
   alias Aludel.Providers
+  alias Aludel.TaskSupervisor
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -250,7 +251,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       pid = self()
       suite_id = socket.assigns.suite.id
 
-      Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
+      Task.Supervisor.start_child(TaskSupervisor, fn ->
         version = Prompts.get_prompt_version!(version_id)
         provider = Providers.get_provider!(provider_id)
         suite = Evals.get_suite_with_test_cases!(suite_id)

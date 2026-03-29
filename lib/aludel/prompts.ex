@@ -5,10 +5,8 @@ defmodule Aludel.Prompts do
 
   import Ecto.Query
 
-  alias Aludel.Prompts.Evolution
-  alias Aludel.Prompts.Project
-  alias Aludel.Prompts.Prompt
-  alias Aludel.Prompts.PromptVersion
+  alias Aludel.Prompts.{Evolution, Project, Prompt, PromptVersion}
+  alias Ecto.Changeset
 
   @doc """
   Lists all prompts in the system.
@@ -121,7 +119,7 @@ defmodule Aludel.Prompts do
   Creates a new prompt.
   """
   @spec create_prompt(map()) ::
-          {:ok, Prompt.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Prompt.t()} | {:error, Changeset.t()}
   def create_prompt(attrs \\ %{}) do
     %Prompt{}
     |> Prompt.changeset(attrs)
@@ -132,7 +130,7 @@ defmodule Aludel.Prompts do
   Updates an existing prompt.
   """
   @spec update_prompt(Prompt.t(), map()) ::
-          {:ok, Prompt.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Prompt.t()} | {:error, Changeset.t()}
   def update_prompt(%Prompt{} = prompt, attrs) do
     prompt
     |> Prompt.changeset(attrs)
@@ -143,7 +141,7 @@ defmodule Aludel.Prompts do
   Deletes a prompt.
   """
   @spec delete_prompt(Prompt.t()) ::
-          {:ok, Prompt.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Prompt.t()} | {:error, Changeset.t()}
   def delete_prompt(%Prompt{} = prompt) do
     repo().delete(prompt)
   end
@@ -155,7 +153,7 @@ defmodule Aludel.Prompts do
   the template.
   """
   @spec create_prompt_version(Prompt.t(), String.t()) ::
-          {:ok, PromptVersion.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, PromptVersion.t()} | {:error, Changeset.t()}
   def create_prompt_version(%Prompt{} = prompt, template) do
     variables = extract_variables(template)
     version_number = get_next_version_number(prompt.id)
@@ -226,7 +224,7 @@ defmodule Aludel.Prompts do
   @doc """
   Returns a changeset for tracking project changes.
   """
-  @spec change_project(Project.t(), map()) :: Ecto.Changeset.t()
+  @spec change_project(Project.t(), map()) :: Changeset.t()
   def change_project(%Project{} = project, attrs \\ %{}) do
     Project.changeset(project, attrs)
   end
@@ -234,7 +232,7 @@ defmodule Aludel.Prompts do
   @doc """
   Creates a new project.
   """
-  @spec create_project(map()) :: {:ok, Project.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_project(map()) :: {:ok, Project.t()} | {:error, Changeset.t()}
   def create_project(attrs \\ %{}) do
     %Project{}
     |> Project.changeset(attrs)
@@ -245,7 +243,7 @@ defmodule Aludel.Prompts do
   Updates an existing project.
   """
   @spec update_project(Project.t(), map()) ::
-          {:ok, Project.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Project.t()} | {:error, Changeset.t()}
   def update_project(%Project{} = project, attrs) do
     project
     |> Project.changeset(attrs)
@@ -256,7 +254,7 @@ defmodule Aludel.Prompts do
   Deletes a project.
   """
   @spec delete_project(Project.t()) ::
-          {:ok, Project.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Project.t()} | {:error, Changeset.t()}
   def delete_project(%Project{} = project) do
     repo().delete(project)
   end

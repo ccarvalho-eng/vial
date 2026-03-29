@@ -9,6 +9,9 @@ defmodule Aludel.Prompts.PromptVersion do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Prompts.Prompt
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @required_fields ~w(prompt_id template)a
@@ -22,7 +25,7 @@ defmodule Aludel.Prompts.PromptVersion do
     field :template, :string
     field :variables, {:array, :string}, default: []
 
-    belongs_to :prompt, Aludel.Prompts.Prompt
+    belongs_to(:prompt, Prompt)
 
     timestamps(type: :utc_datetime, updated_at: false)
   end
@@ -32,7 +35,7 @@ defmodule Aludel.Prompts.PromptVersion do
 
   Validates that prompt_id and template are present.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(prompt_version, attrs) do
     prompt_version
     |> cast(attrs, @required_fields ++ @optional_fields)

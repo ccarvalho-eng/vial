@@ -8,6 +8,9 @@ defmodule Aludel.Prompts.Prompt do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Prompts.{Project, PromptVersion}
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @required_fields ~w(name)a
@@ -21,8 +24,8 @@ defmodule Aludel.Prompts.Prompt do
     field :description, :string
     field :tags, {:array, :string}, default: []
 
-    belongs_to :project, Aludel.Prompts.Project
-    has_many :versions, Aludel.Prompts.PromptVersion
+    belongs_to(:project, Project)
+    has_many(:versions, PromptVersion)
 
     timestamps(type: :utc_datetime)
   end
@@ -33,7 +36,7 @@ defmodule Aludel.Prompts.Prompt do
   Validates that name is present.
   Converts comma-separated tags string to array if needed.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(prompt, attrs) do
     attrs = normalize_tags(attrs)
 

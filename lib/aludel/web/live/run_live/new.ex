@@ -11,6 +11,7 @@ defmodule Aludel.Web.RunLive.New do
   alias Aludel.Prompts
   alias Aludel.Providers
   alias Aludel.Runs
+  alias Aludel.Runs.Run
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -40,7 +41,7 @@ defmodule Aludel.Web.RunLive.New do
       Map.new(prompt_version.variables, fn var -> {var, ""} end)
 
     changeset =
-      Runs.change_run(%Aludel.Runs.Run{}, %{
+      Runs.change_run(%Run{}, %{
         prompt_version_id: version_id,
         variable_values: variable_values
       })

@@ -9,6 +9,7 @@ defmodule Aludel.Web.RunLive.Show do
 
   use Aludel.Web, :live_view
 
+  alias Aludel.PubSub
   alias Aludel.Runs
 
   @impl Phoenix.LiveView
@@ -24,7 +25,7 @@ defmodule Aludel.Web.RunLive.Show do
       # Subscribe to run-specific updates. Topic format: "run:#{run_id}"
       # NOTE: If multi-tenancy is added in the future, scope topics by org/user:
       # "run:#{org_id}:#{id}" to prevent data leaks between tenants
-      Phoenix.PubSub.subscribe(Aludel.PubSub, "run:#{id}")
+      Phoenix.PubSub.subscribe(PubSub, "run:#{id}")
     end
 
     title = if run.name, do: run.name, else: "Run"

@@ -10,6 +10,7 @@ defmodule Aludel.Web.PromptLive.New do
 
   alias Aludel.Prompts
   alias Aludel.Prompts.Prompt
+  alias Ecto.Changeset
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -105,7 +106,7 @@ defmodule Aludel.Web.PromptLive.New do
          |> put_flash(:info, "Prompt created successfully")
          |> push_navigate(to: aludel_path("prompts/#{prompt.id}"))}
 
-      {:error, %Ecto.Changeset{} = changeset} ->
+      {:error, %Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end
@@ -130,7 +131,7 @@ defmodule Aludel.Web.PromptLive.New do
          |> put_flash(:info, "Prompt updated successfully")
          |> push_navigate(to: aludel_path("prompts/#{updated_prompt.id}"))}
 
-      {:error, %Ecto.Changeset{} = changeset} ->
+      {:error, %Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end

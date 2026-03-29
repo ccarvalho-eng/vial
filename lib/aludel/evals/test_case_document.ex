@@ -10,6 +10,9 @@ defmodule Aludel.Evals.TestCaseDocument do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Evals.TestCase
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @max_size_bytes 10 * 1024 * 1024
@@ -43,7 +46,7 @@ defmodule Aludel.Evals.TestCaseDocument do
     field :data, :binary
     field :size_bytes, :integer
 
-    belongs_to :test_case, Aludel.Evals.TestCase
+    belongs_to(:test_case, TestCase)
 
     timestamps(type: :utc_datetime)
   end
@@ -65,7 +68,7 @@ defmodule Aludel.Evals.TestCaseDocument do
 
   Validates that all required fields are present.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(test_case_document, attrs) do
     test_case_document
     |> cast(attrs, @required_fields ++ @optional_fields)

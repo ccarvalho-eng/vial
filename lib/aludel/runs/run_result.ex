@@ -9,6 +9,10 @@ defmodule Aludel.Runs.RunResult do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Providers.Provider
+  alias Aludel.Runs.Run
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @required_fields ~w(run_id provider_id status)a
@@ -26,8 +30,8 @@ defmodule Aludel.Runs.RunResult do
     field :status, Ecto.Enum, values: [:pending, :streaming, :completed, :error]
     field :error, :string
 
-    belongs_to :run, Aludel.Runs.Run
-    belongs_to :provider, Aludel.Providers.Provider
+    belongs_to(:run, Run)
+    belongs_to(:provider, Provider)
 
     timestamps(type: :utc_datetime)
   end
@@ -37,7 +41,7 @@ defmodule Aludel.Runs.RunResult do
 
   Validates that run_id, provider_id, and status are present.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(run_result, attrs) do
     run_result
     |> cast(attrs, @required_fields ++ @optional_fields)

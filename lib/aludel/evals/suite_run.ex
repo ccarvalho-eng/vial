@@ -10,6 +10,11 @@ defmodule Aludel.Evals.SuiteRun do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Evals.Suite
+  alias Aludel.Prompts.PromptVersion
+  alias Aludel.Providers.Provider
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @required_fields ~w(suite_id prompt_version_id provider_id)a
@@ -25,9 +30,9 @@ defmodule Aludel.Evals.SuiteRun do
     field :avg_cost_usd, :decimal
     field :avg_latency_ms, :integer
 
-    belongs_to :suite, Aludel.Evals.Suite
-    belongs_to :prompt_version, Aludel.Prompts.PromptVersion
-    belongs_to :provider, Aludel.Providers.Provider
+    belongs_to(:suite, Suite)
+    belongs_to(:prompt_version, PromptVersion)
+    belongs_to(:provider, Provider)
 
     timestamps(type: :utc_datetime)
   end
@@ -38,7 +43,7 @@ defmodule Aludel.Evals.SuiteRun do
   Validates that suite_id, prompt_version_id, and provider_id are
   present.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(suite_run, attrs) do
     suite_run
     |> cast(attrs, @required_fields ++ @optional_fields)

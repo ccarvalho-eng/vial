@@ -15,6 +15,9 @@ defmodule Aludel.Evals.TestCase do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Evals.{Suite, TestCaseDocument}
+  alias Ecto.Changeset
+
   @type t :: %__MODULE__{}
 
   @required_fields ~w(suite_id variable_values assertions)a
@@ -27,8 +30,8 @@ defmodule Aludel.Evals.TestCase do
     field :variable_values, :map
     field :assertions, {:array, :map}
 
-    belongs_to :suite, Aludel.Evals.Suite
-    has_many :documents, Aludel.Evals.TestCaseDocument, on_delete: :delete_all
+    belongs_to(:suite, Suite)
+    has_many(:documents, TestCaseDocument, on_delete: :delete_all)
 
     timestamps(type: :utc_datetime)
   end
@@ -39,7 +42,7 @@ defmodule Aludel.Evals.TestCase do
   Validates that suite_id, variable_values, and assertions are
   present.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Changeset.t()
   def changeset(test_case, attrs) do
     test_case
     |> cast(attrs, @required_fields ++ @optional_fields)

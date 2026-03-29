@@ -5,13 +5,12 @@ defmodule Aludel.Evals do
 
   import Ecto.Query
 
-  alias Aludel.Evals.Suite
-  alias Aludel.Evals.SuiteRun
-  alias Aludel.Evals.TestCase
-  alias Aludel.Evals.TestCaseDocument
+  alias Aludel.Evals.{Suite, SuiteRun, TestCase, TestCaseDocument}
   alias Aludel.LLM
   alias Aludel.Prompts.PromptVersion
   alias Aludel.Providers.Provider
+  alias Ecto.Association.NotLoaded
+  alias Ecto.Changeset
 
   # Suite functions
 
@@ -76,7 +75,7 @@ defmodule Aludel.Evals do
   @doc """
   Returns a changeset for tracking suite changes.
   """
-  @spec change_suite(Suite.t(), map()) :: Ecto.Changeset.t()
+  @spec change_suite(Suite.t(), map()) :: Changeset.t()
   def change_suite(%Suite{} = suite, attrs \\ %{}) do
     Suite.changeset(suite, attrs)
   end
@@ -84,7 +83,7 @@ defmodule Aludel.Evals do
   @doc """
   Creates a new suite.
   """
-  @spec create_suite(map()) :: {:ok, Suite.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_suite(map()) :: {:ok, Suite.t()} | {:error, Changeset.t()}
   def create_suite(attrs \\ %{}) do
     %Suite{}
     |> Suite.changeset(attrs)
@@ -95,7 +94,7 @@ defmodule Aludel.Evals do
   Updates an existing suite.
   """
   @spec update_suite(Suite.t(), map()) ::
-          {:ok, Suite.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Suite.t()} | {:error, Changeset.t()}
   def update_suite(%Suite{} = suite, attrs) do
     suite
     |> Suite.changeset(attrs)
@@ -106,7 +105,7 @@ defmodule Aludel.Evals do
   Deletes a suite.
   """
   @spec delete_suite(Suite.t()) ::
-          {:ok, Suite.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Suite.t()} | {:error, Changeset.t()}
   def delete_suite(%Suite{} = suite) do
     repo().delete(suite)
   end
@@ -134,15 +133,15 @@ defmodule Aludel.Evals do
 
   Raises `Ecto.NoResultsError` if the document does not exist.
   """
-  @spec get_test_case_document!(binary()) :: Aludel.Evals.TestCaseDocument.t()
+  @spec get_test_case_document!(binary()) :: TestCaseDocument.t()
   def get_test_case_document!(id) do
-    repo().get!(Aludel.Evals.TestCaseDocument, id)
+    repo().get!(TestCaseDocument, id)
   end
 
   @doc """
   Returns a changeset for tracking test case changes.
   """
-  @spec change_test_case(TestCase.t(), map()) :: Ecto.Changeset.t()
+  @spec change_test_case(TestCase.t(), map()) :: Changeset.t()
   def change_test_case(%TestCase{} = test_case, attrs \\ %{}) do
     TestCase.changeset(test_case, attrs)
   end
@@ -151,7 +150,7 @@ defmodule Aludel.Evals do
   Creates a new test case.
   """
   @spec create_test_case(map()) ::
-          {:ok, TestCase.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, TestCase.t()} | {:error, Changeset.t()}
   def create_test_case(attrs \\ %{}) do
     %TestCase{}
     |> TestCase.changeset(attrs)
@@ -162,7 +161,7 @@ defmodule Aludel.Evals do
   Updates an existing test case.
   """
   @spec update_test_case(TestCase.t(), map()) ::
-          {:ok, TestCase.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, TestCase.t()} | {:error, Changeset.t()}
   def update_test_case(%TestCase{} = test_case, attrs) do
     test_case
     |> TestCase.changeset(attrs)
@@ -173,7 +172,7 @@ defmodule Aludel.Evals do
   Deletes a test case.
   """
   @spec delete_test_case(TestCase.t()) ::
-          {:ok, TestCase.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, TestCase.t()} | {:error, Changeset.t()}
   def delete_test_case(%TestCase{} = test_case) do
     repo().delete(test_case)
   end
@@ -252,7 +251,7 @@ defmodule Aludel.Evals do
   Creates a new suite run.
   """
   @spec create_suite_run(map()) ::
-          {:ok, SuiteRun.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, SuiteRun.t()} | {:error, Changeset.t()}
   def create_suite_run(attrs \\ %{}) do
     %SuiteRun{}
     |> SuiteRun.changeset(attrs)
@@ -263,7 +262,7 @@ defmodule Aludel.Evals do
   Deletes a suite run.
   """
   @spec delete_suite_run(SuiteRun.t()) ::
-          {:ok, SuiteRun.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, SuiteRun.t()} | {:error, Changeset.t()}
   def delete_suite_run(%SuiteRun{} = suite_run) do
     repo().delete(suite_run)
   end
@@ -348,19 +347,19 @@ defmodule Aludel.Evals do
   Creates a test case document.
   """
   @spec create_test_case_document(map()) ::
-          {:ok, TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, TestCaseDocument.t()} | {:error, Changeset.t()}
   def create_test_case_document(attrs \\ %{}) do
-    %Aludel.Evals.TestCaseDocument{}
-    |> Aludel.Evals.TestCaseDocument.changeset(attrs)
+    %TestCaseDocument{}
+    |> TestCaseDocument.changeset(attrs)
     |> repo().insert()
   end
 
   @doc """
   Deletes a test case document.
   """
-  @spec delete_test_case_document(Aludel.Evals.TestCaseDocument.t()) ::
-          {:ok, Aludel.Evals.TestCaseDocument.t()} | {:error, Ecto.Changeset.t()}
-  def delete_test_case_document(%Aludel.Evals.TestCaseDocument{} = document) do
+  @spec delete_test_case_document(TestCaseDocument.t()) ::
+          {:ok, TestCaseDocument.t()} | {:error, Changeset.t()}
+  def delete_test_case_document(%TestCaseDocument{} = document) do
     repo().delete(document)
   end
 
@@ -458,7 +457,7 @@ defmodule Aludel.Evals do
     end
   end
 
-  defp ensure_documents_loaded(%TestCase{documents: %Ecto.Association.NotLoaded{}} = test_case) do
+  defp ensure_documents_loaded(%TestCase{documents: %NotLoaded{}} = test_case) do
     repo().preload(test_case, :documents)
   end
 

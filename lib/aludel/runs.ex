@@ -8,8 +8,10 @@ defmodule Aludel.Runs do
   alias Aludel.Evals.SuiteRun
   alias Aludel.LLM
   alias Aludel.Providers.Provider
-  alias Aludel.Runs.Run
-  alias Aludel.Runs.RunResult
+  alias Aludel.PubSub
+  alias Aludel.Runs.{Run, RunResult}
+  alias Aludel.TaskSupervisor
+  alias Ecto.Changeset
 
   @doc """
   Lists all runs in the system.
@@ -83,7 +85,7 @@ defmodule Aludel.Runs do
   @doc """
   Creates a new run.
   """
-  @spec create_run(map()) :: {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_run(map()) :: {:ok, Run.t()} | {:error, Changeset.t()}
   def create_run(attrs \\ %{}) do
     %Run{}
     |> Run.changeset(attrs)
@@ -94,7 +96,7 @@ defmodule Aludel.Runs do
   Updates an existing run.
   """
   @spec update_run(Run.t(), map()) ::
-          {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Run.t()} | {:error, Changeset.t()}
   def update_run(%Run{} = run, attrs) do
     run
     |> Run.changeset(attrs)
@@ -104,7 +106,7 @@ defmodule Aludel.Runs do
   @doc """
   Deletes a run.
   """
-  @spec delete_run(Run.t()) :: {:ok, Run.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_run(Run.t()) :: {:ok, Run.t()} | {:error, Changeset.t()}
   def delete_run(%Run{} = run) do
     repo().delete(run)
   end
@@ -112,7 +114,7 @@ defmodule Aludel.Runs do
   @doc """
   Returns a changeset for tracking run changes.
   """
-  @spec change_run(Run.t(), map()) :: Ecto.Changeset.t()
+  @spec change_run(Run.t(), map()) :: Changeset.t()
   def change_run(%Run{} = run, attrs \\ %{}) do
     Run.changeset(run, attrs)
   end
@@ -121,7 +123,7 @@ defmodule Aludel.Runs do
   Creates a new run result.
   """
   @spec create_run_result(map()) ::
-          {:ok, RunResult.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, RunResult.t()} | {:error, Changeset.t()}
   def create_run_result(attrs \\ %{}) do
     %RunResult{}
     |> RunResult.changeset(attrs)
@@ -132,7 +134,7 @@ defmodule Aludel.Runs do
   Updates an existing run result.
   """
   @spec update_run_result(RunResult.t(), map()) ::
-          {:ok, RunResult.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, RunResult.t()} | {:error, Changeset.t()}
   def update_run_result(%RunResult{} = run_result, attrs) do
     run_result
     |> RunResult.changeset(attrs)
@@ -172,7 +174,7 @@ defmodule Aludel.Runs do
 
     _results =
       Task.Supervisor.async_stream(
-        Aludel.TaskSupervisor,
+        TaskSupervisor,
         providers,
         fn provider ->
           execute_provider(run, provider, rendered_prompt)
@@ -238,7 +240,7 @@ defmodule Aludel.Runs do
 
   defp broadcast_update(run_id, result_id, status, output) do
     Phoenix.PubSub.broadcast(
-      Aludel.PubSub,
+      PubSub,
       "run:#{run_id}",
       {:run_result_update, result_id, status, output}
     )
