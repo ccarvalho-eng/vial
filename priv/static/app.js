@@ -20510,12 +20510,14 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     },
     handleToggle(e) {
       const idx = this.el.getAttribute("data-index");
+      const testCaseId = this.el.getAttribute("data-test-case-id");
       const type = this.el.value;
-      this.toggleFields(idx, type);
+      this.toggleFields(idx, testCaseId, type);
     },
-    toggleFields(idx, type) {
-      const jsonFields = document.getElementById("json-fields-" + idx);
-      const valueField = document.getElementById("value-field-" + idx);
+    toggleFields(idx, testCaseId, type) {
+      const suffix = testCaseId ? testCaseId + "-" + idx : idx;
+      const jsonFields = document.getElementById("json-fields-" + suffix);
+      const valueField = document.getElementById("value-field-" + suffix);
       if (jsonFields && valueField) {
         if (type === "json_field") {
           jsonFields.style.display = "flex";
@@ -20528,9 +20530,10 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     },
     initializeFields() {
       const idx = this.el.getAttribute("data-index");
+      const testCaseId = this.el.getAttribute("data-test-case-id");
       const type = this.el.value;
       if (idx) {
-        this.toggleFields(idx, type);
+        this.toggleFields(idx, testCaseId, type);
       }
     }
   };
