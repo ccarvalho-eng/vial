@@ -53,8 +53,12 @@ defmodule Aludel.Web.SuiteLive.New do
         Map.put(tc, :variable_values, variable_values)
       end)
 
+    # Update suite with selected prompt_id
+    suite = Map.put(socket.assigns.suite, :prompt_id, prompt_id)
+
     socket =
       socket
+      |> assign(:suite, suite)
       |> assign(:selected_prompt, selected_prompt)
       |> assign(:test_cases, updated_test_cases)
 
