@@ -173,45 +173,65 @@ defmodule Aludel.Web.SuiteLive.Show do
     # Parse assertions based on edit mode
     edit_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
 
-    assertions =
-      if edit_mode == :json do
-        # Parse from JSON textarea
-        case Jason.decode(params["assertions_json"] || "[]") do
-          {:ok, json_assertions} when is_list(json_assertions) -> json_assertions
-          _ -> test_case.assertions
+    with {:ok, assertions} <- parse_assertions(edit_mode, params) do
+      attrs = %{
+        variable_values: variables,
+        assertions: assertions
+      }
+
+      update_test_case_with_attrs(socket, test_case, attrs, params)
+    else
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
+    end
+  end
+
+  defp parse_assertions(:json, params) do
+    case Jason.decode(params["assertions_json"] || "[]") do
+      {:ok, json_assertions} when is_list(json_assertions) ->
+        case validate_assertions(json_assertions) do
+          :ok -> {:ok, json_assertions}
+          {:error, _} = error -> error
         end
-      else
-        # Parse from visual form fields
-        assertion_indices =
-          params
-          |> Map.keys()
-          |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
-          |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
-          |> Enum.sort()
 
-        Enum.map(assertion_indices, fn idx ->
-          type = params["assertion_type_#{idx}"]
+      {:ok, _} ->
+        {:error, "Invalid JSON: assertions must be a list"}
 
-          if type == "json_field" do
-            %{
-              "type" => type,
-              "field" => params["assertion_field_#{idx}"],
-              "expected" => params["assertion_expected_#{idx}"]
-            }
-          else
-            %{
-              "type" => type,
-              "value" => params["assertion_value_#{idx}"]
-            }
-          end
-        end)
-      end
+      {:error, %Jason.DecodeError{}} ->
+        {:error, "Invalid JSON syntax in assertions"}
+    end
+  end
 
-    attrs = %{
-      variable_values: variables,
-      assertions: assertions
-    }
+  defp parse_assertions(:visual, params) do
+    assertion_indices =
+      params
+      |> Map.keys()
+      |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
+      |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
+      |> Enum.sort()
 
+    assertions =
+      Enum.map(assertion_indices, fn idx ->
+        type = params["assertion_type_#{idx}"]
+
+        if type == "json_field" do
+          %{
+            "type" => type,
+            "field" => params["assertion_field_#{idx}"],
+            "expected" => params["assertion_expected_#{idx}"]
+          }
+        else
+          %{
+            "type" => type,
+            "value" => params["assertion_value_#{idx}"]
+          }
+        end
+      end)
+
+    {:ok, assertions}
+  end
+
+  defp update_test_case_with_attrs(socket, test_case, attrs, _params) do
     case Evals.update_test_case(test_case, attrs) do
       {:ok, _test_case} ->
         # Handle uploaded documents and collect results
@@ -427,5 +447,34 @@ defmodule Aludel.Web.SuiteLive.Show do
     |> Regex.scan(template)
     |> Enum.map(fn [_, var] -> String.trim(var) end)
     |> Enum.uniq()
+  end
+
+  defp validate_assertions(assertions) do
+    valid_types = ["contains", "not_contains", "regex", "exact_match", "json_field"]
+
+    assertions
+    |> Enum.with_index(1)
+    |> Enum.reduce_while(:ok, fn {assertion, idx}, _acc ->
+      type = Map.get(assertion, "type")
+
+      cond do
+        type not in valid_types ->
+          {:halt,
+           {:error,
+            "Invalid assertion type at index #{idx}: #{inspect(type)}. Must be one of: #{Enum.join(valid_types, ", ")}"}}
+
+        type == "json_field" and
+            (not Map.has_key?(assertion, "field") or not Map.has_key?(assertion, "expected")) ->
+          {:halt,
+           {:error,
+            "Assertion at index #{idx}: json_field type requires 'field' and 'expected' fields"}}
+
+        type != "json_field" and not Map.has_key?(assertion, "value") ->
+          {:halt, {:error, "Assertion at index #{idx}: #{type} type requires 'value' field"}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
   end
 end

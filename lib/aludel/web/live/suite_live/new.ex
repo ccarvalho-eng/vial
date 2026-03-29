@@ -186,29 +186,66 @@ defmodule Aludel.Web.SuiteLive.New do
   end
 
   defp save_suite(socket, :new, suite_params) do
-    case create_suite_with_test_cases(suite_params) do
-      {:ok, suite} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Suite created successfully")
-         |> push_navigate(to: aludel_path("suites/#{suite.id}"))}
+    case validate_test_cases_json(suite_params) do
+      :ok ->
+        case create_suite_with_test_cases(suite_params) do
+          {:ok, suite} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Suite created successfully")
+             |> push_navigate(to: aludel_path("suites/#{suite.id}"))}
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+          {:error, changeset} ->
+            {:noreply, assign(socket, :form, to_form(changeset))}
+        end
+
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
     end
   end
 
   defp save_suite(socket, :edit, suite_params) do
-    case update_suite_with_test_cases(socket.assigns.suite, suite_params) do
-      {:ok, suite} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Suite updated successfully")
-         |> push_navigate(to: aludel_path("suites/#{suite.id}"))}
+    case validate_test_cases_json(suite_params) do
+      :ok ->
+        case update_suite_with_test_cases(socket.assigns.suite, suite_params) do
+          {:ok, suite} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Suite updated successfully")
+             |> push_navigate(to: aludel_path("suites/#{suite.id}"))}
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+          {:error, changeset} ->
+            {:noreply, assign(socket, :form, to_form(changeset))}
+        end
+
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
     end
+  end
+
+  defp validate_test_cases_json(params) do
+    test_cases = params["test_cases"] || %{}
+
+    test_cases
+    |> Enum.reduce_while(:ok, fn {_id, test_case_params}, _acc ->
+      if test_case_params["assertions_json"] do
+        case Jason.decode(test_case_params["assertions_json"]) do
+          {:ok, json_assertions} when is_list(json_assertions) ->
+            case validate_assertion_structure(json_assertions) do
+              :ok -> {:cont, :ok}
+              {:error, _} = error -> {:halt, error}
+            end
+
+          {:ok, _} ->
+            {:halt, {:error, "Invalid JSON: assertions must be a list"}}
+
+          {:error, %Jason.DecodeError{}} ->
+            {:halt, {:error, "Invalid JSON syntax in assertions"}}
+        end
+      else
+        {:cont, :ok}
+      end
+    end)
   end
 
   defp create_suite_with_test_cases(params) do
@@ -320,5 +357,34 @@ defmodule Aludel.Web.SuiteLive.New do
 
   defp generate_id do
     :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+  end
+
+  defp validate_assertion_structure(assertions) do
+    valid_types = ["contains", "not_contains", "regex", "exact_match", "json_field"]
+
+    assertions
+    |> Enum.with_index(1)
+    |> Enum.reduce_while(:ok, fn {assertion, idx}, _acc ->
+      type = Map.get(assertion, "type")
+
+      cond do
+        type not in valid_types ->
+          {:halt,
+           {:error,
+            "Invalid assertion type at index #{idx}: #{inspect(type)}. Must be one of: #{Enum.join(valid_types, ", ")}"}}
+
+        type == "json_field" and
+            (not Map.has_key?(assertion, "field") or not Map.has_key?(assertion, "expected")) ->
+          {:halt,
+           {:error,
+            "Assertion at index #{idx}: json_field type requires 'field' and 'expected' fields"}}
+
+        type != "json_field" and not Map.has_key?(assertion, "value") ->
+          {:halt, {:error, "Assertion at index #{idx}: #{type} type requires 'value' field"}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
   end
 end

@@ -135,6 +135,7 @@
                             phx-hook="AssertionTypeToggle"
                             id={"assertion-type-#{test_case.id}-#{idx}"}
                             data-index={idx}
+                            data-test-case-id={test_case.id}
                             style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px; width: 110px; flex-shrink: 0;"
                           >
                             <option value="contains" selected={assertion["type"] == "contains"}>
@@ -168,7 +169,7 @@
                         </div>
                         <%!-- JSON field inputs --%>
                         <div
-                          id={"json-fields-#{idx}"}
+                          id={"json-fields-#{test_case.id}-#{idx}"}
                           style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
                         >
                           <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -198,7 +199,7 @@
                         </div>
                         <%!-- Regular assertion value input --%>
                         <div
-                          id={"value-field-#{idx}"}
+                          id={"value-field-#{test_case.id}-#{idx}"}
                           style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
                         >
                           <label style="font-size: 11px; color: var(--text-muted);">
