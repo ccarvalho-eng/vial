@@ -66,9 +66,11 @@ defmodule Aludel.Evals do
   """
   @spec get_suite_with_test_cases_and_prompt!(binary()) :: Suite.t()
   def get_suite_with_test_cases_and_prompt!(id) do
+    test_cases_query = from tc in TestCase, order_by: [desc: tc.inserted_at]
+
     Suite
     |> repo().get!(id)
-    |> repo().preload(test_cases: :documents, prompt: [])
+    |> repo().preload(test_cases: {test_cases_query, :documents}, prompt: [])
   end
 
   @doc """

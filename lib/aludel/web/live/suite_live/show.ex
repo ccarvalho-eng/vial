@@ -89,6 +89,34 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
+  def handle_event("add_test_case", _params, socket) do
+    # Extract variables from prompt template
+    template =
+      socket.assigns.prompt.versions |> List.first() |> then(&if &1, do: &1.template, else: "")
+
+    variables = extract_variables(template)
+    variable_values = Map.new(variables, fn var -> {var, ""} end)
+
+    # Create new test case
+    case Evals.create_test_case(%{
+           suite_id: socket.assigns.suite.id,
+           variable_values: variable_values,
+           assertions: [%{"type" => "contains", "value" => ""}]
+         }) do
+      {:ok, _test_case} ->
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> put_flash(:info, "Test case created")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to create test case")}
+    end
+  end
+
+  @impl Phoenix.LiveView
   def handle_event("edit_test_case", %{"id" => id}, socket) do
     test_case = Evals.get_test_case!(id)
 
@@ -372,5 +400,12 @@ defmodule Aludel.Web.SuiteLive.Show do
       true ->
         Calendar.strftime(datetime, "%B %d, %Y")
     end
+  end
+
+  defp extract_variables(template) do
+    ~r/\{\{([^}]+)\}\}/
+    |> Regex.scan(template)
+    |> Enum.map(fn [_, var] -> String.trim(var) end)
+    |> Enum.uniq()
   end
 end

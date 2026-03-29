@@ -32,8 +32,8 @@ defmodule Aludel.LLM do
     ollama: ~w(llava bakllava)
   }
 
-  alias Aludel.Providers.Provider
   alias Aludel.DocumentConverter
+  alias Aludel.Providers.Provider
 
   @type error_reason ::
           :missing_api_key

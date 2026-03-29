@@ -130,7 +130,16 @@
     </div>
     <%!-- Column 2: Test Cases --%>
     <div style="padding: 24px; overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--border);">
-      <h2 style="margin-bottom: 16px;">Test Cases</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Test Cases</h2>
+        <button
+          phx-click="add_test_case"
+          class="button-primary"
+          style="font-size: 13px; padding: 6px 12px;"
+        >
+          + Add Test Case
+        </button>
+      </div>
       <div
         id="test-cases"
         phx-hook="AssertionTypeToggle"
@@ -341,7 +350,8 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                   <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent) 0%, rgba(139, 92, 246, 0.7) 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);">
-                      {Enum.find_index(@suite.test_cases, &(&1.id == test_case.id)) + 1}
+                      {length(@suite.test_cases) -
+                        Enum.find_index(@suite.test_cases, &(&1.id == test_case.id))}
                     </div>
                     <h4 style="margin: 0; font-size: 15px; font-weight: 600;">Test Case</h4>
                   </div>
