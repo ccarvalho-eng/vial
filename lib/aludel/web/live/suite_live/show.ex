@@ -98,6 +98,19 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
+  def handle_event("add_assertion", %{"id" => _id}, socket) do
+    new_assertions = socket.assigns.editing_assertions ++ [%{"type" => "contains", "value" => ""}]
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("remove_assertion", %{"index" => index_str, "id" => _id}, socket) do
+    index = String.to_integer(index_str)
+    new_assertions = List.delete_at(socket.assigns.editing_assertions, index)
+    {:noreply, assign(socket, :editing_assertions, new_assertions)}
+  end
+
+  @impl Phoenix.LiveView
   def handle_event("add_test_case", _params, socket) do
     # Extract variables from prompt template
     template =
@@ -183,6 +196,69 @@ defmodule Aludel.Web.SuiteLive.Show do
     else
       {:error, message} ->
         {:noreply, put_flash(socket, :error, message)}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("delete_document", %{"doc-id" => doc_id, "id" => _test_case_id}, socket) do
+    document = Evals.get_test_case_document!(doc_id)
+
+    case Evals.delete_test_case_document(document) do
+      {:ok, _} ->
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> put_flash(:info, "Document deleted successfully")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to delete document")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("delete_test_case", %{"id" => id}, socket) do
+    test_case = Evals.get_test_case!(id)
+
+    case Evals.delete_test_case(test_case) do
+      {:ok, _} ->
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
+
+        {:noreply,
+         socket
+         |> assign(:suite, suite)
+         |> put_flash(:info, "Test case deleted successfully")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to delete test case")}
+    end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("run_suite", _params, socket) do
+    # Prevent concurrent runs
+    if socket.assigns.running do
+      {:noreply, put_flash(socket, :error, "Suite is already running")}
+    else
+      # Use the stored selections instead of params
+      version_id = socket.assigns.selected_version_id
+      provider_id = socket.assigns.selected_provider_id
+
+      # Start async execution
+      pid = self()
+      suite_id = socket.assigns.suite.id
+
+      Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
+        version = Prompts.get_prompt_version!(version_id)
+        provider = Providers.get_provider!(provider_id)
+        suite = Evals.get_suite_with_test_cases!(suite_id)
+
+        result = Evals.execute_suite(suite, version, provider)
+        send(pid, {:suite_completed, result})
+      end)
+
+      {:noreply, assign(socket, :running, true)}
     end
   end
 
@@ -317,82 +393,6 @@ defmodule Aludel.Web.SuiteLive.Show do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to update test case")}
-    end
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("add_assertion", %{"id" => _id}, socket) do
-    new_assertions = socket.assigns.editing_assertions ++ [%{"type" => "contains", "value" => ""}]
-    {:noreply, assign(socket, :editing_assertions, new_assertions)}
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("remove_assertion", %{"index" => index_str, "id" => _id}, socket) do
-    index = String.to_integer(index_str)
-    new_assertions = List.delete_at(socket.assigns.editing_assertions, index)
-    {:noreply, assign(socket, :editing_assertions, new_assertions)}
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("delete_document", %{"doc-id" => doc_id, "id" => _test_case_id}, socket) do
-    document = Evals.get_test_case_document!(doc_id)
-
-    case Evals.delete_test_case_document(document) do
-      {:ok, _} ->
-        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
-
-        {:noreply,
-         socket
-         |> assign(:suite, suite)
-         |> put_flash(:info, "Document deleted successfully")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete document")}
-    end
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("delete_test_case", %{"id" => id}, socket) do
-    test_case = Evals.get_test_case!(id)
-
-    case Evals.delete_test_case(test_case) do
-      {:ok, _} ->
-        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
-
-        {:noreply,
-         socket
-         |> assign(:suite, suite)
-         |> put_flash(:info, "Test case deleted successfully")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete test case")}
-    end
-  end
-
-  @impl Phoenix.LiveView
-  def handle_event("run_suite", _params, socket) do
-    # Prevent concurrent runs
-    if socket.assigns.running do
-      {:noreply, put_flash(socket, :error, "Suite is already running")}
-    else
-      # Use the stored selections instead of params
-      version_id = socket.assigns.selected_version_id
-      provider_id = socket.assigns.selected_provider_id
-
-      # Start async execution
-      pid = self()
-      suite_id = socket.assigns.suite.id
-
-      Task.Supervisor.start_child(Aludel.TaskSupervisor, fn ->
-        version = Prompts.get_prompt_version!(version_id)
-        provider = Providers.get_provider!(provider_id)
-        suite = Evals.get_suite_with_test_cases!(suite_id)
-
-        result = Evals.execute_suite(suite, version, provider)
-        send(pid, {:suite_completed, result})
-      end)
-
-      {:noreply, assign(socket, :running, true)}
     end
   end
 
