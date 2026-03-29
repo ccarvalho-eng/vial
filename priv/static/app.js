@@ -20509,11 +20509,9 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
       this.el.removeEventListener("change", this.handleToggle);
     },
     handleToggle(e) {
-      if (e.target.matches('select[name^="assertion_type_"]')) {
-        const idx = e.target.name.replace("assertion_type_", "");
-        const type = e.target.value;
-        this.toggleFields(idx, type);
-      }
+      const idx = this.el.getAttribute("data-index");
+      const type = this.el.value;
+      this.toggleFields(idx, type);
     },
     toggleFields(idx, type) {
       const jsonFields = document.getElementById("json-fields-" + idx);
@@ -20529,11 +20527,11 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
       }
     },
     initializeFields() {
-      this.el.querySelectorAll('select[name^="assertion_type_"]').forEach((select) => {
-        const idx = select.name.replace("assertion_type_", "");
-        const type = select.value;
+      const idx = this.el.getAttribute("data-index");
+      const type = this.el.value;
+      if (idx) {
         this.toggleFields(idx, type);
-      });
+      }
     }
   };
 

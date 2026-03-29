@@ -132,6 +132,9 @@
                         <div style="display: flex; gap: 8px; align-items: center;">
                           <select
                             name={"suite[test_cases][#{test_case.id}][assertion_type_#{idx}]"}
+                            phx-hook="AssertionTypeToggle"
+                            id={"assertion-type-#{test_case.id}-#{idx}"}
+                            data-index={idx}
                             style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px; width: 110px; flex-shrink: 0;"
                           >
                             <option value="contains" selected={assertion["type"] == "contains"}>
@@ -163,32 +166,52 @@
                             ✕
                           </button>
                         </div>
-                        <%= if assertion["type"] == "json_field" do %>
-                          <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <%!-- JSON field inputs --%>
+                        <div
+                          id={"json-fields-#{idx}"}
+                          style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
+                        >
+                          <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 11px; color: var(--text-muted);">
+                              Field path (e.g., "user.name"):
+                            </label>
                             <input
                               type="text"
                               name={"suite[test_cases][#{test_case.id}][assertion_field_#{idx}]"}
                               value={assertion["field"] || ""}
-                              placeholder="Field path (e.g., invoice_number)"
-                              style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                              placeholder="invoice_number"
+                              style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
                             />
+                          </div>
+                          <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 11px; color: var(--text-muted);">
+                              Expected value:
+                            </label>
                             <input
                               type="text"
                               name={"suite[test_cases][#{test_case.id}][assertion_expected_#{idx}]"}
                               value={assertion["expected"] || ""}
-                              placeholder="Expected value"
-                              style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                              placeholder="INV-001"
+                              style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
                             />
                           </div>
-                        <% else %>
+                        </div>
+                        <%!-- Regular assertion value input --%>
+                        <div
+                          id={"value-field-#{idx}"}
+                          style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
+                        >
+                          <label style="font-size: 11px; color: var(--text-muted);">
+                            Value to match:
+                          </label>
                           <input
                             type="text"
                             name={"suite[test_cases][#{test_case.id}][assertion_value_#{idx}]"}
                             value={assertion["value"] || ""}
-                            placeholder="Value to match"
-                            style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                            placeholder="text to find"
+                            style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
                           />
-                        <% end %>
+                        </div>
                       </div>
                     <% end %>
                   <% else %>

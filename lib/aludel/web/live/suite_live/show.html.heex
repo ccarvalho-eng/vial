@@ -266,6 +266,9 @@
                             <div style="display: flex; gap: 8px; align-items: center;">
                               <select
                                 name={"assertion_type_#{idx}"}
+                                phx-hook="AssertionTypeToggle"
+                                id={"assertion-type-#{idx}"}
+                                data-index={idx}
                                 style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px; width: 110px; flex-shrink: 0;"
                               >
                                 <option

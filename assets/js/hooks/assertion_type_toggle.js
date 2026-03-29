@@ -16,11 +16,10 @@ export const AssertionTypeToggle = {
   },
 
   handleToggle(e) {
-    if (e.target.matches('select[name^="assertion_type_"]')) {
-      const idx = e.target.name.replace('assertion_type_', '')
-      const type = e.target.value
-      this.toggleFields(idx, type)
-    }
+    // Get index from data-index attribute instead of parsing name
+    const idx = this.el.getAttribute('data-index')
+    const type = this.el.value
+    this.toggleFields(idx, type)
   },
 
   toggleFields(idx, type) {
@@ -39,11 +38,11 @@ export const AssertionTypeToggle = {
   },
 
   initializeFields() {
-    // Set initial state for all assertion type selects
-    this.el.querySelectorAll('select[name^="assertion_type_"]').forEach(select => {
-      const idx = select.name.replace('assertion_type_', '')
-      const type = select.value
+    // Initialize this select's fields on mount/update
+    const idx = this.el.getAttribute('data-index')
+    const type = this.el.value
+    if (idx) {
       this.toggleFields(idx, type)
-    })
+    }
   }
 }
