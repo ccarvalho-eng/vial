@@ -8,6 +8,7 @@ defmodule Aludel.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Phoenix.PubSub, name: Aludel.PubSub},
       {Task.Supervisor, name: Aludel.TaskSupervisor}
     ]
 
