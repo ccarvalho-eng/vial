@@ -277,6 +277,11 @@ mix phx.server  # Starts asset watchers automatically
 
 ---
 
+## Community
+
+- **💬 [Discussions](https://github.com/ccarvalho-eng/aludel/discussions)** — Ask questions, share ideas, or discuss use cases
+- **🐛 [Issues](https://github.com/ccarvalho-eng/aludel/issues)** — Report bugs or request features
+
 ## Contributing
 
 1. Fork the repository

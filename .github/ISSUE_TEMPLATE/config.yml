@@ -1,1 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Ask a Question or Start a Discussion
+    url: https://github.com/ccarvalho-eng/aludel/discussions
+    about: Have questions, ideas, or want to discuss Aludel? Start a conversation in Discussions.
+  - name: 📚 Documentation
+    url: https://github.com/ccarvalho-eng/aludel#readme
+    about: Read the installation guide, usage examples, and development instructions.
