@@ -17,87 +17,87 @@
         <div class="aludel-card">
           <h2 style="margin-bottom: 16px;">Run Configuration</h2>
 
-        <div style="margin-bottom: 16px;">
-          <label for="run_name">Run Name (optional)</label>
-          <.input field={@form[:name]} type="text" placeholder="My comparison run" />
-        </div>
-
-        <%= if @variables != [] do %>
           <div style="margin-bottom: 16px;">
-            <h3 style="margin-bottom: 12px;">Variable Values</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <%= for variable <- @variables do %>
-                <div>
-                  <label
-                    for={"variable-#{variable}"}
-                    style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; display: block;"
-                  >
-                    {variable}
-                  </label>
-                  <input
-                    type="text"
-                    name={"run[variables][#{variable}]"}
-                    id={"variable-#{variable}"}
-                    required
-                    style="width: 100%; padding: 8px 12px; background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; font-size: 14px; color: var(--text-primary);"
-                    placeholder={"Enter value for {{#{variable}}}"}
-                  />
-                </div>
-              <% end %>
-            </div>
+            <label for="run_name">Run Name (optional)</label>
+            <.input field={@form[:name]} type="text" placeholder="My comparison run" />
           </div>
-        <% end %>
 
-        <div>
-          <h3 style="margin-bottom: 12px;">Select Providers</h3>
-          <%= if @providers == [] do %>
-            <div style="padding: 20px; text-align: center; color: var(--text-secondary); background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px;">
-              <div style="font-size: 14px; margin-bottom: 8px;">No providers configured</div>
-              <.link
-                navigate={aludel_path("providers/new")}
-                style="color: var(--link-color); font-size: 13px;"
-              >
-                Add your first provider →
-              </.link>
-            </div>
-          <% else %>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <%= for provider <- @providers do %>
-                <label
-                  for={"provider-#{provider.id}"}
-                  style="display: flex; align-items: center; padding: 12px; background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all 0.15s ease;"
-                  onmouseover="this.style.borderColor='var(--border-hover)'; this.style.backgroundColor='var(--bg-secondary)';"
-                  onmouseout="this.style.borderColor='var(--border)'; this.style.backgroundColor='var(--bg-tertiary)';"
-                >
-                  <input
-                    type="checkbox"
-                    name="run[provider_ids][]"
-                    value={provider.id}
-                    id={"provider-#{provider.id}"}
-                    style="margin-right: 12px; width: 16px; height: 16px;"
-                  />
+          <%= if @variables != [] do %>
+            <div style="margin-bottom: 16px;">
+              <h3 style="margin-bottom: 12px;">Variable Values</h3>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <%= for variable <- @variables do %>
                   <div>
-                    <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">
-                      {provider.name}
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">
-                      {provider.model}
-                    </div>
+                    <label
+                      for={"variable-#{variable}"}
+                      style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; display: block;"
+                    >
+                      {variable}
+                    </label>
+                    <input
+                      type="text"
+                      name={"run[variables][#{variable}]"}
+                      id={"variable-#{variable}"}
+                      required
+                      style="width: 100%; padding: 8px 12px; background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; font-size: 14px; color: var(--text-primary);"
+                      placeholder={"Enter value for {{#{variable}}}"}
+                    />
                   </div>
-                </label>
-              <% end %>
+                <% end %>
+              </div>
             </div>
           <% end %>
-        </div>
 
-        <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); justify-content: flex-end;">
-          <.link navigate={aludel_path("prompts/#{@prompt.id}")} class="button-secondary">
-            Cancel
-          </.link>
-          <button type="submit" class="button-primary" phx-disable-with="Launching...">
-            Launch Run
-          </button>
-        </div>
+          <div>
+            <h3 style="margin-bottom: 12px;">Select Providers</h3>
+            <%= if @providers == [] do %>
+              <div style="padding: 20px; text-align: center; color: var(--text-secondary); background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px;">
+                <div style="font-size: 14px; margin-bottom: 8px;">No providers configured</div>
+                <.link
+                  navigate={aludel_path("providers/new")}
+                  style="color: var(--link-color); font-size: 13px;"
+                >
+                  Add your first provider →
+                </.link>
+              </div>
+            <% else %>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <%= for provider <- @providers do %>
+                  <label
+                    for={"provider-#{provider.id}"}
+                    style="display: flex; align-items: center; padding: 12px; background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all 0.15s ease;"
+                    onmouseover="this.style.borderColor='var(--border-hover)'; this.style.backgroundColor='var(--bg-secondary)';"
+                    onmouseout="this.style.borderColor='var(--border)'; this.style.backgroundColor='var(--bg-tertiary)';"
+                  >
+                    <input
+                      type="checkbox"
+                      name="run[provider_ids][]"
+                      value={provider.id}
+                      id={"provider-#{provider.id}"}
+                      style="margin-right: 12px; width: 16px; height: 16px;"
+                    />
+                    <div>
+                      <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                        {provider.name}
+                      </div>
+                      <div style="font-size: 12px; color: var(--text-secondary);">
+                        {provider.model}
+                      </div>
+                    </div>
+                  </label>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); justify-content: flex-end;">
+            <.link navigate={aludel_path("prompts/#{@prompt.id}")} class="button-secondary">
+              Cancel
+            </.link>
+            <button type="submit" class="button-primary" phx-disable-with="Launching...">
+              Launch Run
+            </button>
+          </div>
         </div>
       </div>
     </.form>
