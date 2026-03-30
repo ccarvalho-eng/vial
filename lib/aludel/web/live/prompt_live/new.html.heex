@@ -59,15 +59,15 @@
                 </div>
               </div>
             <% end %>
-          </div>
 
-          <div style="display: flex; gap: 12px;">
-            <button type="submit" class="button-primary">
-              Create Prompt
-            </button>
-            <.link navigate={aludel_path("prompts")} class="button-secondary">
-              Cancel
-            </.link>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+              <.link navigate={aludel_path("prompts")} class="button-secondary">
+                Cancel
+              </.link>
+              <button type="submit" class="button-primary">
+                Create Prompt
+              </button>
+            </div>
           </div>
         </.form>
       </div>
@@ -130,15 +130,15 @@
                 </div>
               </div>
             <% end %>
-          </div>
 
-          <div style="display: flex; gap: 12px;">
-            <button type="submit" class="button-primary">
-              Update Prompt
-            </button>
-            <.link navigate={aludel_path("prompts/#{@prompt.id}")} class="button-secondary">
-              Cancel
-            </.link>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+              <.link navigate={aludel_path("prompts/#{@prompt.id}")} class="button-secondary">
+                Cancel
+              </.link>
+              <button type="submit" class="button-primary">
+                Update Prompt
+              </button>
+            </div>
           </div>
         </.form>
       </div>
