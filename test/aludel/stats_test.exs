@@ -29,10 +29,11 @@ defmodule Aludel.StatsTest do
       percentiles = Stats.latency_percentiles()
 
       # With 10 values [100..1000]:
-      # P50 at index 4 (0-based) = 500
-      # P95 at index 8 (0-based) = 900
+      # percentile_disc(0.5) returns 500 (50th percentile)
+      # percentile_disc(0.95) returns 1000 (95th percentile)
+      # Note: percentile_disc picks the first value at or above the percentile
       assert percentiles.p50 == 500.0
-      assert percentiles.p95 == 900.0
+      assert percentiles.p95 == 1000.0
     end
 
     test "returns zero when no latency data" do

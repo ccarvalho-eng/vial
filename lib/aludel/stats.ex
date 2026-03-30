@@ -75,30 +75,36 @@ defmodule Aludel.Stats do
 
   @doc """
   Returns latency percentiles (P50, P95) in milliseconds.
+  Uses Postgres percentile_disc function for efficient calculation without loading all rows.
   """
   @spec latency_percentiles() :: %{p50: number(), p95: number()}
   def latency_percentiles do
-    latencies =
+    result =
       from(rr in RunResult,
         where: not is_nil(rr.latency_ms),
-        select: rr.latency_ms,
-        order_by: [asc: rr.latency_ms]
+        select: %{
+          p50:
+            fragment(
+              "percentile_disc(0.5) WITHIN GROUP (ORDER BY ?)",
+              rr.latency_ms
+            ),
+          p95:
+            fragment(
+              "percentile_disc(0.95) WITHIN GROUP (ORDER BY ?)",
+              rr.latency_ms
+            )
+        }
       )
-      |> repo().all()
-      |> Enum.map(&to_float/1)
+      |> repo().one()
 
-    case latencies do
-      [] ->
+    case result do
+      nil ->
         %{p50: 0, p95: 0}
 
-      latencies ->
-        count = length(latencies)
-        p50_idx = max(0, trunc(count * 0.5) - 1)
-        p95_idx = max(0, trunc(count * 0.95) - 1)
-
+      %{p50: p50, p95: p95} ->
         %{
-          p50: Enum.at(latencies, p50_idx) |> Float.round(0),
-          p95: Enum.at(latencies, p95_idx) |> Float.round(0)
+          p50: to_float(p50) |> Float.round(0),
+          p95: to_float(p95) |> Float.round(0)
         }
     end
   end

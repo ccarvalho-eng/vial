@@ -110,7 +110,7 @@ defmodule Aludel.Web.DashboardLiveTest do
 
     # Latency tooltip
     assert html =~ "Per run"
-    assert html =~ "P50 = median"
+    assert html =~ "P50 = 50th percentile"
 
     # Total Cost tooltip
     assert html =~ "Combined costs across all prompt runs and suite runs"

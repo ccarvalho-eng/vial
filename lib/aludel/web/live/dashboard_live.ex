@@ -34,7 +34,8 @@ defmodule Aludel.Web.DashboardLive do
     avg_latency = Stats.avg_latency()
     latency_percentiles = Stats.latency_percentiles()
     total_cost = Runs.total_cost()
-    cost_per_run = Stats.cost_per_run()
+    # Calculate cost_per_run here to avoid redundant DB queries
+    cost_per_run = if total_runs > 0, do: total_cost / total_runs, else: 0.0
     trends = Stats.comparison_stats(7)
 
     # Breakdown stats
