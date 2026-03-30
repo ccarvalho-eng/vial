@@ -8,6 +8,7 @@ defmodule Aludel.Interfaces.LLM.Config do
   @doc """
   Returns the configured HTTP adapter for making LLM API calls.
   """
+  @spec http_adapter() :: module()
   def http_adapter do
     Application.get_env(:aludel, :http_client, Http.Default)
   end
@@ -17,6 +18,7 @@ defmodule Aludel.Interfaces.LLM.Config do
 
   Returns `{:ok, key}` if valid, `{:error, :missing_api_key}` otherwise.
   """
+  @spec get_api_key(map()) :: {:ok, String.t()} | {:error, :missing_api_key}
   def get_api_key(%{"api_key" => key}) when is_binary(key) and key != "",
     do: {:ok, key}
 
