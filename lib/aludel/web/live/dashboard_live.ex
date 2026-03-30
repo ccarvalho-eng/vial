@@ -12,6 +12,12 @@ defmodule Aludel.Web.DashboardLive do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, false)
+      |> assign(:show_latency_breakdown, false)
+      |> assign(:show_activity_chart, false)
+
     {:ok, socket}
   end
 
@@ -61,6 +67,19 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:last_run_at, last_run_at)
 
     {:noreply, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle_cost_breakdown", _params, socket) do
+    {:noreply, assign(socket, :show_cost_breakdown, !socket.assigns.show_cost_breakdown)}
+  end
+
+  def handle_event("toggle_latency_breakdown", _params, socket) do
+    {:noreply, assign(socket, :show_latency_breakdown, !socket.assigns.show_latency_breakdown)}
+  end
+
+  def handle_event("toggle_activity_chart", _params, socket) do
+    {:noreply, assign(socket, :show_activity_chart, !socket.assigns.show_activity_chart)}
   end
 
   defp sort_by_pass_rate(pass_rates) do
