@@ -29,14 +29,19 @@ defmodule Aludel.Web.PromptLive.New do
       |> Map.get("template", "")
       |> Prompts.extract_variables()
 
+    # Store tags string separately, don't include in changeset
+    tags_string = Map.get(prompt_params, "tags", "")
+
     changeset =
       socket.assigns.prompt
-      |> Prompts.change_prompt(prompt_params)
+      |> Ecto.Changeset.cast(Map.delete(prompt_params, "tags"), [:name, :description, :project_id])
+      |> Ecto.Changeset.validate_required([:name])
       |> Map.put(:action, :validate)
 
     {:noreply,
      socket
      |> assign(:form, to_form(changeset))
+     |> assign(:tags_input, tags_string)
      |> assign(:variables, variables)}
   end
 
@@ -57,6 +62,7 @@ defmodule Aludel.Web.PromptLive.New do
     |> assign(:page_title, "New Prompt")
     |> assign(:prompt, prompt)
     |> assign(:form, to_form(changeset))
+    |> assign(:tags_input, "")
     |> assign(:variables, [])
     |> assign(:projects, projects)
   end
@@ -68,16 +74,17 @@ defmodule Aludel.Web.PromptLive.New do
     latest_version = List.first(prompt.versions)
     latest_template = if latest_version, do: latest_version.template, else: ""
 
-    # Convert tags array to comma-separated string for form display
+    # Don't include tags in changeset - handle separately
     form_data = %{
       "name" => prompt.name,
       "description" => prompt.description,
-      "tags" => Enum.join(prompt.tags, ", "),
-      "template" => latest_template,
       "project_id" => prompt.project_id
     }
 
-    changeset = Prompts.change_prompt(prompt, form_data)
+    changeset =
+      prompt
+      |> Ecto.Changeset.cast(form_data, [:name, :description, :project_id])
+      |> Ecto.Changeset.validate_required([:name])
 
     # Extract variables from latest template
     variables = Prompts.extract_variables(latest_template)
@@ -87,6 +94,7 @@ defmodule Aludel.Web.PromptLive.New do
     |> assign(:page_title, "Edit Prompt")
     |> assign(:prompt, prompt)
     |> assign(:form, to_form(changeset))
+    |> assign(:tags_input, Enum.join(prompt.tags, ", "))
     |> assign(:variables, variables)
     |> assign(:projects, projects)
   end

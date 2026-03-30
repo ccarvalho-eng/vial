@@ -17,6 +17,44 @@ defmodule Aludel.PromptsTest do
       assert prompt.tags == ["test", "sample"]
     end
 
+    test "create_prompt/1 normalizes comma-separated tags string" do
+      attrs = %{
+        "name" => "Test Prompt",
+        "tags" => "elixir, phoenix, testing"
+      }
+
+      assert {:ok, prompt} = Prompts.create_prompt(attrs)
+      assert prompt.tags == ["elixir", "phoenix", "testing"]
+    end
+
+    test "create_prompt/1 trims whitespace from tags" do
+      attrs = %{
+        "name" => "Test Prompt",
+        "tags" => "  elixir  ,  phoenix  ,  testing  "
+      }
+
+      assert {:ok, prompt} = Prompts.create_prompt(attrs)
+      assert prompt.tags == ["elixir", "phoenix", "testing"]
+    end
+
+    test "create_prompt/1 rejects empty tags" do
+      attrs = %{
+        "name" => "Test Prompt",
+        "tags" => "elixir, , phoenix, , testing"
+      }
+
+      assert {:ok, prompt} = Prompts.create_prompt(attrs)
+      assert prompt.tags == ["elixir", "phoenix", "testing"]
+    end
+
+    test "update_prompt/2 normalizes comma-separated tags string" do
+      prompt = prompt_fixture()
+
+      attrs = %{"tags" => "updated, tags, list"}
+      assert {:ok, updated} = Prompts.update_prompt(prompt, attrs)
+      assert updated.tags == ["updated", "tags", "list"]
+    end
+
     test "create_prompt/1 requires name" do
       attrs = %{description: "Test"}
 
