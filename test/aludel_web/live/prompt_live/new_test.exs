@@ -18,20 +18,26 @@ defmodule Aludel.Web.PromptLive.NewTest do
     test "creates new prompt with valid data", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/prompts/new")
 
+      # Send tags directly as comma-separated string - bypasses TagInput hook
       result =
         view
-        |> form("#prompt-form",
+        |> element("#prompt-form")
+        |> render_submit(%{
           prompt: %{
             name: "Test Prompt",
             description: "Test description",
             tags: "elixir, test",
             template: "Hello {{name}}, welcome to {{topic}}"
           }
-        )
-        |> render_submit()
+        })
 
       assert {:error, {:live_redirect, %{to: path}}} = result
       assert path =~ "/prompts/"
+
+      # Verify tags were saved
+      prompt_id = path |> String.split("/") |> List.last()
+      created_prompt = Aludel.Prompts.get_prompt!(prompt_id)
+      assert created_prompt.tags == ["elixir", "test"]
     end
 
     test "shows validation errors", %{conn: conn} do
@@ -77,22 +83,27 @@ defmodule Aludel.Web.PromptLive.NewTest do
     end
 
     test "updates prompt and creates new version", %{conn: conn} do
-      prompt = prompt_fixture(%{name: "Original"})
+      prompt = prompt_fixture(%{name: "Original", tags: ["old"]})
 
       {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}/edit")
 
       result =
         view
-        |> form("#prompt-form",
+        |> element("#prompt-form")
+        |> render_submit(%{
           prompt: %{
             name: "Updated",
+            tags: "new, updated",
             template: "New template with {{var}}"
           }
-        )
-        |> render_submit()
+        })
 
       assert {:error, {:live_redirect, %{to: path}}} = result
       assert path == "/prompts/#{prompt.id}"
+
+      # Verify tags were updated
+      updated_prompt = Aludel.Prompts.get_prompt!(prompt.id)
+      assert updated_prompt.tags == ["new", "updated"]
     end
 
     test "shows validation errors on edit", %{conn: conn} do
