@@ -9,7 +9,7 @@ defmodule Aludel.Interfaces.LLM.Providers.Ollama do
   as api_key to ReqLLM.
   """
 
-  alias Aludel.Interfaces.LLM.{ErrorParser, Utils}
+  alias Aludel.Interfaces.LLM.{Config, ErrorParser}
 
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
@@ -23,7 +23,7 @@ defmodule Aludel.Interfaces.LLM.Providers.Ollama do
 
     model_spec = "openai:#{model}"
 
-    case Utils.http_client().request(model_spec, prompt, req_opts) do
+    case Config.http_adapter().request(model_spec, prompt, req_opts) do
       {:ok, response} ->
         {:ok, response}
 

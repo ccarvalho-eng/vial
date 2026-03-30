@@ -1,17 +1,15 @@
-defmodule Aludel.Interfaces.LLM.Utils do
+defmodule Aludel.Interfaces.LLM.Config do
   @moduledoc """
-  Shared utilities for LLM provider implementations.
+  Configuration utilities for LLM provider implementations.
   """
 
+  alias Aludel.Interfaces.LLM.Adapters.Http
+
   @doc """
-  Returns the configured HTTP client for making LLM API calls.
+  Returns the configured HTTP adapter for making LLM API calls.
   """
-  def http_client do
-    Application.get_env(
-      :aludel,
-      :http_client,
-      Aludel.Interfaces.LLM.Adapters.Http.Default
-    )
+  def http_adapter do
+    Application.get_env(:aludel, :http_client, Http.Default)
   end
 
   @doc """

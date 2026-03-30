@@ -5,27 +5,31 @@ This directory contains the LLM abstraction layer, providing clean separation be
 ## Architecture Overview
 
 ```
-┌──────────────────┐
-│   Aludel.LLM     │  Main API
-└────────┬─────────┘
-         │
-         ▼
-┌────────────────────────────┐
-│  Provider Implementations  │  Business logic (API keys)
-│  - OpenAI                  │  Uses: ErrorParser, HTTP behaviour
-│  - Anthropic               │
-│  - Ollama                  │
-└────┬───────────────────┬───┘
-     │                   │
-     │                   └──────────┐
-     │                              │
-     ▼                              ▼
-┌──────────────┐    ┌─────────────────────────────┐
-│ ErrorParser  │    │  HTTP Client Adapter        │  Transport + telemetry
-└──────────────┘    │  - ReqLLM (default)         │
-                    │  - HTTPoison (example)      │
-                    │  - Mock (for tests)         │
-                    └─────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                     Aludel.LLM                          │  Public API
+│               (calculates cost, latency)                │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+         ┌───────────────────────────────┐
+         │  LLM.Providers (via Config)   │
+         │  - OpenAI                     │  Business logic
+         │  - Anthropic                  │  (auth, validation)
+         │  - Ollama                     │
+         └──┬──────────────────────────┬─┘
+            │                          │
+   ┌────────┴────────┐        ┌────────┴────────────────────┐
+   │                 │        │                             │
+   ▼                 ▼        ▼                             ▼
+┌──────────┐  ┌──────────┐  ┌─────────────────────────────────┐
+│  Config  │  │  Error   │  │  Adapters.Http (behaviour)      │
+│          │  │  Parser  │  │  ┌───────────────────────────┐  │
+│ - http_  │  │          │  │  │ LLM.Adapters.Http.Default │  │  Transport
+│   adapter│  │ - parse_ │  │  │ (ReqLLM + telemetry)      │  │  layer
+│ - get_   │  │   error  │  │  └───────────────────────────┘  │
+│   api_key│  │          │  │  - HTTPoison (swappable)        │
+└──────────┘  └──────────┘  │  - Mock (tests)                 │
+                            └─────────────────────────────────┘
 ```
 
 ## Configuration
@@ -85,16 +89,16 @@ To add a new LLM provider (e.g., Google Gemini):
 
 ```elixir
 defmodule Aludel.Interfaces.LLM.Providers.Gemini do
-  alias Aludel.Interfaces.LLM.{ErrorParser, Utils}
+  alias Aludel.Interfaces.LLM.{Config, ErrorParser}
 
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
   @impl true
   def generate(model, prompt, config, _opts) do
-    with {:ok, api_key} <- Utils.get_api_key(config) do
+    with {:ok, api_key} <- Config.get_api_key(config) do
       opts = [api_key: api_key, temperature: config["temperature"] || 0.7]
 
-      case Utils.http_client().request("gemini:#{model}", prompt, opts) do
+      case Config.http_adapter().request("gemini:#{model}", prompt, opts) do
         {:ok, response} -> {:ok, response}
         {:error, reason} -> ErrorParser.parse_error(reason)
       end
@@ -121,7 +125,7 @@ defp get_adapter(:gemini), do: Aludel.Interfaces.LLM.Providers.Gemini
 
 - **HTTP Layer** (`llm/adapters/http/`): Transport + normalization + telemetry
 - **Provider Layer** (`llm/*.ex`): Business logic (auth, validation)
-- **Shared Utilities** (`llm/utils.ex`, `llm/error_parser.ex`): DRY helpers
+- **Shared Utilities** (`llm/config.ex`, `llm/error_parser.ex`): DRY helpers
 
 ### 3. **No Type Leakage**
 
@@ -131,7 +135,7 @@ defp get_adapter(:gemini), do: Aludel.Interfaces.LLM.Providers.Gemini
 
 ### 4. **Dependency Injection**
 
-- HTTP client via `Utils.http_client/0`
+- HTTP adapter via `Config.http_adapter/0`
 - Mockable for testing
 - Configurable per environment
 
@@ -164,7 +168,7 @@ lib/aludel/interfaces/
     │   └── ollama.ex       # Ollama provider
     │
     ├── behaviour.ex        # LLM provider behaviour
-    ├── utils.ex            # Shared utilities (http_client, get_api_key)
+    ├── config.ex           # Config utilities (http_adapter, get_api_key)
     └── error_parser.ex     # Shared error parsing
 ```
 

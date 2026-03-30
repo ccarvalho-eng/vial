@@ -26,6 +26,7 @@ defmodule Aludel.LLM do
         }
 
   alias Aludel.Providers.Provider
+  alias Aludel.Interfaces.LLM.Providers.{Anthropic, OpenAI, Ollama}
 
   @type error_reason ::
           :missing_api_key
@@ -70,10 +71,10 @@ defmodule Aludel.LLM do
   def call(%Provider{} = provider, prompt, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
-    adapter = get_adapter(provider.provider)
+    provider_module = get_provider(provider.provider)
     config = build_config(provider)
 
-    result = adapter.generate(provider.model, prompt, config, opts)
+    result = provider_module.generate(provider.model, prompt, config, opts)
 
     case result do
       {:ok, response} ->
@@ -93,9 +94,9 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp get_adapter(:openai), do: Aludel.Interfaces.LLM.Providers.OpenAI
-  defp get_adapter(:anthropic), do: Aludel.Interfaces.LLM.Providers.Anthropic
-  defp get_adapter(:ollama), do: Aludel.Interfaces.LLM.Providers.Ollama
+  defp get_provider(:openai), do: OpenAI
+  defp get_provider(:anthropic), do: Anthropic
+  defp get_provider(:ollama), do: Ollama
 
   defp build_config(provider) do
     base_config = provider.config || %{}
