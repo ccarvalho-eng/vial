@@ -47,7 +47,7 @@
         </div>
       </div>
     <% else %>
-      <div class="aludel-card" style="margin-bottom: 24px; position: relative;">
+      <div class="aludel-card" style="margin-bottom: 24px;">
         <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
           <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Evolution Trends</h2>
           <button
@@ -101,18 +101,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <%!-- View Breakdown button in bottom right of card --%>
-        <div style="position: absolute; bottom: 16px; right: 16px;">
-          <button
-            phx-click="toggle_breakdown_sidebar"
-            class="button-secondary"
-            style="padding: 10px 16px; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);"
-          >
-            <.icon name="hero-table-cells" class="size-4" />
-            <span>View Breakdown</span>
-          </button>
         </div>
       </div>
 
