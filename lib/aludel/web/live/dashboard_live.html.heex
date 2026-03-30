@@ -255,15 +255,11 @@
               <tr style="border-bottom: 1px solid var(--border);">
                 <td style="padding: 10px 16px;">
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <%= if icon_path = provider_icon(provider.provider_name) do %>
+                    <%= if icon_path = provider_icon(provider.provider) do %>
                       <img
                         src={icon_path}
                         alt={provider.provider_name}
-                        class={
-                          if String.contains?(String.downcase(provider.provider_name), "ollama"),
-                            do: "provider-icon-ollama",
-                            else: ""
-                        }
+                        class={if provider.provider == :ollama, do: "provider-icon-ollama", else: ""}
                         style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 3px;"
                       />
                     <% else %>
@@ -337,16 +333,11 @@
                 <tr style="border-bottom: 1px solid var(--border);">
                   <td style="padding: 10px 16px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <%= if icon_path = provider_icon(provider.provider_name) do %>
+                      <%= if icon_path = provider_icon(provider.provider) do %>
                         <img
                           src={icon_path}
                           alt={provider.provider_name}
-                          class={
-                            if String.contains?(
-                                 String.downcase(provider.provider_name),
-                                 "ollama"
-                               ), do: "provider-icon-ollama", else: ""
-                          }
+                          class={if provider.provider == :ollama, do: "provider-icon-ollama", else: ""}
                           style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 3px;"
                         />
                       <% else %>

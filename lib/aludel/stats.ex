@@ -148,10 +148,11 @@ defmodule Aludel.Stats do
       from(rr in RunResult,
         join: p in assoc(rr, :provider),
         where: not is_nil(rr.cost_usd),
-        group_by: [p.id, p.name],
+        group_by: [p.id, p.name, p.provider],
         select: %{
           provider_id: p.id,
           provider_name: p.name,
+          provider: p.provider,
           total_cost: sum(rr.cost_usd),
           run_count: count(rr.id)
         }
@@ -163,10 +164,11 @@ defmodule Aludel.Stats do
       from(sr in SuiteRun,
         join: p in assoc(sr, :provider),
         where: not is_nil(sr.avg_cost_usd),
-        group_by: [p.id, p.name],
+        group_by: [p.id, p.name, p.provider],
         select: %{
           provider_id: p.id,
           provider_name: p.name,
+          provider: p.provider,
           total_cost: sum(sr.avg_cost_usd),
           run_count: count(sr.id)
         }
@@ -190,9 +192,11 @@ defmodule Aludel.Stats do
         end)
 
       run_count = Enum.sum(Enum.map(entries, & &1.run_count))
+      first_entry = List.first(entries)
 
       %{
-        provider_name: List.first(entries).provider_name,
+        provider_name: first_entry.provider_name,
+        provider: first_entry.provider,
         total_cost: Decimal.to_float(total_cost),
         run_count: run_count,
         avg_cost: Decimal.to_float(Decimal.div(total_cost, run_count))
@@ -275,9 +279,10 @@ defmodule Aludel.Stats do
     from(rr in RunResult,
       join: p in assoc(rr, :provider),
       where: not is_nil(rr.latency_ms),
-      group_by: [p.id, p.name],
+      group_by: [p.id, p.name, p.provider],
       select: %{
         provider_name: p.name,
+        provider: p.provider,
         avg_latency: avg(rr.latency_ms),
         min_latency: min(rr.latency_ms),
         max_latency: max(rr.latency_ms),
@@ -288,6 +293,7 @@ defmodule Aludel.Stats do
     |> Enum.map(fn row ->
       %{
         provider_name: row.provider_name,
+        provider: row.provider,
         avg_latency: to_float(row.avg_latency),
         min_latency: to_float(row.min_latency),
         max_latency: to_float(row.max_latency),
