@@ -1,11 +1,46 @@
 defmodule Aludel.LLM.VisionTest do
   use Aludel.DataCase, async: true
 
+  import Mox
+
   alias Aludel.LLM
 
+  setup :verify_on_exit!
+
+  defp build_mock_response(text, input_tokens, output_tokens) do
+    %ReqLLM.Response{
+      id: "test-id",
+      model: "test-model",
+      context: [
+        %{role: "user", content: "test"},
+        %{role: "assistant", content: [%{type: "text", text: text}]}
+      ],
+      message: %ReqLLM.Message{
+        role: :assistant,
+        content: [%{type: :text, text: text}]
+      },
+      finish_reason: :stop,
+      usage: %{
+        input_tokens: input_tokens,
+        output_tokens: output_tokens,
+        total_tokens: input_tokens + output_tokens
+      },
+      error: nil,
+      object: nil,
+      provider_meta: %{},
+      stream: nil,
+      stream?: false
+    }
+  end
+
   describe "call/3 with OpenAI vision models" do
-    @tag :openai_integration
     test "processes image with gpt-4o" do
+      mock_response = build_mock_response("The image is red", 100, 20)
+
+      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -32,8 +67,13 @@ defmodule Aludel.LLM.VisionTest do
       assert result.cost_usd > 0
     end
 
-    @tag :openai_integration
     test "processes multiple images" do
+      mock_response = build_mock_response("Both images are different colors", 150, 25)
+
+      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -65,8 +105,11 @@ defmodule Aludel.LLM.VisionTest do
       assert result.output_tokens > 0
     end
 
-    @tag :openai_integration
     test "returns error when non-vision model used with documents" do
+      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+        {:error, %{status: 400}}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -81,14 +124,18 @@ defmodule Aludel.LLM.VisionTest do
 
       document = %{data: image_data, content_type: "image/png"}
 
-      result =
-        LLM.call(provider, "Describe this image", documents: [document])
+      result = LLM.call(provider, "Describe this image", documents: [document])
 
-      assert match?({:error, {:invalid_request, _}}, result) or
-               match?({:error, {:api_error, _, _}}, result)
+      assert {:error, {:invalid_request, _}} = result
     end
 
     test "works without documents for text-only prompts" do
+      mock_response = build_mock_response("Hello!", 5, 2)
+
+      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -98,13 +145,18 @@ defmodule Aludel.LLM.VisionTest do
 
       result = LLM.call(provider, "Say hello")
 
-      assert match?({:ok, _}, result) or match?({:error, _}, result)
+      assert {:ok, _} = result
     end
   end
 
   describe "Anthropic vision" do
-    @tag :anthropic_integration
     test "processes image with claude-3-5-sonnet" do
+      mock_response = build_mock_response("This is a red pixel image", 120, 18)
+
+      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -131,8 +183,13 @@ defmodule Aludel.LLM.VisionTest do
       assert result.cost_usd > 0
     end
 
-    @tag :anthropic_integration
     test "processes multiple images" do
+      mock_response = build_mock_response("Different colored pixels", 140, 22)
+
+      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -165,6 +222,12 @@ defmodule Aludel.LLM.VisionTest do
     end
 
     test "works without documents for text-only prompts" do
+      mock_response = build_mock_response("Hello there!", 6, 3)
+
+      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -174,7 +237,7 @@ defmodule Aludel.LLM.VisionTest do
 
       result = LLM.call(provider, "Say hello")
 
-      assert match?({:ok, _}, result) or match?({:error, _}, result)
+      assert {:ok, _} = result
     end
   end
 end

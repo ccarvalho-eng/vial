@@ -1,8 +1,13 @@
 defmodule Aludel.EvalsTest do
-  use Aludel.DataCase, async: true
+  use Aludel.DataCase
+
+  import Mox
 
   alias Aludel.Evals
   alias Aludel.Evals.SuiteRun
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   describe "suites" do
     test "create_suite/1 creates a suite with valid attributes" do

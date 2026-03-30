@@ -1,10 +1,15 @@
 defmodule Aludel.RunsTest do
   use Aludel.DataCase
 
+  import Mox
+
   alias Aludel.Runs
 
   import Aludel.PromptsFixtures
   import Aludel.ProvidersFixtures
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   describe "runs" do
     alias Aludel.Runs.Run

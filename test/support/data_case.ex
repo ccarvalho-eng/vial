@@ -34,6 +34,7 @@ defmodule Aludel.DataCase do
 
   setup tags do
     Aludel.DataCase.setup_sandbox(tags)
+    Aludel.DataCase.setup_mox_stub()
     :ok
   end
 
@@ -43,6 +44,39 @@ defmodule Aludel.DataCase do
   def setup_sandbox(tags) do
     pid = Sandbox.start_owner!(Aludel.Test.Repo, shared: not tags[:async])
     on_exit(fn -> Sandbox.stop_owner(pid) end)
+  end
+
+  @doc """
+  Sets up default Mox stub for LLM calls.
+  This provides a fallback response for tests that don't set explicit expectations.
+  """
+  def setup_mox_stub do
+    Mox.stub(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      {:ok,
+       %ReqLLM.Response{
+         id: "test-id",
+         model: "test-model",
+         context: [
+           %{role: "user", content: "test"},
+           %{role: "assistant", content: [%{type: "text", text: "Test response"}]}
+         ],
+         message: %ReqLLM.Message{
+           role: :assistant,
+           content: [%{type: :text, text: "Test response"}]
+         },
+         finish_reason: :stop,
+         usage: %{
+           input_tokens: 10,
+           output_tokens: 5,
+           total_tokens: 15
+         },
+         error: nil,
+         object: nil,
+         provider_meta: %{},
+         stream: nil,
+         stream?: false
+       }}
+    end)
   end
 
   @doc """

@@ -15,6 +15,6 @@ defmodule Aludel.LLM.ReqLLMClient do
   end
 
   defp impl do
-    Application.get_env(:aludel, :req_llm_client, Aludel.LLM.ReqLLMClient.Real)
+    Application.get_env(:aludel, :req_llm_client, Aludel.LLM.ReqLLMClient.Live)
   end
 end

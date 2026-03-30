@@ -1,6 +1,6 @@
-defmodule Aludel.LLM.ReqLLMClient.Real do
+defmodule Aludel.LLM.ReqLLMClient.Live do
   @moduledoc """
-  Production implementation that calls real ReqLLM.
+  Live implementation that delegates to ReqLLM for actual API calls.
   """
 
   @behaviour Aludel.LLM.ReqLLMClient
