@@ -18,6 +18,7 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:cost_view, :provider)
       |> assign(:show_latency_breakdown, false)
       |> assign(:show_activity_chart, true)
+      |> assign(:show_pass_rates, false)
 
     {:ok, socket}
   end
@@ -111,6 +112,19 @@ defmodule Aludel.Web.DashboardLive do
   def handle_event("toggle_cost_view", _params, socket) do
     new_view = if socket.assigns.cost_view == :provider, do: :prompt, else: :provider
     {:noreply, assign(socket, :cost_view, new_view)}
+  end
+
+  def handle_event("toggle_pass_rates", _params, socket) do
+    new_value = !socket.assigns.show_pass_rates
+
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, false)
+      |> assign(:show_latency_breakdown, false)
+      |> assign(:show_activity_chart, false)
+      |> assign(:show_pass_rates, new_value)
+
+    {:noreply, socket}
   end
 
   defp sort_by_pass_rate(pass_rates) do

@@ -32,7 +32,7 @@ defmodule Aludel.Web.DashboardLiveTest do
     assert render(view) =~ "0.05"
   end
 
-  test "shows pass rates per prompt", %{conn: conn} do
+  test "shows pass rates per prompt when toggled", %{conn: conn} do
     prompt = prompt_fixture(%{name: "Test Prompt"})
     {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Template")
 
@@ -45,7 +45,14 @@ defmodule Aludel.Web.DashboardLiveTest do
 
     {:ok, view, _html} = live(conn, "/")
 
-    assert has_element?(view, "#pass-rates")
+    # Pass rates should be hidden by default
+    refute has_element?(view, "h3", "Pass Rates by Prompt")
+
+    # Toggle to show pass rates
+    view |> element("button", "View by prompt") |> render_click()
+
+    # Now pass rates should be visible
+    assert has_element?(view, "h3", "Pass Rates by Prompt")
     assert render(view) =~ "Test Prompt"
   end
 
