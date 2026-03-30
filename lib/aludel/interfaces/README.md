@@ -81,20 +81,20 @@ config :aludel,
 
 To add a new LLM provider (e.g., Google Gemini):
 
-1. **Create implementation** in `lib/aludel/interfaces/llm/gemini.ex`:
+1. **Create implementation** in `lib/aludel/interfaces/llm/providers/gemini.ex`:
 
 ```elixir
-defmodule Aludel.Interfaces.LLM.Gemini do
-  alias Aludel.Interfaces.LLM.{ErrorParser, Provider}
+defmodule Aludel.Interfaces.LLM.Providers.Gemini do
+  alias Aludel.Interfaces.LLM.{ErrorParser, Utils}
 
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
   @impl true
   def generate(model, prompt, config, _opts) do
-    with {:ok, api_key} <- Provider.get_api_key(config) do
+    with {:ok, api_key} <- Utils.get_api_key(config) do
       opts = [api_key: api_key, temperature: config["temperature"] || 0.7]
 
-      case Provider.http_client().request("gemini:#{model}", prompt, opts) do
+      case Utils.http_client().request("gemini:#{model}", prompt, opts) do
         {:ok, response} -> {:ok, response}
         {:error, reason} -> ErrorParser.parse_error(reason)
       end
@@ -106,7 +106,7 @@ end
 2. **Register in main LLM module** (`lib/aludel/llm.ex`):
 
 ```elixir
-defp get_adapter(:gemini), do: Aludel.Interfaces.LLM.Gemini
+defp get_adapter(:gemini), do: Aludel.Interfaces.LLM.Providers.Gemini
 ```
 
 ## Key Design Principles
@@ -121,7 +121,7 @@ defp get_adapter(:gemini), do: Aludel.Interfaces.LLM.Gemini
 
 - **HTTP Layer** (`llm/adapters/http/`): Transport + normalization + telemetry
 - **Provider Layer** (`llm/*.ex`): Business logic (auth, validation)
-- **Shared Utilities** (`llm/provider.ex`, `llm/error_parser.ex`): DRY helpers
+- **Shared Utilities** (`llm/utils.ex`, `llm/error_parser.ex`): DRY helpers
 
 ### 3. **No Type Leakage**
 
@@ -131,7 +131,7 @@ defp get_adapter(:gemini), do: Aludel.Interfaces.LLM.Gemini
 
 ### 4. **Dependency Injection**
 
-- HTTP client via `Provider.http_client/0`
+- HTTP client via `Utils.http_client/0`
 - Mockable for testing
 - Configurable per environment
 
@@ -158,12 +158,14 @@ lib/aludel/interfaces/
     ├── adapters/http/
     │   └── default.ex      # Default HTTP client (ReqLLM + telemetry)
     │
+    ├── providers/
+    │   ├── openai.ex       # OpenAI provider
+    │   ├── anthropic.ex    # Anthropic provider
+    │   └── ollama.ex       # Ollama provider
+    │
     ├── behaviour.ex        # LLM provider behaviour
-    ├── provider.ex         # Shared provider utilities
-    ├── error_parser.ex     # Shared error parsing logic
-    ├── openai.ex           # OpenAI provider
-    ├── anthropic.ex        # Anthropic provider
-    └── ollama.ex           # Ollama provider
+    ├── utils.ex            # Shared utilities (http_client, get_api_key)
+    └── error_parser.ex     # Shared error parsing
 ```
 
 ## Testing

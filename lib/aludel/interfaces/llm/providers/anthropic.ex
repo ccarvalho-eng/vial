@@ -1,4 +1,4 @@
-defmodule Aludel.Interfaces.LLM.Anthropic do
+defmodule Aludel.Interfaces.LLM.Providers.Anthropic do
   @moduledoc """
   Anthropic Claude API adapter implementation.
 
@@ -6,13 +6,13 @@ defmodule Aludel.Interfaces.LLM.Anthropic do
   configured HTTP adapter.
   """
 
-  alias Aludel.Interfaces.LLM.{ErrorParser, Provider}
+  alias Aludel.Interfaces.LLM.{ErrorParser, Utils}
 
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
   @impl true
   def generate(model, prompt, config, _opts) do
-    with {:ok, api_key} <- Provider.get_api_key(config) do
+    with {:ok, api_key} <- Utils.get_api_key(config) do
       req_opts = [
         api_key: api_key,
         temperature: config["temperature"] || 0.5,
@@ -21,7 +21,7 @@ defmodule Aludel.Interfaces.LLM.Anthropic do
 
       model_spec = "anthropic:#{model}"
 
-      case Provider.http_client().request(model_spec, prompt, req_opts) do
+      case Utils.http_client().request(model_spec, prompt, req_opts) do
         {:ok, response} ->
           {:ok, response}
 

@@ -1,4 +1,4 @@
-defmodule Aludel.Interfaces.LLM.Ollama do
+defmodule Aludel.Interfaces.LLM.Providers.Ollama do
   @moduledoc """
   Ollama API adapter implementation.
 
@@ -9,7 +9,7 @@ defmodule Aludel.Interfaces.LLM.Ollama do
   as api_key to ReqLLM.
   """
 
-  alias Aludel.Interfaces.LLM.{ErrorParser, Provider}
+  alias Aludel.Interfaces.LLM.{ErrorParser, Utils}
 
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
@@ -23,7 +23,7 @@ defmodule Aludel.Interfaces.LLM.Ollama do
 
     model_spec = "openai:#{model}"
 
-    case Provider.http_client().request(model_spec, prompt, req_opts) do
+    case Utils.http_client().request(model_spec, prompt, req_opts) do
       {:ok, response} ->
         {:ok, response}
 

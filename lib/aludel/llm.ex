@@ -93,9 +93,9 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp get_adapter(:openai), do: Aludel.Interfaces.LLM.OpenAI
-  defp get_adapter(:anthropic), do: Aludel.Interfaces.LLM.Anthropic
-  defp get_adapter(:ollama), do: Aludel.Interfaces.LLM.Ollama
+  defp get_adapter(:openai), do: Aludel.Interfaces.LLM.Providers.OpenAI
+  defp get_adapter(:anthropic), do: Aludel.Interfaces.LLM.Providers.Anthropic
+  defp get_adapter(:ollama), do: Aludel.Interfaces.LLM.Providers.Ollama
 
   defp build_config(provider) do
     base_config = provider.config || %{}

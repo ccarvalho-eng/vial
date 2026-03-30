@@ -1,4 +1,4 @@
-defmodule Aludel.Interfaces.LLM.Provider do
+defmodule Aludel.Interfaces.LLM.Utils do
   @moduledoc """
   Shared utilities for LLM provider implementations.
   """
