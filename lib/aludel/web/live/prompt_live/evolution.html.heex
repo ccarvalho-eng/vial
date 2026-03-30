@@ -204,6 +204,7 @@
     <%= if not Enum.empty?(@metrics) do %>
       <button
         phx-click="toggle_breakdown_sidebar"
+        title="View detailed metrics breakdown by version and provider"
         style="position: fixed; bottom: 32px; right: 32px; background-color: var(--accent); color: white; border: none; border-radius: 50%; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.2s ease; z-index: 40;"
         onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 16px rgba(0, 0, 0, 0.2)'"
         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.15)'"
