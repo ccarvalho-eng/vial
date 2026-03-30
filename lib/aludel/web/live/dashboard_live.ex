@@ -12,6 +12,13 @@ defmodule Aludel.Web.DashboardLive do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, false)
+      |> assign(:cost_view, :provider)
+      |> assign(:show_latency_breakdown, false)
+      |> assign(:show_activity_chart, true)
+
     {:ok, socket}
   end
 
@@ -25,7 +32,17 @@ defmodule Aludel.Web.DashboardLive do
     {total_passed, total_failed} = Stats.test_totals()
     success_rate = Stats.success_rate(total_passed, total_failed)
     avg_latency = Stats.avg_latency()
+    latency_percentiles = Stats.latency_percentiles()
     total_cost = Runs.total_cost()
+    # Calculate cost_per_run here to avoid redundant DB queries
+    cost_per_run = if total_runs > 0, do: total_cost / total_runs, else: 0.0
+    trends = Stats.comparison_stats(7)
+
+    # Breakdown stats
+    cost_by_provider = Stats.cost_by_provider()
+    cost_by_prompt = Stats.cost_by_prompt()
+    latency_by_provider = Stats.latency_by_provider()
+    daily_activity = Stats.daily_activity(30)
 
     # Get last run time
     last_run_at = if recent_activity != [], do: List.first(recent_activity).inserted_at, else: nil
@@ -40,10 +57,60 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:total_failed, total_failed)
       |> assign(:success_rate, success_rate)
       |> assign(:avg_latency, avg_latency)
+      |> assign(:latency_p50, latency_percentiles.p50)
+      |> assign(:latency_p95, latency_percentiles.p95)
       |> assign(:total_cost, total_cost)
+      |> assign(:cost_per_run, cost_per_run)
+      |> assign(:trends, trends)
+      |> assign(:cost_by_provider, cost_by_provider)
+      |> assign(:cost_by_prompt, cost_by_prompt)
+      |> assign(:latency_by_provider, latency_by_provider)
+      |> assign(:daily_activity, daily_activity)
       |> assign(:last_run_at, last_run_at)
 
     {:noreply, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("toggle_cost_breakdown", _params, socket) do
+    new_value = !socket.assigns.show_cost_breakdown
+
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, new_value)
+      |> assign(:show_latency_breakdown, false)
+      |> assign(:show_activity_chart, false)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("toggle_latency_breakdown", _params, socket) do
+    new_value = !socket.assigns.show_latency_breakdown
+
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, false)
+      |> assign(:show_latency_breakdown, new_value)
+      |> assign(:show_activity_chart, false)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("toggle_activity_chart", _params, socket) do
+    new_value = !socket.assigns.show_activity_chart
+
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, false)
+      |> assign(:show_latency_breakdown, false)
+      |> assign(:show_activity_chart, new_value)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("toggle_cost_view", _params, socket) do
+    new_view = if socket.assigns.cost_view == :provider, do: :prompt, else: :provider
+    {:noreply, assign(socket, :cost_view, new_view)}
   end
 
   defp sort_by_pass_rate(pass_rates) do

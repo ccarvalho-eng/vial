@@ -45,13 +45,48 @@ defmodule Aludel.Web.Helpers do
   end
 
   @doc """
-  Returns the icon path for a provider type.
+  Returns the icon path for a provider name or type.
+  Accepts both atoms (:openai) and strings ("OpenAI", "openai").
   """
-  def provider_icon(provider_type) do
+  def provider_icon(provider_name) when is_binary(provider_name) do
+    name_lower = String.downcase(provider_name)
+
+    cond do
+      String.contains?(name_lower, "openai") ->
+        "/images/open-ai-icon.svg"
+
+      String.contains?(name_lower, "anthropic") or String.contains?(name_lower, "claude") ->
+        "/images/anthropic-icon.svg"
+
+      String.contains?(name_lower, "ollama") ->
+        "/images/ollama-icon.svg"
+
+      String.contains?(name_lower, "gemini") ->
+        "/images/gemini-icon.svg"
+
+      String.contains?(name_lower, "grok") ->
+        "/images/grok-icon.svg"
+
+      String.contains?(name_lower, "perplexity") ->
+        "/images/perplexity-ai-icon.svg"
+
+      String.contains?(name_lower, "google") ->
+        "/images/google-ai-studio-icon.svg"
+
+      true ->
+        nil
+    end
+  end
+
+  def provider_icon(provider_type) when is_atom(provider_type) do
     case provider_type do
-      :openai -> "/images/openai-icon.svg"
+      :openai -> "/images/open-ai-icon.svg"
       :anthropic -> "/images/anthropic-icon.svg"
       :ollama -> "/images/ollama-icon.svg"
+      :gemini -> "/images/gemini-icon.svg"
+      :grok -> "/images/grok-icon.svg"
+      :perplexity -> "/images/perplexity-ai-icon.svg"
+      :google -> "/images/google-ai-studio-icon.svg"
       _ -> nil
     end
   end

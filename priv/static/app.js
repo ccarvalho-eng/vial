@@ -20538,6 +20538,64 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   };
 
+  // assets/js/hooks/activity_chart.js
+  var ActivityChart = {
+    mounted() {
+      this.initTooltip();
+    },
+    updated() {
+      this.initTooltip();
+    },
+    initTooltip() {
+      const container = this.el.querySelector("#activity-bars");
+      const tooltip = this.el.querySelector("#activity-tooltip");
+      const tooltipContent = this.el.querySelector("#tooltip-content");
+      if (!container || !tooltip || !tooltipContent) return;
+      if (this.mouseoverHandler) {
+        container.removeEventListener("mouseover", this.mouseoverHandler);
+      }
+      if (this.mouseoutHandler) {
+        container.removeEventListener("mouseout", this.mouseoutHandler);
+      }
+      this.mouseoverHandler = (e) => {
+        if (e.target.classList.contains("activity-bar")) {
+          const date = e.target.dataset.date;
+          const total = e.target.dataset.total;
+          const runs = total == 1 ? "run" : "runs";
+          tooltipContent.innerHTML = `<strong>${date}</strong><br>${total} ${runs}`;
+          const rect = e.target.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          const left = rect.left - containerRect.left + rect.width / 2;
+          tooltip.style.left = left + "px";
+          tooltip.style.opacity = "1";
+          e.target.style.transform = "scaleY(1.05)";
+          e.target.style.opacity = "1";
+        }
+      };
+      this.mouseoutHandler = (e) => {
+        if (e.target.classList.contains("activity-bar")) {
+          tooltip.style.opacity = "0";
+          e.target.style.transform = "scaleY(1)";
+          const computedOpacity = window.getComputedStyle(e.target).opacity;
+          if (computedOpacity !== "1") {
+            e.target.style.opacity = computedOpacity;
+          }
+        }
+      };
+      container.addEventListener("mouseover", this.mouseoverHandler);
+      container.addEventListener("mouseout", this.mouseoutHandler);
+    },
+    destroyed() {
+      const container = this.el.querySelector("#activity-bars");
+      if (container && this.mouseoverHandler) {
+        container.removeEventListener("mouseover", this.mouseoverHandler);
+      }
+      if (container && this.mouseoutHandler) {
+        container.removeEventListener("mouseout", this.mouseoutHandler);
+      }
+    }
+  };
+
   // assets/js/app.js
   var AutoDismissFlash = {
     mounted() {
@@ -20586,7 +20644,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
   var liveSocket = new LiveSocket2(livePath, Socket, {
     transport: liveTran === "longpoll" ? LongPoll : WebSocket,
     params: { _csrf_token: csrfToken },
-    hooks: { AutoDismissFlash, EvolutionChart, AssertionTypeToggle }
+    hooks: { AutoDismissFlash, EvolutionChart, AssertionTypeToggle, ActivityChart }
   });
   import_topbar.default.config({ barColors: { 0: "#29d" }, shadowColor: "rgba(0, 0, 0, .3)" });
   window.addEventListener("phx:page-loading-start", (_info) => import_topbar.default.show(300));
