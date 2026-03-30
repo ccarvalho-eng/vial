@@ -23,13 +23,13 @@
 
             <div style="margin-bottom: 16px;">
               <label for="prompt_tags">Tags</label>
-              <div id="tag-input" phx-hook="TagInput" phx-update="ignore">
+              <div id="tag-input" phx-hook="TagInput" phx-update="ignore" class="tag-input-wrapper">
+                <div class="tag-chips-container"></div>
                 <input
                   type="text"
                   class="tag-input-field"
                   placeholder="Type and press Enter or comma to add tags..."
                 />
-                <div class="tag-chips-container"></div>
                 <input
                   type="hidden"
                   name="prompt[tags]"
@@ -107,13 +107,13 @@
 
             <div style="margin-bottom: 16px;">
               <label for="prompt_tags">Tags</label>
-              <div id="tag-input" phx-hook="TagInput" phx-update="ignore">
+              <div id="tag-input" phx-hook="TagInput" phx-update="ignore" class="tag-input-wrapper">
+                <div class="tag-chips-container"></div>
                 <input
                   type="text"
                   class="tag-input-field"
                   placeholder="Type and press Enter or comma to add tags..."
                 />
-                <div class="tag-chips-container"></div>
                 <input
                   type="hidden"
                   name="prompt[tags]"
