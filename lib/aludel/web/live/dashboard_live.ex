@@ -81,6 +81,7 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:show_cost_breakdown, new_value)
       |> assign(:show_latency_breakdown, false)
       |> assign(:show_activity_chart, false)
+      |> assign(:show_pass_rates, false)
 
     {:noreply, socket}
   end
@@ -93,6 +94,7 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:show_cost_breakdown, false)
       |> assign(:show_latency_breakdown, new_value)
       |> assign(:show_activity_chart, false)
+      |> assign(:show_pass_rates, false)
 
     {:noreply, socket}
   end
@@ -105,6 +107,7 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:show_cost_breakdown, false)
       |> assign(:show_latency_breakdown, false)
       |> assign(:show_activity_chart, new_value)
+      |> assign(:show_pass_rates, false)
 
     {:noreply, socket}
   end
