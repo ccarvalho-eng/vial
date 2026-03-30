@@ -15,6 +15,7 @@ defmodule Aludel.Web.DashboardLive do
     socket =
       socket
       |> assign(:show_cost_breakdown, false)
+      |> assign(:cost_view, :provider)
       |> assign(:show_latency_breakdown, false)
       |> assign(:show_activity_chart, false)
 
@@ -71,15 +72,44 @@ defmodule Aludel.Web.DashboardLive do
 
   @impl Phoenix.LiveView
   def handle_event("toggle_cost_breakdown", _params, socket) do
-    {:noreply, assign(socket, :show_cost_breakdown, !socket.assigns.show_cost_breakdown)}
+    new_value = !socket.assigns.show_cost_breakdown
+
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, new_value)
+      |> assign(:show_latency_breakdown, false)
+      |> assign(:show_activity_chart, false)
+
+    {:noreply, socket}
   end
 
   def handle_event("toggle_latency_breakdown", _params, socket) do
-    {:noreply, assign(socket, :show_latency_breakdown, !socket.assigns.show_latency_breakdown)}
+    new_value = !socket.assigns.show_latency_breakdown
+
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, false)
+      |> assign(:show_latency_breakdown, new_value)
+      |> assign(:show_activity_chart, false)
+
+    {:noreply, socket}
   end
 
   def handle_event("toggle_activity_chart", _params, socket) do
-    {:noreply, assign(socket, :show_activity_chart, !socket.assigns.show_activity_chart)}
+    new_value = !socket.assigns.show_activity_chart
+
+    socket =
+      socket
+      |> assign(:show_cost_breakdown, false)
+      |> assign(:show_latency_breakdown, false)
+      |> assign(:show_activity_chart, new_value)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("toggle_cost_view", _params, socket) do
+    new_view = if socket.assigns.cost_view == :provider, do: :prompt, else: :provider
+    {:noreply, assign(socket, :cost_view, new_view)}
   end
 
   defp sort_by_pass_rate(pass_rates) do

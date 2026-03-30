@@ -37,13 +37,14 @@
         <div class="stat-label text-sm font-medium">Total Runs</div>
         <div class="stat-description mt-xs">Evaluations executed</div>
         <%= if @daily_activity != [] && Enum.any?(@daily_activity, & &1.total > 0) do %>
-          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
             <button
               phx-click="toggle_activity_chart"
-              class="button-link"
-              style="font-size: 11px;"
+              style="background-color: var(--bg-secondary); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: 5px; transition: all 0.15s ease; font-weight: 500;"
+              onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'"
             >
-              {if @show_activity_chart, do: "Hide", else: "View"} activity
+              <span>{if @show_activity_chart, do: "Hide chart", else: "Show chart"}</span>
               <.icon
                 name={if @show_activity_chart, do: "hero-chevron-up", else: "hero-chevron-down"}
                 class="size-3"
@@ -86,13 +87,14 @@
           P50: {trunc(@latency_p50)}ms, P95: {trunc(@latency_p95)}ms
         </div>
         <%= if @latency_by_provider != [] do %>
-          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
             <button
               phx-click="toggle_latency_breakdown"
-              class="button-link"
-              style="font-size: 11px;"
+              style="background-color: var(--bg-secondary); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: 5px; transition: all 0.15s ease; font-weight: 500;"
+              onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'"
             >
-              {if @show_latency_breakdown, do: "Hide", else: "View"} by provider
+              <span>{if @show_latency_breakdown, do: "Hide details", else: "View details"}</span>
               <.icon
                 name={
                   if @show_latency_breakdown, do: "hero-chevron-up", else: "hero-chevron-down"
@@ -122,13 +124,14 @@
           ${:erlang.float_to_binary(@cost_per_run, decimals: 4)} per run
         </div>
         <%= if @cost_by_provider != [] || @cost_by_prompt != [] do %>
-          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
             <button
               phx-click="toggle_cost_breakdown"
-              class="button-link"
-              style="font-size: 11px;"
+              style="background-color: var(--bg-secondary); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: 5px; transition: all 0.15s ease; font-weight: 500;"
+              onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'"
             >
-              {if @show_cost_breakdown, do: "Hide", else: "View"} breakdown
+              <span>{if @show_cost_breakdown, do: "Hide breakdown", else: "View breakdown"}</span>
               <.icon
                 name={if @show_cost_breakdown, do: "hero-chevron-up", else: "hero-chevron-down"}
                 class="size-3"
@@ -141,10 +144,13 @@
 
     <%!-- Expandable breakdowns appear here after stat cards --%>
     <%= if @show_activity_chart && @daily_activity != [] && Enum.any?(@daily_activity, & &1.total > 0) do %>
-      <div style="margin-bottom: 48px;">
-        <div class="aludel-card" style="padding: 20px;">
-          <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">
-            Activity (Last 30 Days)
+      <div style="margin-bottom: 32px; padding: 20px; background-color: rgba(99, 102, 241, 0.015); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.06);">
+        <div
+          class="aludel-card"
+          style="padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);"
+        >
+          <h3 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em;">
+            Activity — Last 30 Days
           </h3>
           <div style="display: flex; align-items: flex-end; gap: 2px; height: 100px;">
             <%= for day <- @daily_activity do %>
@@ -166,10 +172,15 @@
     <% end %>
 
     <%= if @show_latency_breakdown && @latency_by_provider != [] do %>
-      <div style="margin-bottom: 48px;">
-        <div class="aludel-card" style="padding: 0; overflow: hidden;">
-          <div style="padding: 20px 20px 12px 20px; border-bottom: 1px solid var(--border);">
-            <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Latency by Provider</h3>
+      <div style="margin-bottom: 32px; padding: 20px; background-color: rgba(99, 102, 241, 0.015); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.06);">
+        <div
+          class="aludel-card"
+          style="padding: 0; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);"
+        >
+          <div style="padding: 24px 24px 16px 24px; border-bottom: 1px solid var(--border);">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em;">
+              Latency by Provider
+            </h3>
           </div>
           <table style="width: 100%; border-collapse: collapse;">
             <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
@@ -194,9 +205,21 @@
             <tbody>
               <%= for provider <- @latency_by_provider do %>
                 <tr style="border-bottom: 1px solid var(--border);">
-                  <td style="padding: 16px 20px;">
-                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
-                      {provider.provider_name}
+                  <td style="padding: 14px 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <%= if icon_path = provider_icon(provider.provider_name) do %>
+                        <img
+                          src={icon_path}
+                          alt={provider.provider_name}
+                          style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 3px;"
+                        />
+                      <% else %>
+                        <div style="width: 20px; height: 20px; border-radius: 4px; background-color: var(--accent); flex-shrink: 0;">
+                        </div>
+                      <% end %>
+                      <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                        {provider.provider_name}
+                      </span>
                     </div>
                   </td>
                   <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px;">
@@ -220,99 +243,137 @@
     <% end %>
 
     <%= if @show_cost_breakdown && (@cost_by_provider != [] || @cost_by_prompt != []) do %>
-      <div style="margin-bottom: 48px;">
-        <%= if @cost_by_provider != [] do %>
-          <div style="margin-bottom: 32px;">
-            <div class="aludel-card" style="padding: 0; overflow: hidden;">
-              <div style="padding: 20px 20px 12px 20px; border-bottom: 1px solid var(--border);">
-                <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Cost by Provider</h3>
-              </div>
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
-                  <tr>
-                    <th style="text-align: left; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Provider
-                    </th>
-                    <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Total Cost
-                    </th>
-                    <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Avg Cost
-                    </th>
-                    <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Runs
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <%= for provider <- @cost_by_provider do %>
-                    <tr style="border-bottom: 1px solid var(--border);">
-                      <td style="padding: 16px 20px;">
-                        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
-                          {provider.provider_name}
-                        </div>
-                      </td>
-                      <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px;">
-                        ${:erlang.float_to_binary(provider.total_cost, decimals: 4)}
-                      </td>
-                      <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px; color: var(--text-secondary);">
-                        ${:erlang.float_to_binary(provider.avg_cost, decimals: 4)}
-                      </td>
-                      <td style="padding: 16px 20px; text-align: right; color: var(--text-secondary);">
-                        {provider.run_count}
-                      </td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
+      <div style="margin-bottom: 32px; padding: 20px; background-color: rgba(99, 102, 241, 0.015); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.06);">
+        <%= if @cost_view == :provider && @cost_by_provider != [] do %>
+          <div
+            class="aludel-card"
+            style="padding: 0; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);"
+          >
+            <div style="padding: 24px 24px 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em;">
+                Cost Breakdown
+              </h3>
+              <%= if @cost_by_prompt != [] do %>
+                <button
+                  phx-click="toggle_cost_view"
+                  style="background-color: var(--bg-secondary); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: 5px; transition: all 0.15s ease; font-weight: 500;"
+                  onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'"
+                  onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'"
+                >
+                  By Prompt <.icon name="hero-arrow-right" class="size-3" />
+                </button>
+              <% end %>
             </div>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+                <tr>
+                  <th style="text-align: left; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Provider
+                  </th>
+                  <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Total Cost
+                  </th>
+                  <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Avg Cost
+                  </th>
+                  <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Runs
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for provider <- @cost_by_provider do %>
+                  <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 14px 20px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <%= if icon_path = provider_icon(provider.provider_name) do %>
+                          <img
+                            src={icon_path}
+                            alt={provider.provider_name}
+                            style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 3px;"
+                          />
+                        <% else %>
+                          <div style="width: 20px; height: 20px; border-radius: 4px; background-color: var(--accent); flex-shrink: 0;">
+                          </div>
+                        <% end %>
+                        <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                          {provider.provider_name}
+                        </span>
+                      </div>
+                    </td>
+                    <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px;">
+                      ${:erlang.float_to_binary(provider.total_cost, decimals: 4)}
+                    </td>
+                    <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px; color: var(--text-secondary);">
+                      ${:erlang.float_to_binary(provider.avg_cost, decimals: 4)}
+                    </td>
+                    <td style="padding: 16px 20px; text-align: right; color: var(--text-secondary);">
+                      {provider.run_count}
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         <% end %>
-        <%= if @cost_by_prompt != [] do %>
-          <div>
-            <div class="aludel-card" style="padding: 0; overflow: hidden;">
-              <div style="padding: 20px 20px 12px 20px; border-bottom: 1px solid var(--border);">
-                <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Cost by Prompt</h3>
-              </div>
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
-                  <tr>
-                    <th style="text-align: left; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Prompt
-                    </th>
-                    <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Total Cost
-                    </th>
-                    <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Avg Cost
-                    </th>
-                    <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                      Runs
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <%= for prompt <- @cost_by_prompt do %>
-                    <tr style="border-bottom: 1px solid var(--border);">
-                      <td style="padding: 16px 20px;">
-                        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
-                          {prompt.prompt_name}
-                        </div>
-                      </td>
-                      <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px;">
-                        ${:erlang.float_to_binary(prompt.total_cost, decimals: 4)}
-                      </td>
-                      <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px; color: var(--text-secondary);">
-                        ${:erlang.float_to_binary(prompt.avg_cost, decimals: 4)}
-                      </td>
-                      <td style="padding: 16px 20px; text-align: right; color: var(--text-secondary);">
-                        {prompt.run_count}
-                      </td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
+        <%= if @cost_view == :prompt && @cost_by_prompt != [] do %>
+          <div
+            class="aludel-card"
+            style="padding: 0; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);"
+          >
+            <div style="padding: 24px 24px 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em;">
+                Cost Breakdown
+              </h3>
+              <%= if @cost_by_provider != [] do %>
+                <button
+                  phx-click="toggle_cost_view"
+                  style="background-color: var(--bg-secondary); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: 5px; transition: all 0.15s ease; font-weight: 500;"
+                  onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'"
+                  onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'"
+                >
+                  By Provider <.icon name="hero-arrow-right" class="size-3" />
+                </button>
+              <% end %>
             </div>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+                <tr>
+                  <th style="text-align: left; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Prompt
+                  </th>
+                  <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Total Cost
+                  </th>
+                  <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Avg Cost
+                  </th>
+                  <th style="text-align: right; padding: 12px 20px; font-weight: 600; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Runs
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for prompt <- @cost_by_prompt do %>
+                  <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 16px 20px;">
+                      <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
+                        {prompt.prompt_name}
+                      </div>
+                    </td>
+                    <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px;">
+                      ${:erlang.float_to_binary(prompt.total_cost, decimals: 4)}
+                    </td>
+                    <td style="padding: 16px 20px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 14px; color: var(--text-secondary);">
+                      ${:erlang.float_to_binary(prompt.avg_cost, decimals: 4)}
+                    </td>
+                    <td style="padding: 16px 20px; text-align: right; color: var(--text-secondary);">
+                      {prompt.run_count}
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         <% end %>
       </div>
