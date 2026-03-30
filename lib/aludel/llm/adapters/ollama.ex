@@ -18,7 +18,7 @@ defmodule Aludel.LLM.Adapters.Ollama do
 
     model_spec = "openai:#{model}"
 
-    case ReqLLM.generate_text(model_spec, prompt, req_opts) do
+    case Aludel.LLM.ReqLLMClient.generate_text(model_spec, prompt, req_opts) do
       {:ok, response} ->
         usage = ReqLLM.Response.usage(response)
         content = ReqLLM.Response.text(response)

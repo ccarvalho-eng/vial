@@ -16,7 +16,7 @@ defmodule Aludel.LLM.Adapters.Anthropic do
 
       model_spec = "anthropic:#{model}"
 
-      case ReqLLM.generate_text(model_spec, prompt, req_opts) do
+      case Aludel.LLM.ReqLLMClient.generate_text(model_spec, prompt, req_opts) do
         {:ok, response} ->
           usage = ReqLLM.Response.usage(response)
           content = ReqLLM.Response.text(response)
