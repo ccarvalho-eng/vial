@@ -3315,27 +3315,34 @@ textarea.json-editor {
   background: #dc2626;
   color: white;
 }
-.tag-input-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.tag-input-field {
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background-color: var(--bg-primary);
-  min-height: 46px;
-  align-items: center;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.tag-input-wrapper:focus-within {
+.tag-input-field:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+.tag-input-field::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 .tag-chips-container {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: center;
+  margin-top: 12px;
+  min-height: 0;
+}
+.tag-chips-container:empty {
+  display: none;
 }
 .tag-chip {
   display: inline-flex;
@@ -3377,20 +3384,6 @@ textarea.json-editor {
   background: var(--accent);
   color: white;
   transform: scale(1.15);
-}
-.tag-input-field {
-  flex: 1;
-  min-width: 150px;
-  border: none;
-  background: transparent;
-  outline: none;
-  padding: 6px 4px;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-.tag-input-field::placeholder {
-  color: var(--text-muted);
-  opacity: 0.6;
 }
 .tag-hidden-input {
   display: none;
