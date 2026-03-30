@@ -94,7 +94,9 @@
               onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'"
               onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'"
             >
-              <span>{if @show_latency_breakdown, do: "Hide breakdown", else: "View breakdown"}</span>
+              <span>
+                {if @show_latency_breakdown, do: "Hide breakdown", else: "View breakdown"}
+              </span>
               <.icon
                 name={
                   if @show_latency_breakdown, do: "hero-chevron-up", else: "hero-chevron-down"
@@ -163,7 +165,10 @@
           </div>
 
           <%!-- Bars --%>
-          <div style="display: flex; align-items: flex-end; gap: 3px; height: 140px; position: relative;" id="activity-bars">
+          <div
+            style="display: flex; align-items: flex-end; gap: 3px; height: 140px; position: relative;"
+            id="activity-bars"
+          >
             <%= for {day, idx} <- Enum.with_index(@daily_activity) do %>
               <% max_total = Enum.max_by(@daily_activity, & &1.total).total %>
               <% height = if max_total > 0, do: day.total / max_total * 120, else: 0 %>
@@ -199,10 +204,16 @@
           </div>
           <div style="display: flex; gap: 16px; font-size: 11px;">
             <span style="color: var(--text-secondary);">
-              Total: <span style="font-weight: 600; color: var(--text-primary);">{Enum.sum(Enum.map(@daily_activity, & &1.total))}</span>
+              Total:
+              <span style="font-weight: 600; color: var(--text-primary);">
+                {Enum.sum(Enum.map(@daily_activity, & &1.total))}
+              </span>
             </span>
             <span style="color: var(--text-secondary);">
-              Avg: <span style="font-weight: 600; color: var(--text-primary);">{trunc(Enum.sum(Enum.map(@daily_activity, & &1.total)) / length(@daily_activity))}</span>
+              Avg:
+              <span style="font-weight: 600; color: var(--text-primary);">
+                {trunc(Enum.sum(Enum.map(@daily_activity, & &1.total)) / length(@daily_activity))}
+              </span>
             </span>
           </div>
         </div>
@@ -248,6 +259,7 @@
                       <img
                         src={icon_path}
                         alt={provider.provider_name}
+                        class={if String.contains?(String.downcase(provider.provider_name), "ollama"), do: "provider-icon-ollama", else: ""}
                         style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 3px;"
                       />
                     <% else %>
@@ -299,58 +311,59 @@
               </button>
             <% end %>
           </div>
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
-                <tr>
-                  <th style="text-align: left; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                    Provider
-                  </th>
-                  <th style="text-align: right; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                    Total Cost
-                  </th>
-                  <th style="text-align: right; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                    Avg Cost
-                  </th>
-                  <th style="text-align: right; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
-                    Runs
-                  </th>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+              <tr>
+                <th style="text-align: left; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Provider
+                </th>
+                <th style="text-align: right; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Total Cost
+                </th>
+                <th style="text-align: right; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Avg Cost
+                </th>
+                <th style="text-align: right; padding: 8px 16px; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Runs
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for provider <- @cost_by_provider do %>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 10px 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <%= if icon_path = provider_icon(provider.provider_name) do %>
+                        <img
+                          src={icon_path}
+                          alt={provider.provider_name}
+                          class={if String.contains?(String.downcase(provider.provider_name), "ollama"), do: "provider-icon-ollama", else: ""}
+                          style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 3px;"
+                        />
+                      <% else %>
+                        <div style="width: 16px; height: 16px; border-radius: 4px; background-color: var(--accent); flex-shrink: 0;">
+                        </div>
+                      <% end %>
+                      <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                        {provider.provider_name}
+                      </span>
+                    </div>
+                  </td>
+                  <td style="padding: 10px 16px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 13px;">
+                    ${:erlang.float_to_binary(provider.total_cost, decimals: 4)}
+                  </td>
+                  <td style="padding: 10px 16px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 13px; color: var(--text-secondary);">
+                    ${:erlang.float_to_binary(provider.avg_cost, decimals: 4)}
+                  </td>
+                  <td style="padding: 10px 16px; text-align: right; color: var(--text-secondary); font-size: 13px;">
+                    {provider.run_count}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                <%= for provider <- @cost_by_provider do %>
-                  <tr style="border-bottom: 1px solid var(--border);">
-                    <td style="padding: 10px 16px;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <%= if icon_path = provider_icon(provider.provider_name) do %>
-                          <img
-                            src={icon_path}
-                            alt={provider.provider_name}
-                            style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 3px;"
-                          />
-                        <% else %>
-                          <div style="width: 16px; height: 16px; border-radius: 4px; background-color: var(--accent); flex-shrink: 0;">
-                          </div>
-                        <% end %>
-                        <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
-                          {provider.provider_name}
-                        </span>
-                      </div>
-                    </td>
-                    <td style="padding: 10px 16px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 13px;">
-                      ${:erlang.float_to_binary(provider.total_cost, decimals: 4)}
-                    </td>
-                    <td style="padding: 10px 16px; text-align: right; font-family: 'SF Mono', 'Monaco', monospace; font-size: 13px; color: var(--text-secondary);">
-                      ${:erlang.float_to_binary(provider.avg_cost, decimals: 4)}
-                    </td>
-                    <td style="padding: 10px 16px; text-align: right; color: var(--text-secondary); font-size: 13px;">
-                      {provider.run_count}
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        <% end %>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
       <%= if @cost_view == :prompt && @cost_by_prompt != [] do %>
         <div
           class="aludel-card"
@@ -393,7 +406,10 @@
                 <tr style="border-bottom: 1px solid var(--border);">
                   <td style="padding: 10px 16px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <.icon name="hero-document-text" class="size-4 text-[var(--text-secondary)] flex-shrink-0" />
+                      <.icon
+                        name="hero-document-text"
+                        class="size-4 text-[var(--text-secondary)] flex-shrink-0"
+                      />
                       <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
                         {prompt.prompt_name}
                       </span>

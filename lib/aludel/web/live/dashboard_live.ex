@@ -17,7 +17,7 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:show_cost_breakdown, false)
       |> assign(:cost_view, :provider)
       |> assign(:show_latency_breakdown, false)
-      |> assign(:show_activity_chart, false)
+      |> assign(:show_activity_chart, true)
 
     {:ok, socket}
   end
