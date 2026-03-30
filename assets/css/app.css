@@ -1175,7 +1175,6 @@ a:has(.aludel-card) .aludel-card:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
-  margin-bottom: 40px;
 }
 
 .action-grid {
