@@ -320,7 +320,7 @@
                     By Provider
                   </h4>
                   <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <%= for breakdown <- metric.provider_breakdown do %>
+                    <%= for breakdown <- Enum.sort_by(metric.provider_breakdown, & &1.avg_pass_rate, :desc) do %>
                       <div style="padding: 14px; background-color: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                           <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">

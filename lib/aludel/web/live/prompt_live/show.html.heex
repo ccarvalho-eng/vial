@@ -95,8 +95,8 @@
 
       <%!-- Timeline sidebar --%>
       <div style="width: 320px; flex-shrink: 0; border-left: 1px solid var(--border); padding-left: 24px;">
-        <h3 style="margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em;">
-          History
+        <h3 style="margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px;">
+          <.icon name="hero-clock" class="size-3" /> History
         </h3>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <%= for version <- @prompt.versions do %>
