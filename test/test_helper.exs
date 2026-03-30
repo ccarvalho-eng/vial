@@ -70,7 +70,4 @@ Mox.defmock(Aludel.Interfaces.HttpClientMock,
   for: Aludel.Interfaces.Adapters.Http
 )
 
-# Configure test environment to use mocked HTTP client
-Application.put_env(:aludel, :http_client, Aludel.Interfaces.HttpClientMock)
-
 ExUnit.start()
