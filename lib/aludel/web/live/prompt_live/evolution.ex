@@ -20,11 +20,14 @@ defmodule Aludel.Web.PromptLive.Evolution do
     metrics = Prompts.get_evolution_metrics(id)
     chart_data = Evolution.prepare_chart_data(metrics)
 
+    # Reverse metrics for table display (descending order: newest first)
+    reversed_metrics = Enum.reverse(metrics)
+
     {:noreply,
      socket
      |> assign(:page_title, "#{prompt.name} - Evolution")
      |> assign(:prompt, prompt)
-     |> assign(:metrics, metrics)
+     |> assign(:metrics, reversed_metrics)
      |> assign(:chart_data, chart_data)}
   end
 
