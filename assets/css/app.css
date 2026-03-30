@@ -1499,19 +1499,25 @@ textarea.json-editor {
 .tag-input-wrapper {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: var(--bg-primary);
-  min-height: 42px;
+  min-height: 46px;
   align-items: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tag-input-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .tag-chips-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -1519,50 +1525,61 @@ textarea.json-editor {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  background-color: var(--accent);
-  color: white;
-  border-radius: 4px;
+  padding: 6px 12px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   font-size: 13px;
   font-weight: 500;
-  line-height: 1.2;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+}
+
+.tag-chip:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent);
 }
 
 .tag-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
+  margin-left: 2px;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: transparent;
+  color: var(--text-secondary);
   border-radius: 50%;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .tag-remove:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  background: var(--accent);
+  color: white;
+  transform: scale(1.15);
 }
 
 .tag-input-field {
   flex: 1;
-  min-width: 120px;
+  min-width: 150px;
   border: none;
   background: transparent;
   outline: none;
-  padding: 4px;
+  padding: 6px 4px;
   font-size: 14px;
   color: var(--text-primary);
 }
 
 .tag-input-field::placeholder {
   color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .tag-hidden-input {
