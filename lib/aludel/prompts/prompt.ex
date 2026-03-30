@@ -14,7 +14,7 @@ defmodule Aludel.Prompts.Prompt do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(name)a
-  @optional_fields ~w(description tags project_id)a
+  @optional_fields ~w(description tags project_id template)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -23,6 +23,7 @@ defmodule Aludel.Prompts.Prompt do
     field :name, :string
     field :description, :string
     field :tags, {:array, :string}, default: []
+    field :template, :string, virtual: true
 
     belongs_to(:project, Project)
     has_many(:versions, PromptVersion)

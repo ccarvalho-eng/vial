@@ -74,17 +74,17 @@ defmodule Aludel.Web.PromptLive.New do
     latest_version = List.first(prompt.versions)
     latest_template = if latest_version, do: latest_version.template, else: ""
 
-    # Don't include tags in changeset - handle separately
+    # Include template in form data so it shows in the textarea
     form_data = %{
       "name" => prompt.name,
       "description" => prompt.description,
-      "project_id" => prompt.project_id
+      "project_id" => prompt.project_id,
+      "template" => latest_template
     }
 
     changeset =
       prompt
-      |> Ecto.Changeset.cast(form_data, [:name, :description, :project_id])
-      |> Ecto.Changeset.validate_required([:name])
+      |> Prompts.change_prompt(form_data)
 
     # Extract variables from latest template
     variables = Prompts.extract_variables(latest_template)
