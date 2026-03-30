@@ -20596,6 +20596,68 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   };
 
+  // assets/js/hooks/tag_input.js
+  var TagInput = {
+    mounted() {
+      this.input = this.el.querySelector(".tag-input-field");
+      this.hiddenInput = this.el.querySelector(".tag-hidden-input");
+      this.container = this.el.querySelector(".tag-chips-container");
+      this.tags = this.parseTags(this.hiddenInput.value);
+      this.renderTags();
+      this.input.addEventListener("keydown", (e) => this.handleKeyDown(e));
+      this.input.addEventListener("blur", () => this.addCurrentTag());
+    },
+    parseTags(value) {
+      if (!value || value.trim() === "") return [];
+      return value.split(",").map((t) => t.trim()).filter((t) => t !== "");
+    },
+    handleKeyDown(e) {
+      const value = this.input.value.trim();
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault();
+        this.addCurrentTag();
+      } else if (e.key === "Backspace" && value === "" && this.tags.length > 0) {
+        e.preventDefault();
+        this.removeTag(this.tags.length - 1);
+      }
+    },
+    addCurrentTag() {
+      const value = this.input.value.trim();
+      if (value && !this.tags.includes(value)) {
+        this.tags.push(value);
+        this.input.value = "";
+        this.updateHiddenInput();
+        this.renderTags();
+      }
+    },
+    removeTag(index) {
+      this.tags.splice(index, 1);
+      this.updateHiddenInput();
+      this.renderTags();
+    },
+    updateHiddenInput() {
+      this.hiddenInput.value = this.tags.join(", ");
+      this.hiddenInput.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+    renderTags() {
+      this.container.innerHTML = "";
+      this.tags.forEach((tag, index) => {
+        const chip = document.createElement("span");
+        chip.className = "tag-chip";
+        chip.innerHTML = `
+        ${tag}
+        <button type="button" class="tag-remove" data-index="${index}">\xD7</button>
+      `;
+        const removeBtn = chip.querySelector(".tag-remove");
+        removeBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.removeTag(index);
+        });
+        this.container.appendChild(chip);
+      });
+    }
+  };
+
   // assets/js/app.js
   var AutoDismissFlash = {
     mounted() {
@@ -20644,7 +20706,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
   var liveSocket = new LiveSocket2(livePath, Socket, {
     transport: liveTran === "longpoll" ? LongPoll : WebSocket,
     params: { _csrf_token: csrfToken },
-    hooks: { AutoDismissFlash, EvolutionChart, AssertionTypeToggle, ActivityChart }
+    hooks: { AutoDismissFlash, EvolutionChart, AssertionTypeToggle, ActivityChart, TagInput }
   });
   import_topbar.default.config({ barColors: { 0: "#29d" }, shadowColor: "rgba(0, 0, 0, .3)" });
   window.addEventListener("phx:page-loading-start", (_info) => import_topbar.default.show(300));

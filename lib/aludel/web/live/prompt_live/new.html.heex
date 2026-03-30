@@ -22,16 +22,26 @@
             </div>
 
             <div style="margin-bottom: 16px;">
-              <label for="prompt_tags">Tags (comma-separated)</label>
-              <input
-                type="text"
-                name="prompt[tags]"
-                id="prompt_tags"
-                value={@tags_input}
-                placeholder="elixir, langchain, ai"
-                class="block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 border-zinc-300 focus:border-zinc-400"
-                style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;"
-              />
+              <label for="prompt_tags">Tags</label>
+              <div
+                id="tag-input"
+                phx-hook="TagInput"
+                phx-update="ignore"
+                class="tag-input-wrapper"
+              >
+                <div class="tag-chips-container"></div>
+                <input
+                  type="text"
+                  class="tag-input-field"
+                  placeholder="Type and press Enter or comma to add tags..."
+                />
+                <input
+                  type="hidden"
+                  name="prompt[tags]"
+                  class="tag-hidden-input"
+                  value={@tags_input}
+                />
+              </div>
             </div>
 
             <div style="margin-bottom: 16px;">
@@ -101,16 +111,26 @@
             </div>
 
             <div style="margin-bottom: 16px;">
-              <label for="prompt_tags">Tags (comma-separated)</label>
-              <input
-                type="text"
-                name="prompt[tags]"
-                id="prompt_tags"
-                value={@tags_input}
-                placeholder="elixir, langchain, ai"
-                class="block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 border-zinc-300 focus:border-zinc-400"
-                style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;"
-              />
+              <label for="prompt_tags">Tags</label>
+              <div
+                id="tag-input"
+                phx-hook="TagInput"
+                phx-update="ignore"
+                class="tag-input-wrapper"
+              >
+                <div class="tag-chips-container"></div>
+                <input
+                  type="text"
+                  class="tag-input-field"
+                  placeholder="Type and press Enter or comma to add tags..."
+                />
+                <input
+                  type="hidden"
+                  name="prompt[tags]"
+                  class="tag-hidden-input"
+                  value={@tags_input}
+                />
+              </div>
             </div>
 
             <div style="margin-bottom: 16px;">
