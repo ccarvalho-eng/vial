@@ -1,9 +1,6 @@
 defmodule Aludel.Interfaces.Adapters.Http do
   @moduledoc """
   Generic HTTP client adapter behaviour.
-
-  Provides swappable HTTP client interface. Not tied to any specific
-  domain (LLMs, APIs, etc.) - implementations handle domain-specific logic.
   """
 
   @doc """
