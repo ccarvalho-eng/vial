@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.9] - 2026-03-30
+
+### Added
+- Dashboard trend indicators showing 7-day comparison for total runs
+- Cost per run metric on dashboard
+- Latency percentiles (P50, P95) alongside average latency
+- Activity chart showing last 30 days of run history with interactive tooltips
+- Cost breakdown by provider and by prompt with toggle view
+- Latency breakdown by provider
+- Provider icons for Gemini, Grok, Perplexity, Google AI Studio, and OpenAI
+
+### Changed
+- Dashboard breakdowns are now collapsible/expandable
+- Improved stat card tooltip clarity
+
+### Performance
+- Optimized dashboard metrics calculation to reduce database queries
+
 ## [0.1.8] - 2026-03-29
 
 ### Added
