@@ -1018,6 +1018,13 @@
       opacity: 20%;
     }
   }
+  .stats {
+    position: relative;
+    display: inline-grid;
+    grid-auto-flow: column;
+    overflow-x: auto;
+    border-radius: var(--radius-box);
+  }
   .progress {
     position: relative;
     height: calc(0.25rem * 2);
@@ -1256,6 +1263,28 @@
     --hero-arrow-right: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%20aria-hidden%3D%22true%22%20data-slot%3D%22icon%22%3E%20%20%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M13.5%204.5%2021%2012m0%200-7.5%207.5M21%2012H3%22%2F%3E%3C%2Fsvg%3E');
     -webkit-mask: var(--hero-arrow-right);
     mask: var(--hero-arrow-right);
+    mask-repeat: no-repeat;
+    background-color: currentColor;
+    vertical-align: middle;
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .hero-arrow-trending-down {
+    --hero-arrow-trending-down: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%20aria-hidden%3D%22true%22%20data-slot%3D%22icon%22%3E%20%20%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M2.25%206%209%2012.75l4.286-4.286a11.948%2011.948%200%200%201%204.306%206.43l.776%202.898m0%200%203.182-5.511m-3.182%205.51-5.511-3.181%22%2F%3E%3C%2Fsvg%3E');
+    -webkit-mask: var(--hero-arrow-trending-down);
+    mask: var(--hero-arrow-trending-down);
+    mask-repeat: no-repeat;
+    background-color: currentColor;
+    vertical-align: middle;
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .hero-arrow-trending-up {
+    --hero-arrow-trending-up: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%20aria-hidden%3D%22true%22%20data-slot%3D%22icon%22%3E%20%20%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M2.25%2018%209%2011.25l4.306%204.306a11.95%2011.95%200%200%201%205.814-5.518l2.74-1.22m0%200-5.94-2.281m5.94%202.28-2.28%205.941%22%2F%3E%3C%2Fsvg%3E');
+    -webkit-mask: var(--hero-arrow-trending-up);
+    mask: var(--hero-arrow-trending-up);
     mask-repeat: no-repeat;
     background-color: currentColor;
     vertical-align: middle;

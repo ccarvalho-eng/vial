@@ -30,6 +30,12 @@ defmodule Aludel.Web.DashboardLive do
     cost_per_run = Stats.cost_per_run()
     trends = Stats.comparison_stats(7)
 
+    # Breakdown stats
+    cost_by_provider = Stats.cost_by_provider()
+    cost_by_prompt = Stats.cost_by_prompt()
+    latency_by_provider = Stats.latency_by_provider()
+    daily_activity = Stats.daily_activity(30)
+
     # Get last run time
     last_run_at = if recent_activity != [], do: List.first(recent_activity).inserted_at, else: nil
 
@@ -48,6 +54,10 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:total_cost, total_cost)
       |> assign(:cost_per_run, cost_per_run)
       |> assign(:trends, trends)
+      |> assign(:cost_by_provider, cost_by_provider)
+      |> assign(:cost_by_prompt, cost_by_prompt)
+      |> assign(:latency_by_provider, latency_by_provider)
+      |> assign(:daily_activity, daily_activity)
       |> assign(:last_run_at, last_run_at)
 
     {:noreply, socket}
