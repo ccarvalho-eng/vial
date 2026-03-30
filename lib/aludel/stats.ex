@@ -93,8 +93,8 @@ defmodule Aludel.Stats do
 
       latencies ->
         count = length(latencies)
-        p50_idx = trunc(count * 0.5)
-        p95_idx = trunc(count * 0.95)
+        p50_idx = max(0, trunc(count * 0.5) - 1)
+        p95_idx = max(0, trunc(count * 0.95) - 1)
 
         %{
           p50: Enum.at(latencies, p50_idx) |> Float.round(0),
