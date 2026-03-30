@@ -28,6 +28,12 @@ defmodule Aludel.LLM do
   alias Aludel.Providers.Provider
   alias Aludel.Interfaces.LLM.Providers.{Anthropic, OpenAI, Ollama}
 
+  @providers %{
+    openai: OpenAI,
+    anthropic: Anthropic,
+    ollama: Ollama
+  }
+
   @type error_reason ::
           :missing_api_key
           | {:auth_error, String.t()}
@@ -94,9 +100,7 @@ defmodule Aludel.LLM do
     end
   end
 
-  defp get_provider(:openai), do: OpenAI
-  defp get_provider(:anthropic), do: Anthropic
-  defp get_provider(:ollama), do: Ollama
+  defp get_provider(provider_name), do: Map.fetch!(@providers, provider_name)
 
   defp build_config(provider) do
     base_config = provider.config || %{}

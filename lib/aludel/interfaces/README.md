@@ -63,7 +63,12 @@ end
 Register in `lib/aludel/llm.ex`:
 
 ```elixir
-defp get_provider(:gemini), do: Gemini
+@providers %{
+  openai: OpenAI,
+  anthropic: Anthropic,
+  ollama: Ollama,
+  gemini: Gemini
+}
 ```
 
 ## Swapping HTTP Client
