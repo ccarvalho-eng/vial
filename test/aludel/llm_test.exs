@@ -8,28 +8,10 @@ defmodule Aludel.LLMTest do
   setup :verify_on_exit!
 
   defp build_mock_response(text, input_tokens, output_tokens) do
-    %ReqLLM.Response{
-      id: "test-id",
-      model: "test-model",
-      context: [
-        %{role: "user", content: "test"},
-        %{role: "assistant", content: [%{type: "text", text: text}]}
-      ],
-      message: %ReqLLM.Message{
-        role: :assistant,
-        content: [%{type: :text, text: text}]
-      },
-      finish_reason: :stop,
-      usage: %{
-        input_tokens: input_tokens,
-        output_tokens: output_tokens,
-        total_tokens: input_tokens + output_tokens
-      },
-      error: nil,
-      object: nil,
-      provider_meta: %{},
-      stream: nil,
-      stream?: false
+    %{
+      content: text,
+      input_tokens: input_tokens,
+      output_tokens: output_tokens
     }
   end
 
@@ -71,7 +53,7 @@ defmodule Aludel.LLMTest do
     test "returns structured response with all required fields" do
       mock_response = build_mock_response("Hello! How can I help?", 5, 10)
 
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -95,7 +77,7 @@ defmodule Aludel.LLMTest do
     test "calculates cost for OpenAI" do
       mock_response = build_mock_response("Test response", 5, 10)
 
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -113,7 +95,7 @@ defmodule Aludel.LLMTest do
     test "calls OpenAI adapter successfully" do
       mock_response = build_mock_response("Hello!", 3, 2)
 
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -132,7 +114,7 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns auth error for invalid API key" do
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:error, %{status: 401}}
       end)
 
@@ -149,7 +131,7 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns invalid_request error for bad parameters" do
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:error, %{status: 400}}
       end)
 
@@ -209,7 +191,7 @@ defmodule Aludel.LLMTest do
     test "returns structured response" do
       mock_response = build_mock_response("Hello! I'm Claude.", 8, 6)
 
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -234,7 +216,7 @@ defmodule Aludel.LLMTest do
     test "calculates cost for Anthropic" do
       mock_response = build_mock_response("Test response", 5, 10)
 
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -250,7 +232,7 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns auth error for invalid API key" do
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:error, %{status: 401}}
       end)
 
@@ -267,7 +249,7 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns invalid_request error for bad parameters" do
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:error, %{status: 400}}
       end)
 
@@ -285,8 +267,13 @@ defmodule Aludel.LLMTest do
   end
 
   describe "call/3 with Ollama provider" do
-    @tag :ollama
     test "returns structured response" do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :ollama,
@@ -302,8 +289,13 @@ defmodule Aludel.LLMTest do
       assert is_float(result.cost_usd)
     end
 
-    @tag :ollama
     test "returns zero cost for Ollama (local)" do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :ollama,
@@ -318,7 +310,7 @@ defmodule Aludel.LLMTest do
 
   describe "call/3 error handling" do
     test "handles network errors gracefully" do
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:error, :timeout}
       end)
 
@@ -338,7 +330,7 @@ defmodule Aludel.LLMTest do
     test "counts tokens for input and output" do
       mock_response = build_mock_response("Response", 10, 15)
 
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -359,7 +351,7 @@ defmodule Aludel.LLMTest do
     test "measures execution time in milliseconds" do
       mock_response = build_mock_response("Response", 5, 5)
 
-      expect(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -373,6 +365,39 @@ defmodule Aludel.LLMTest do
       {:ok, result} = LLM.call(provider, "test", [])
       assert result.latency_ms >= 0
       assert is_integer(result.latency_ms)
+    end
+  end
+
+  describe "call/3 with documents option" do
+    test "processes prompt with document attachments" do
+      mock_response = build_mock_response("The image is red", 100, 20)
+
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o",
+          config: %{"api_key" => "sk-test-key"}
+        })
+
+      # Sample 1x1 red PNG
+      image_data =
+        Base.decode64!(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        )
+
+      document = %{data: image_data, content_type: "image/png"}
+
+      assert {:ok, result} =
+               LLM.call(provider, "What color is this image?", documents: [document])
+
+      assert is_binary(result.output)
+      assert result.output == "The image is red"
+      assert result.input_tokens == 100
+      assert result.output_tokens == 20
     end
   end
 end

@@ -47,34 +47,17 @@ defmodule Aludel.DataCase do
   end
 
   @doc """
-  Sets up default Mox stub for LLM calls.
-  This provides a fallback response for tests that don't set explicit expectations.
+  Sets up default Mox stub for HTTP client calls.
+  This provides a fallback response for tests that don't set explicit
+  expectations.
   """
   def setup_mox_stub do
-    Mox.stub(Aludel.LLM.ReqLLMClientMock, :generate_text, fn _model, _prompt, _opts ->
+    Mox.stub(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
       {:ok,
-       %ReqLLM.Response{
-         id: "test-id",
-         model: "test-model",
-         context: [
-           %{role: "user", content: "test"},
-           %{role: "assistant", content: [%{type: "text", text: "Test response"}]}
-         ],
-         message: %ReqLLM.Message{
-           role: :assistant,
-           content: [%{type: :text, text: "Test response"}]
-         },
-         finish_reason: :stop,
-         usage: %{
-           input_tokens: 10,
-           output_tokens: 5,
-           total_tokens: 15
-         },
-         error: nil,
-         object: nil,
-         provider_meta: %{},
-         stream: nil,
-         stream?: false
+       %{
+         content: "Test response",
+         input_tokens: 10,
+         output_tokens: 5
        }}
     end)
   end
