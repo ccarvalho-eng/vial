@@ -25,7 +25,10 @@ defmodule Aludel.Web.DashboardLive do
     {total_passed, total_failed} = Stats.test_totals()
     success_rate = Stats.success_rate(total_passed, total_failed)
     avg_latency = Stats.avg_latency()
+    latency_percentiles = Stats.latency_percentiles()
     total_cost = Runs.total_cost()
+    cost_per_run = Stats.cost_per_run()
+    trends = Stats.comparison_stats(7)
 
     # Get last run time
     last_run_at = if recent_activity != [], do: List.first(recent_activity).inserted_at, else: nil
@@ -40,7 +43,11 @@ defmodule Aludel.Web.DashboardLive do
       |> assign(:total_failed, total_failed)
       |> assign(:success_rate, success_rate)
       |> assign(:avg_latency, avg_latency)
+      |> assign(:latency_p50, latency_percentiles.p50)
+      |> assign(:latency_p95, latency_percentiles.p95)
       |> assign(:total_cost, total_cost)
+      |> assign(:cost_per_run, cost_per_run)
+      |> assign(:trends, trends)
       |> assign(:last_run_at, last_run_at)
 
     {:noreply, socket}

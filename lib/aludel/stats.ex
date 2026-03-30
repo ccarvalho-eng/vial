@@ -74,6 +74,65 @@ defmodule Aludel.Stats do
   end
 
   @doc """
+  Returns latency percentiles (P50, P95) in milliseconds.
+  """
+  @spec latency_percentiles() :: %{p50: number(), p95: number()}
+  def latency_percentiles do
+    latencies =
+      from(rr in RunResult,
+        where: not is_nil(rr.latency_ms),
+        select: rr.latency_ms,
+        order_by: [asc: rr.latency_ms]
+      )
+      |> repo().all()
+      |> Enum.map(&to_float/1)
+
+    case latencies do
+      [] ->
+        %{p50: 0, p95: 0}
+
+      latencies ->
+        count = length(latencies)
+        p50_idx = trunc(count * 0.5)
+        p95_idx = trunc(count * 0.95)
+
+        %{
+          p50: Enum.at(latencies, p50_idx) |> Float.round(0),
+          p95: Enum.at(latencies, p95_idx) |> Float.round(0)
+        }
+    end
+  end
+
+  @doc """
+  Returns average cost per run (total cost / total runs).
+  """
+  @spec cost_per_run() :: float()
+  def cost_per_run do
+    total = total_runs()
+    if total > 0, do: Aludel.Runs.total_cost() / total, else: 0.0
+  end
+
+  @doc """
+  Returns stats for last N days compared to previous period.
+  Returns %{current: map, previous: map, trends: map}.
+  """
+  @spec comparison_stats(integer()) :: map()
+  def comparison_stats(days \\ 7) do
+    now = DateTime.utc_now()
+    period_start = DateTime.add(now, -days, :day)
+    previous_start = DateTime.add(period_start, -days, :day)
+
+    current = period_stats(period_start, now)
+    previous = period_stats(previous_start, period_start)
+
+    %{
+      current: current,
+      previous: previous,
+      trends: calculate_trends(current, previous)
+    }
+  end
+
+  @doc """
   Returns recent activity combining both Run and SuiteRun records.
 
   Fetches and normalizes both types of runs into a common format,
@@ -138,6 +197,34 @@ defmodule Aludel.Stats do
   defp to_integer(nil), do: 0
   defp to_integer(%Decimal{} = value), do: Decimal.to_integer(value)
   defp to_integer(value) when is_integer(value), do: value
+
+  defp to_float(nil), do: 0.0
+  defp to_float(%Decimal{} = value), do: Decimal.to_float(value)
+  defp to_float(value) when is_float(value), do: value
+  defp to_float(value) when is_integer(value), do: value / 1
+
+  defp period_stats(start_time, end_time) do
+    suite_runs =
+      from(sr in SuiteRun, where: sr.inserted_at >= ^start_time and sr.inserted_at < ^end_time)
+      |> repo().aggregate(:count)
+
+    prompt_runs =
+      from(r in Run, where: r.inserted_at >= ^start_time and r.inserted_at < ^end_time)
+      |> repo().aggregate(:count)
+
+    %{total_runs: suite_runs + prompt_runs}
+  end
+
+  defp calculate_trends(current, previous) do
+    %{
+      total_runs: trend_direction(current.total_runs, previous.total_runs)
+    }
+  end
+
+  defp trend_direction(current, previous) when previous == 0 and current > 0, do: :up
+  defp trend_direction(current, previous) when current > previous, do: :up
+  defp trend_direction(current, previous) when current < previous, do: :down
+  defp trend_direction(_current, _previous), do: :stable
 
   defp normalize_run(run) do
     %{

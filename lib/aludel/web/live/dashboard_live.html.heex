@@ -25,7 +25,15 @@
             </div>
           </div>
         </div>
-        <div class="stat-value mb-xs">{@total_runs}</div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <div class="stat-value">{@total_runs}</div>
+          <%= if @trends.trends.total_runs == :up do %>
+            <.icon name="hero-arrow-trending-up" class="size-5 text-green-600" />
+          <% end %>
+          <%= if @trends.trends.total_runs == :down do %>
+            <.icon name="hero-arrow-trending-down" class="size-5 text-red-600" />
+          <% end %>
+        </div>
         <div class="stat-label text-sm font-medium">Total Runs</div>
         <div class="stat-description mt-xs">Evaluations executed</div>
       </div>
@@ -53,13 +61,15 @@
           <div class="stat-info-tooltip">
             <.icon name="hero-information-circle" class="size-4 stat-info-icon" />
             <div class="stat-info-tooltip-content">
-              Average API response time for individual prompt runs
+              Latency percentiles (P50: median, P95: 95th percentile)
             </div>
           </div>
         </div>
         <div class="stat-value mb-xs">{trunc(@avg_latency)}ms</div>
-        <div class="stat-label text-sm font-medium">Avg Response</div>
-        <div class="stat-description mt-xs">Average latency</div>
+        <div class="stat-label text-sm font-medium">Avg Latency</div>
+        <div class="stat-description mt-xs">
+          P50: {trunc(@latency_p50)}ms, P95: {trunc(@latency_p95)}ms
+        </div>
       </div>
 
       <div id="cost-summary" class="aludel-card p-md">
@@ -68,7 +78,7 @@
           <div class="stat-info-tooltip">
             <.icon name="hero-information-circle" class="size-4 stat-info-icon" />
             <div class="stat-info-tooltip-content">
-              Total cost across all prompt runs and suite runs
+              Total cost and average cost per run
             </div>
           </div>
         </div>
@@ -76,7 +86,9 @@
           ${:erlang.float_to_binary(@total_cost, decimals: 4)}
         </div>
         <div class="stat-label" style="font-size: 13px; font-weight: 500;">Total Cost</div>
-        <div class="stat-description" style="margin-top: 2px;">All evaluations</div>
+        <div class="stat-description" style="margin-top: 2px;">
+          ${:erlang.float_to_binary(@cost_per_run, decimals: 4)} per run
+        </div>
       </div>
     </div>
 
@@ -301,7 +313,11 @@
               </thead>
               <tbody>
                 <%= for activity <- @recent_activity do %>
-                  <tr style="border-bottom: 1px solid var(--border); transition: background-color 0.15s;">
+                  <% has_failures =
+                    activity.type == :suite_run && activity.failed > 0 %>
+                  <% row_bg =
+                    if has_failures, do: "rgba(239, 68, 68, 0.05)", else: "transparent" %>
+                  <tr style={"border-bottom: 1px solid var(--border); transition: background-color 0.15s; background-color: #{row_bg};"}>
                     <td style="padding: 16px;">
                       <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background-color: var(--bg-secondary); border-radius: 12px; font-size: 12px; font-weight: 500;">
                         <.icon
