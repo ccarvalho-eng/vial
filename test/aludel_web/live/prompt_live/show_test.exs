@@ -33,12 +33,10 @@ defmodule Aludel.Web.PromptLive.ShowTest do
 
       {:ok, _view, html} = live(conn, "/prompts/#{prompt.id}")
 
-      # Check all versions are displayed
-      assert html =~ "Version 1 template"
-      assert html =~ "Version 2 template"
+      # Only the latest version template is displayed in the main content
       assert html =~ "Version 3 template"
 
-      # Check version numbers
+      # All version numbers are visible in the history sidebar
       assert html =~ "v#{v1.version}"
       assert html =~ "v#{v2.version}"
       assert html =~ "v#{v3.version}"

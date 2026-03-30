@@ -275,7 +275,9 @@
                       <img
                         src={icon_path}
                         alt={provider.provider_name}
-                        class={if provider.provider == :ollama, do: "provider-icon-ollama", else: ""}
+                        class={
+                          if provider.provider == :ollama, do: "provider-icon-ollama", else: ""
+                        }
                         style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 3px;"
                       />
                     <% else %>
@@ -353,7 +355,9 @@
                         <img
                           src={icon_path}
                           alt={provider.provider_name}
-                          class={if provider.provider == :ollama, do: "provider-icon-ollama", else: ""}
+                          class={
+                            if provider.provider == :ollama, do: "provider-icon-ollama", else: ""
+                          }
                           style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 3px;"
                         />
                       <% else %>

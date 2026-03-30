@@ -1,5 +1,5 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+  <div style="max-width: 1400px; margin: 0 auto; padding: 0 20px;">
     <div style="margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
       <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
         <div style="flex: 1;">
@@ -39,10 +39,6 @@
       </nav>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-      <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Versions</h2>
-    </div>
-
     <div
       :if={@prompt.versions == []}
       class="aludel-card"
@@ -54,38 +50,99 @@
       </div>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-      <div :for={version <- @prompt.versions} class="aludel-card">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="font-size: 14px; font-weight: 600;">v{version.version}</div>
-            <.link
-              navigate={aludel_path("runs/new?version=#{version.id}")}
-              class="button-primary"
-              style="font-size: 13px; padding: 6px 12px;"
-            >
-              Run
-            </.link>
-          </div>
-          <div style="font-size: 13px; color: var(--text-secondary);">
-            {Calendar.strftime(version.inserted_at, "%Y-%m-%d %H:%M")}
-          </div>
+    <div :if={@prompt.versions != []} style="display: flex; gap: 24px; position: relative;">
+      <%!-- Main content area --%>
+      <div style="flex: 1; min-width: 0;">
+        <div style="margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600;">
+            <%= if @selected_version_id do %>
+              <% selected = Enum.find(@prompt.versions, &(&1.id == @selected_version_id)) %> v{selected.version}
+            <% else %>
+              Current Version
+            <% end %>
+          </h2>
         </div>
 
-        <div style="border-radius: 6px; padding: 12px; margin-bottom: 12px; background-color: var(--bg-tertiary); border: 1px solid var(--border);">
-          <pre style="font-size: 13px; white-space: pre-wrap; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; margin: 0; max-height: 300px; overflow-y: auto;">{version.template}</pre>
-        </div>
-
-        <div :if={version.variables != []} style="margin-top: 12px;">
-          <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Variables:</p>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <span
-              :for={var <- version.variables}
-              class="tag"
-            >
-              {var}
-            </span>
+        <% selected_version = Enum.find(@prompt.versions, &(&1.id == @selected_version_id)) %>
+        <div :if={selected_version} class="aludel-card">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <.link
+                navigate={aludel_path("runs/new?version=#{selected_version.id}")}
+                class="button-primary"
+                style="font-size: 13px; padding: 8px 14px;"
+              >
+                <.icon name="hero-play" class="size-4" /> Run
+              </.link>
+            </div>
+            <div style="font-size: 13px; color: var(--text-secondary);">
+              Created {Calendar.strftime(selected_version.inserted_at, "%Y-%m-%d at %H:%M")}
+            </div>
           </div>
+
+          <div style="border-radius: 6px; padding: 14px; margin-bottom: 14px; background-color: var(--bg-tertiary); border: 1px solid var(--border);">
+            <pre style="font-size: 13px; white-space: pre-wrap; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; margin: 0; max-height: 500px; overflow-y: auto; line-height: 1.5;">{selected_version.template}</pre>
+          </div>
+
+          <div :if={selected_version.variables != []} style="margin-top: 14px;">
+            <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Variables:</p>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span :for={var <- selected_version.variables} class="tag">
+                {var}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Timeline sidebar --%>
+      <div style="width: 320px; flex-shrink: 0; border-left: 1px solid var(--border); padding-left: 24px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em;">
+          History
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <%= for version <- @prompt.versions do %>
+            <% is_selected = version.id == @selected_version_id %>
+            <% border_color = if is_selected, do: "var(--accent)", else: "var(--border)" %>
+            <% bg_color = if is_selected, do: "var(--bg-primary)", else: "transparent" %>
+            <% text_color = if is_selected, do: "var(--accent)", else: "var(--text-primary)" %>
+            <% box_shadow =
+              if is_selected,
+                do: "0 0 0 1px var(--accent), 0 2px 8px rgba(99, 102, 241, 0.12)",
+                else: "none" %>
+            <div
+              phx-click="select_version"
+              phx-value-version-id={version.id}
+              style={"padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; border: 1px solid #{border_color}; background-color: #{bg_color}; box-shadow: #{box_shadow};"}
+              onmouseover={
+                unless is_selected,
+                  do:
+                    "this.style.borderColor='var(--text-muted)'; this.style.backgroundColor='var(--bg-secondary)'"
+              }
+              onmouseout={
+                unless is_selected,
+                  do:
+                    "this.style.borderColor='var(--border)'; this.style.backgroundColor='transparent'"
+              }
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style={"font-size: 14px; font-weight: 600; color: #{text_color}; letter-spacing: -0.01em;"}>
+                  v{version.version}
+                </div>
+                <%= if is_selected do %>
+                  <span style="color: var(--accent); display: flex; align-items: center;">
+                    <.icon name="hero-check-circle-solid" class="size-3" />
+                  </span>
+                <% end %>
+              </div>
+              <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.3;">
+                {Calendar.strftime(version.inserted_at, "%b %d, %Y")}
+              </div>
+              <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'SF Mono', Monaco, monospace;">
+                {Calendar.strftime(version.inserted_at, "%H:%M:%S")}
+              </div>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
