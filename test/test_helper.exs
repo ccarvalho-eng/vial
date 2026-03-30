@@ -65,6 +65,13 @@ Aludel.Web.Endpoint.start_link()
 # Set sandbox mode for test repo
 Ecto.Adapters.SQL.Sandbox.mode(Aludel.Test.Repo, :manual)
 
+# Define Mox mocks
+Mox.defmock(Aludel.LLM.AdapterMock, for: Aludel.LLM.Adapter)
+Mox.defmock(Aludel.HTTPClientMock, for: Aludel.LLM.HTTPClient)
+
+# Configure test environment to use mocked HTTP client
+Application.put_env(:aludel, :http_client, Aludel.HTTPClientMock)
+
 # Exclude integration tests that require external services or real API keys
 # Run with: mix test --include ollama (if you have Ollama running)
 # Run with: mix test --include anthropic_integration (requires ANTHROPIC_API_KEY)
