@@ -11,13 +11,15 @@ defmodule Aludel.Interfaces.LLM.Providers.Anthropic do
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
   @impl true
-  def generate(model, prompt, config, _opts) do
+  def generate(model, prompt, config, opts) do
     with {:ok, api_key} <- Config.get_api_key(config) do
-      req_opts = [
-        api_key: api_key,
-        temperature: config["temperature"] || 0.5,
-        max_tokens: config["max_tokens"] || 1024
-      ]
+      req_opts =
+        [
+          api_key: api_key,
+          temperature: config["temperature"] || 0.5,
+          max_tokens: config["max_tokens"] || 1024
+        ]
+        |> Keyword.merge(opts)
 
       model_spec = "anthropic:#{model}"
 

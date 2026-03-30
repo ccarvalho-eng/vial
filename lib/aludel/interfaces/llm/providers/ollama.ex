@@ -14,12 +14,14 @@ defmodule Aludel.Interfaces.LLM.Providers.Ollama do
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
   @impl true
-  def generate(model, prompt, config, _opts) do
-    req_opts = [
-      api_key: "ollama-no-auth-required",
-      base_url: "http://localhost:11434/v1",
-      temperature: config["temperature"] || 0.8
-    ]
+  def generate(model, prompt, config, opts) do
+    req_opts =
+      [
+        api_key: "ollama-no-auth-required",
+        base_url: "http://localhost:11434/v1",
+        temperature: config["temperature"] || 0.8
+      ]
+      |> Keyword.merge(opts)
 
     model_spec = "openai:#{model}"
 

@@ -369,10 +369,21 @@ defmodule Aludel.LLMTest do
   end
 
   describe "call/3 with documents option" do
-    test "processes prompt with document attachments" do
+    test "forwards documents to HTTP adapter" do
       mock_response = build_mock_response("The image is red", 100, 20)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      # Sample 1x1 red PNG
+      image_data =
+        Base.decode64!(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+        )
+
+      document = %{data: image_data, content_type: "image/png"}
+
+      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, opts ->
+        # Verify documents are forwarded to adapter
+        assert Keyword.has_key?(opts, :documents)
+        assert opts[:documents] == [document]
         {:ok, mock_response}
       end)
 
@@ -382,14 +393,6 @@ defmodule Aludel.LLMTest do
           model: "gpt-4o",
           config: %{"api_key" => "sk-test-key"}
         })
-
-      # Sample 1x1 red PNG
-      image_data =
-        Base.decode64!(
-          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
-        )
-
-      document = %{data: image_data, content_type: "image/png"}
 
       assert {:ok, result} =
                LLM.call(provider, "What color is this image?", documents: [document])
