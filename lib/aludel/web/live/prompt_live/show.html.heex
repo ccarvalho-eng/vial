@@ -65,32 +65,30 @@
 
         <% selected_version = Enum.find(@prompt.versions, &(&1.id == @selected_version_id)) %>
         <div :if={selected_version} class="aludel-card">
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <.link
-                navigate={aludel_path("runs/new?version=#{selected_version.id}")}
-                class="button-primary"
-                style="font-size: 13px; padding: 8px 14px;"
-              >
-                <.icon name="hero-play" class="size-4" /> Run
-              </.link>
-            </div>
-            <div style="font-size: 13px; color: var(--text-secondary);">
-              Created {Calendar.strftime(selected_version.inserted_at, "%Y-%m-%d at %H:%M")}
-            </div>
-          </div>
-
           <div style="border-radius: 6px; padding: 14px; margin-bottom: 14px; background-color: var(--bg-tertiary); border: 1px solid var(--border);">
             <pre style="font-size: 13px; white-space: pre-wrap; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; margin: 0; max-height: 500px; overflow-y: auto; line-height: 1.5;">{selected_version.template}</pre>
           </div>
 
-          <div :if={selected_version.variables != []} style="margin-top: 14px;">
+          <div :if={selected_version.variables != []} style="margin-bottom: 16px;">
             <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Variables:</p>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <span :for={var <- selected_version.variables} class="tag">
                 {var}
               </span>
             </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              Created {Calendar.strftime(selected_version.inserted_at, "%Y-%m-%d at %H:%M")}
+            </div>
+            <.link
+              navigate={aludel_path("runs/new?version=#{selected_version.id}")}
+              class="button-primary"
+              style="font-size: 13px; padding: 8px 14px;"
+            >
+              <.icon name="hero-play" class="size-4" /> Run
+            </.link>
           </div>
         </div>
       </div>
