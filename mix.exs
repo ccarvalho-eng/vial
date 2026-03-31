@@ -94,7 +94,6 @@ defmodule Aludel.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
-      {:ecto_enum, "~> 1.4"},
 
       # Documentation
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
