@@ -37,5 +37,5 @@ config :aludel, :llm,
   anthropic_api_key: "sk-ant-test-fake-anthropic-key-for-testing"
 
 # Use mocked HTTP client for all tests
-config :aludel,
-  http_client: Aludel.Interfaces.HttpClientMock
+# config :aludel,
+#   http_client: Aludel.Interfaces.HttpClientMock
