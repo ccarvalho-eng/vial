@@ -249,47 +249,43 @@ Aludel uses Tailwind CSS and esbuild for styling and JavaScript bundling.
 
 **Asset compilation:**
 
-Assets are compiled to the `dist/` directory and are **not tracked in git**. They are built automatically during development and packaged when publishing to Hex.
+Assets are compiled to the `priv/static/` directory and are **not tracked in git**. They are built automatically during development and packaged when publishing to Hex.
 
-**Development workflow with live reload:**
+**Development workflow:**
 
-Run the standalone app with automatic asset watching:
+Run the standalone app:
 
 ```bash
 cd standalone
 mix phx.server
 ```
 
-**What auto-reloads:**
-- ✅ CSS files in `assets/css/` (via tailwind watcher)
-- ✅ JavaScript files in `assets/js/` (via esbuild watcher)
-- ✅ Standalone app files in `standalone/lib/` (via code reloader)
+**When you make changes:**
 
-**What requires manual recompilation:**
-- ❌ Aludel source files in `lib/aludel/` (path dependency limitation)
-
-When you edit Aludel source files (.ex or .heex), recompile the dependency:
+All changes require recompiling the aludel dependency and restarting the server:
 
 ```bash
-# In another terminal
-cd standalone
-mix deps.compile aludel --force
+# Terminal 1: Stop server (Ctrl+C)
+# Terminal 2: Rebuild assets and recompile
+mix assets.build && mix deps.compile aludel --force
+# Terminal 1: Restart server
+mix phx.server
 ```
 
-Then refresh your browser to see changes
+This is due to path dependency limitations in Phoenix - the code reloader doesn't auto-recompile path dependencies, and assets are read at compile time for performance.
 
 **Manual asset building:**
 
 If you need to build assets manually:
 
 ```bash
-mix assets.build  # Outputs to dist/app.css and dist/app.js
+mix assets.build  # Outputs to priv/static/app.css and priv/static/app.js
 ```
 
 **Asset files:**
 - Source CSS: `assets/css/app.css`
 - Source JavaScript: `assets/js/app.js` and `assets/js/hooks/`
-- Built assets: `dist/app.css` and `dist/app.js` (gitignored, included in Hex package)
+- Built assets: `priv/static/app.css` and `priv/static/app.js` (gitignored, included in Hex package)
 
 **Publishing to Hex:**
 
@@ -300,7 +296,7 @@ mix assets.build
 mix hex.build
 ```
 
-The `dist/` directory is included in the Hex package so users get pre-compiled assets.
+The `priv/static/` directory is included in the Hex package so users get pre-compiled assets.
 
 ---
 

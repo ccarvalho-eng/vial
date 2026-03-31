@@ -59,7 +59,7 @@ defmodule Aludel.MixProject do
       name: "aludel",
       maintainers: ["Cristiano Carvalho"],
       licenses: ["Apache-2.0"],
-      files: ~w(dist lib priv .formatter.exs mix.exs README* CHANGELOG* LICENSE*),
+      files: ~w(lib priv .formatter.exs mix.exs README* CHANGELOG* LICENSE*),
       links: %{
         "GitHub" => "https://github.com/ccarvalho-eng/aludel"
       }

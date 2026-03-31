@@ -28,10 +28,8 @@ erl_crash.dump
 vial-*.tar
 
 # Ignore assets that are produced by build tools.
-/priv/static/assets/
 /priv/static/app.css
 /priv/static/app.js
-/dist/
 
 # Ignore digested assets cache.
 /priv/static/cache_manifest.json

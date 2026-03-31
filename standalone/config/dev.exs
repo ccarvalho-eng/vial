@@ -15,17 +15,7 @@ config :aludel_dash, AludelDash.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "LOCAL_DEV_SECRET_PLEASE_CHANGE_IN_PROD",
-  watchers: [
-    esbuild: {Esbuild, :install_and_run, [:aludel, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:aludel, ~w(--watch)]}
-  ],
-  live_reload: [
-    patterns: [
-      ~r"../dist/.*(js|css)$",
-      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$"
-    ]
-  ]
+  secret_key_base: "LOCAL_DEV_SECRET_PLEASE_CHANGE_IN_PROD"
 
 config :aludel, :llm,
   openai_api_key: System.get_env("OPENAI_API_KEY"),

@@ -10,20 +10,17 @@ defmodule Aludel.Web.Assets do
 
   import Plug.Conn
 
-  # Read assets from dist/ directory relative to source file location
-  # __DIR__ is lib/aludel/web, so ../../../dist gets to project root dist/
-  css_path = Path.join(__DIR__, "../../../dist/app.css")
-  @external_resource css_path
+  @static_path Application.app_dir(:aludel, ["priv", "static"])
+
+  @external_resource css_path = Path.join(@static_path, "app.css")
   @css File.read!(css_path)
 
-  js_path = Path.join(__DIR__, "../../../dist/app.js")
-  @external_resource js_path
+  @external_resource js_path = Path.join(@static_path, "app.js")
   @js File.read!(js_path)
 
   # Generate current_hash/1 functions with MD5 hashes
   for {key, val} <- [css: @css, js: @js] do
     md5 = Base.encode16(:crypto.hash(:md5, val), case: :lower) |> String.slice(0, 8)
-
     def current_hash(unquote(key)), do: unquote(md5)
   end
 
