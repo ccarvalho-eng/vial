@@ -48,3 +48,7 @@ assets/.DS_Store
 
 # Git worktrees directory
 /.worktrees/
+
+# Claude Code configuration
+.claude
+CLAUDE.md
