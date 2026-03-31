@@ -65,9 +65,4 @@ Aludel.Web.Endpoint.start_link()
 # Set sandbox mode for test repo
 Ecto.Adapters.SQL.Sandbox.mode(Aludel.Test.Repo, :manual)
 
-# Define Mox mock for HTTP client
-Mox.defmock(Aludel.Interfaces.HttpClientMock,
-  for: Aludel.Interfaces.Adapters.Http
-)
-
 ExUnit.start()

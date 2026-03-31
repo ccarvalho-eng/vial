@@ -103,8 +103,7 @@ defmodule Aludel.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.14", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
-      {:excoveralls, "~> 0.18", only: :test},
-      {:mox, "~> 1.2", only: :test}
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 
