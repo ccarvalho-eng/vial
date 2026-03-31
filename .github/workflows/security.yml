@@ -33,6 +33,11 @@ jobs:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
       - name: Install dependencies
         run: mix deps.get
 
@@ -42,6 +47,7 @@ jobs:
       - name: Sobelow security scan
         run: |
           mix deps.get
+          mix assets.build
           mix compile --warnings-as-errors
           mix sobelow --config .sobelow-conf
 

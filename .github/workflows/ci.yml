@@ -89,6 +89,14 @@ jobs:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
 
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Build assets
+        run: mix assets.build
+
       - name: Compile (dev)
         run: MIX_ENV=dev mix compile
 
@@ -109,6 +117,11 @@ jobs:
           elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
 
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
       - name: Restore PLT cache
         uses: actions/cache@v4
         with:
@@ -116,6 +129,9 @@ jobs:
           key: ${{ runner.os }}-dialyzer-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-dialyzer-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
+
+      - name: Build assets
+        run: mix assets.build
 
       - name: Compile (dev)
         run: MIX_ENV=dev mix compile
