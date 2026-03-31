@@ -253,17 +253,30 @@ Assets are compiled to the `dist/` directory and are **not tracked in git**. The
 
 **Development workflow with live reload:**
 
-The recommended way to work on Aludel is to run the standalone app, which includes automatic asset watching and live reload:
+Run the standalone app with automatic asset watching:
 
 ```bash
 cd standalone
-mix phx.server  # Starts asset watchers + live reload automatically
+mix phx.server
 ```
 
-Assets will automatically recompile and the browser will refresh when you edit:
-- CSS files in `assets/css/`
-- JavaScript files in `assets/js/`
-- LiveView templates in `lib/aludel/web/`
+**What auto-reloads:**
+- ✅ CSS files in `assets/css/` (via tailwind watcher)
+- ✅ JavaScript files in `assets/js/` (via esbuild watcher)
+- ✅ Standalone app files in `standalone/lib/` (via code reloader)
+
+**What requires manual recompilation:**
+- ❌ Aludel source files in `lib/aludel/` (path dependency limitation)
+
+When you edit Aludel source files (.ex or .heex), recompile the dependency:
+
+```bash
+# In another terminal
+cd standalone
+mix deps.compile aludel --force
+```
+
+Then refresh your browser to see changes
 
 **Manual asset building:**
 

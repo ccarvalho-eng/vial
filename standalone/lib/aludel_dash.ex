@@ -84,6 +84,14 @@ defmodule AludelDash.Endpoint do
 
   socket("/live", Phoenix.LiveView.Socket)
 
+  # Code reloading can be explicitly enabled under the
+  # :code_reloader configuration of your endpoint.
+  if code_reloading? do
+    socket("/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket)
+    plug(Phoenix.LiveReloader)
+    plug(Phoenix.CodeReloader)
+  end
+
   plug(Plug.Session,
     store: :cookie,
     key: "_aludel_dash_key",
