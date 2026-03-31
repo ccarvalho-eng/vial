@@ -34,7 +34,7 @@ jobs:
           otp-version: ${{ env.OTP_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
 
