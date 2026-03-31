@@ -24,6 +24,9 @@ defmodule Aludel.Interfaces.LLM.Adapters.Http.Default do
   """
 
   alias Aludel.Interfaces.Adapters.Http
+  alias ReqLLM.Message.ContentPart
+
+  require Logger
 
   @behaviour Http
 
@@ -94,8 +97,6 @@ defmodule Aludel.Interfaces.LLM.Adapters.Http.Default do
   defp format_messages(_model_spec, prompt, []) when is_binary(prompt), do: prompt
 
   defp format_messages(model_spec, prompt, documents) when is_binary(prompt) do
-    alias ReqLLM.Message.ContentPart
-
     provider = extract_provider(model_spec)
 
     content_parts =
@@ -113,7 +114,7 @@ defmodule Aludel.Interfaces.LLM.Adapters.Http.Default do
   # Anthropic and OpenAI support PDFs natively
   defp to_content_part(%{content_type: "application/pdf", data: data}, provider)
        when provider in ["anthropic", "openai"] do
-    [ReqLLM.Message.ContentPart.file(data, "document.pdf", "application/pdf")]
+    [ContentPart.file(data, "document.pdf", "application/pdf")]
   end
 
   # Ollama needs PDFs converted to images
@@ -133,11 +134,10 @@ defmodule Aludel.Interfaces.LLM.Adapters.Http.Default do
 
   defp to_image_part(data, content_type) do
     data_url = "data:#{content_type};base64,#{Base.encode64(data)}"
-    [ReqLLM.Message.ContentPart.image_url(data_url)]
+    [ContentPart.image_url(data_url)]
   end
 
   defp log_conversion_error(reason) do
-    require Logger
     Logger.error("Failed to convert PDF to image: #{inspect(reason)}")
     []
   end
