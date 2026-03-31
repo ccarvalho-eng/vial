@@ -17,6 +17,7 @@ defmodule Aludel.DataCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
+  alias Aludel.Interfaces.HttpClientMock
 
   using do
     quote do
@@ -52,7 +53,7 @@ defmodule Aludel.DataCase do
   expectations.
   """
   def setup_mox_stub do
-    Mox.stub(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+    Mox.stub(HttpClientMock, :request, fn _model, _prompt, _opts ->
       {:ok,
        %{
          content: "Test response",

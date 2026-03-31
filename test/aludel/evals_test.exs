@@ -3,6 +3,7 @@ defmodule Aludel.EvalsTest do
 
   import Mox
 
+  alias Aludel.Interfaces.HttpClientMock
   alias Aludel.Evals
   alias Aludel.Evals.SuiteRun
 
@@ -309,7 +310,7 @@ defmodule Aludel.EvalsTest do
     test "execute_suite captures avg_cost_usd and avg_latency_ms" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -344,7 +345,7 @@ defmodule Aludel.EvalsTest do
     test "execute_suite handles partial failures in metrics" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -380,7 +381,7 @@ defmodule Aludel.EvalsTest do
     test "executes suite with passing test cases" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -417,7 +418,7 @@ defmodule Aludel.EvalsTest do
     test "executes suite with failing test cases" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -441,7 +442,7 @@ defmodule Aludel.EvalsTest do
     test "evaluates contains assertion" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -465,7 +466,7 @@ defmodule Aludel.EvalsTest do
     test "evaluates not_contains assertion" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -488,7 +489,7 @@ defmodule Aludel.EvalsTest do
     test "evaluates regex assertion" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -511,7 +512,7 @@ defmodule Aludel.EvalsTest do
     test "evaluates exact_match assertion" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -534,7 +535,7 @@ defmodule Aludel.EvalsTest do
     test "evaluates multiple assertions per test case" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 

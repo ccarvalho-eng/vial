@@ -3,6 +3,7 @@ defmodule Aludel.RunsTest do
 
   import Mox
 
+  alias Aludel.Interfaces.HttpClientMock
   alias Aludel.Runs
 
   import Aludel.PromptsFixtures
@@ -288,7 +289,7 @@ defmodule Aludel.RunsTest do
     } do
       mock_response = build_mock_response("Hello Alice", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -313,7 +314,7 @@ defmodule Aludel.RunsTest do
     } do
       mock_response = build_mock_response("Test response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, 3, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, 3, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -346,7 +347,7 @@ defmodule Aludel.RunsTest do
     } do
       mock_response = build_mock_response("Test response", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -366,7 +367,7 @@ defmodule Aludel.RunsTest do
     } do
       mock_response = build_mock_response("Hello Alice", 5, 10)
 
-      expect(Aludel.Interfaces.HttpClientMock, :request, fn _model, _prompt, _opts ->
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
