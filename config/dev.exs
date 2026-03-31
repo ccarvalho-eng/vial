@@ -17,12 +17,6 @@ config :aludel, Aludel.Web.Endpoint,
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:aludel, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:aludel, ~w(--watch)]}
-  ],
-  live_reload: [
-    patterns: [
-      ~r"dist/.*(js|css)$",
-      ~r"lib/aludel/web/(controllers|live|components)/.*(ex|heex)$"
-    ]
   ]
 
 config :aludel, :llm,

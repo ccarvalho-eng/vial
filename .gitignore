@@ -51,6 +51,7 @@ assets/.DS_Store
 /.worktrees/
 
 # AI agent context files
+.claude/
 CLAUDE.md
 GEMINI.md
 CURSOR.md
