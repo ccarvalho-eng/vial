@@ -53,11 +53,11 @@ jobs:
       - name: Check formatting
         run: mix format --check-formatted
 
-      - name: Compile (test)
-        run: mix compile --warnings-as-errors
-
       - name: Build assets
         run: mix assets.build
+
+      - name: Compile (test)
+        run: mix compile --warnings-as-errors
 
       - name: Create and migrate database
         run: mix ecto.create && mix ecto.migrate
