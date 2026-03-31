@@ -247,45 +247,47 @@ Explain {{topic}} in exactly 3 sentences.
 
 Aludel uses Tailwind CSS and esbuild for styling and JavaScript bundling.
 
-**After making changes to CSS or JS files:**
+**Asset compilation:**
 
-```bash
-# 1. Rebuild assets (from aludel directory)
-mix assets.build
+Assets are compiled to the `dist/` directory and are **not tracked in git**. They are built automatically during development and packaged when publishing to Hex.
 
-# 2. Force recompile to pick up new asset hashes
-mix compile --force
+**Development workflow with live reload:**
 
-# 3. If working on an embedded installation, recompile the dependency
-cd ../your_host_app
-mix deps.compile aludel --force
-
-# 4. Restart the Phoenix server to pick up changes
-```
-
-**Asset files:**
-- CSS: `assets/css/app.css`
-- JavaScript: `assets/js/app.js` and `assets/js/hooks/`
-- Built assets: `priv/static/app.css` and `priv/static/app.js` (committed to git)
-
-**Live development workflow:**
-
-For faster iteration during development, you can use Mix tasks with watchers:
-
-```bash
-# Watch and rebuild CSS on changes
-mix tailwind aludel --watch
-
-# Watch and rebuild JS on changes (in another terminal)
-mix esbuild aludel --watch
-```
-
-Alternatively, run the standalone app for a full development server:
+The recommended way to work on Aludel is to run the standalone app, which includes automatic asset watching and live reload:
 
 ```bash
 cd standalone
-mix phx.server  # Starts asset watchers automatically
+mix phx.server  # Starts asset watchers + live reload automatically
 ```
+
+Assets will automatically recompile and the browser will refresh when you edit:
+- CSS files in `assets/css/`
+- JavaScript files in `assets/js/`
+- LiveView templates in `lib/aludel/web/`
+
+**Manual asset building:**
+
+If you need to build assets manually:
+
+```bash
+mix assets.build  # Outputs to dist/app.css and dist/app.js
+```
+
+**Asset files:**
+- Source CSS: `assets/css/app.css`
+- Source JavaScript: `assets/js/app.js` and `assets/js/hooks/`
+- Built assets: `dist/app.css` and `dist/app.js` (gitignored, included in Hex package)
+
+**Publishing to Hex:**
+
+Before publishing a new version, ensure assets are built:
+
+```bash
+mix assets.build
+mix hex.build
+```
+
+The `dist/` directory is included in the Hex package so users get pre-compiled assets.
 
 ---
 

@@ -10,14 +10,20 @@ defmodule Aludel.Web.Assets do
 
   import Plug.Conn
 
-  @static_path Application.app_dir(:aludel, ["priv", "static"])
+  # In development/test, read from project root dist/
+  # In production (as a dep), read from the package's dist/
+  @dist_path (if Mix.env() in [:dev, :test] do
+                Path.join(File.cwd!(), "dist")
+              else
+                Application.app_dir(:aludel, ["dist"])
+              end)
 
   # CSS
-  @external_resource css_path = Path.join(@static_path, "app.css")
+  @external_resource css_path = Path.join(@dist_path, "app.css")
   @css File.read!(css_path)
 
   # JS
-  @external_resource js_path = Path.join(@static_path, "app.js")
+  @external_resource js_path = Path.join(@dist_path, "app.js")
   @js File.read!(js_path)
 
   # Generate current_hash/1 functions with MD5 hashes

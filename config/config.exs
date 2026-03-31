@@ -28,7 +28,7 @@ config :esbuild,
   version: "0.25.4",
   aludel: [
     args:
-      ~w(assets/js/app.js --bundle --target=es2022 --outdir=priv/static --external:/fonts/* --external:/images/*),
+      ~w(assets/js/app.js --bundle --target=es2022 --outdir=dist --external:/fonts/* --external:/images/*),
     cd: Path.expand("..", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
@@ -39,7 +39,7 @@ config :tailwind,
   aludel: [
     args: ~w(
       --input=css/app.css
-      --output=../priv/static/app.css
+      --output=../dist/app.css
     ),
     cd: Path.expand("../assets", __DIR__)
   ]
