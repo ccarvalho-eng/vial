@@ -17,6 +17,18 @@ Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output 
 
 ---
 
+## Requirements
+
+**PostgreSQL 12+** is required. Aludel uses PostgreSQL-specific features:
+
+- **JSONB columns** for storing variable values and assertions
+- **`percentile_disc()`** window function for latency metrics (p50/p95)
+- **`DATE()`** fragment for time-series aggregations
+
+Other Ecto adapters (SQLite, MySQL) are not supported. If you attempt to use a different adapter, migrations will fail with column type errors.
+
+---
+
 ## Features
 
 - **Multi-provider comparison** — Run the same prompt across providers side-by-side. Track latency, token usage, and cost per run.
