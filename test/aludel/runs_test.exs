@@ -12,14 +12,6 @@ defmodule Aludel.RunsTest do
   setup :set_mox_from_context
   setup :verify_on_exit!
 
-  defp build_mock_response(text, input_tokens, output_tokens) do
-    %{
-      content: text,
-      input_tokens: input_tokens,
-      output_tokens: output_tokens
-    }
-  end
-
   describe "runs" do
     alias Aludel.Runs.Run
 
@@ -395,5 +387,13 @@ defmodule Aludel.RunsTest do
       # For now, this should still succeed but handle errors per-provider
       assert {:ok, _result_run} = Runs.execute_run(run, [provider])
     end
+  end
+
+  defp build_mock_response(text, input_tokens, output_tokens) do
+    %{
+      content: text,
+      input_tokens: input_tokens,
+      output_tokens: output_tokens
+    }
   end
 end

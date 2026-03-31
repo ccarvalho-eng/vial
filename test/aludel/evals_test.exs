@@ -10,14 +10,6 @@ defmodule Aludel.EvalsTest do
   setup :set_mox_from_context
   setup :verify_on_exit!
 
-  defp build_mock_response(text, input_tokens, output_tokens) do
-    %{
-      content: text,
-      input_tokens: input_tokens,
-      output_tokens: output_tokens
-    }
-  end
-
   describe "suites" do
     test "create_suite/1 creates a suite with valid attributes" do
       prompt = prompt_fixture()
@@ -670,5 +662,13 @@ defmodule Aludel.EvalsTest do
       assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
       assert suite_run.passed + suite_run.failed > 0
     end
+  end
+
+  defp build_mock_response(text, input_tokens, output_tokens) do
+    %{
+      content: text,
+      input_tokens: input_tokens,
+      output_tokens: output_tokens
+    }
   end
 end
