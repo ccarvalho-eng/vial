@@ -49,3 +49,10 @@ assets/.DS_Store
 
 # Git worktrees directory
 /.worktrees/
+
+# AI agent context files
+CLAUDE.md
+GEMINI.md
+CURSOR.md
+COPILOT.md
+WINDSURF.md
