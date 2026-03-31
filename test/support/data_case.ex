@@ -17,6 +17,7 @@ defmodule Aludel.DataCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
+  alias Aludel.Interfaces.HttpClientMock
 
   using do
     quote do
@@ -34,6 +35,7 @@ defmodule Aludel.DataCase do
 
   setup tags do
     Aludel.DataCase.setup_sandbox(tags)
+    Aludel.DataCase.setup_mox_stub()
     :ok
   end
 
@@ -43,6 +45,22 @@ defmodule Aludel.DataCase do
   def setup_sandbox(tags) do
     pid = Sandbox.start_owner!(Aludel.Test.Repo, shared: not tags[:async])
     on_exit(fn -> Sandbox.stop_owner(pid) end)
+  end
+
+  @doc """
+  Sets up default Mox stub for HTTP client calls.
+  This provides a fallback response for tests that don't set explicit
+  expectations.
+  """
+  def setup_mox_stub do
+    Mox.stub(HttpClientMock, :request, fn _model, _prompt, _opts ->
+      {:ok,
+       %{
+         content: "Test response",
+         input_tokens: 10,
+         output_tokens: 5
+       }}
+    end)
   end
 
   @doc """

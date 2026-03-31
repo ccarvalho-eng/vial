@@ -1,10 +1,16 @@
 defmodule Aludel.RunsTest do
   use Aludel.DataCase
 
+  import Mox
+
+  alias Aludel.Interfaces.HttpClientMock
   alias Aludel.Runs
 
   import Aludel.PromptsFixtures
   import Aludel.ProvidersFixtures
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   describe "runs" do
     alias Aludel.Runs.Run
@@ -269,11 +275,16 @@ defmodule Aludel.RunsTest do
       {:ok, run: run, provider: provider, prompt_version: version}
     end
 
-    @tag :openai_integration
     test "executes run with single provider", %{
       run: run,
       provider: provider
     } do
+      mock_response = build_mock_response("Hello Alice", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       run = Repo.preload(run, :prompt_version)
       assert {:ok, result_run} = Runs.execute_run(run, [provider])
 
@@ -286,14 +297,19 @@ defmodule Aludel.RunsTest do
       assert is_binary(result.output)
       assert result.input_tokens > 0
       assert result.output_tokens > 0
-      assert result.latency_ms > 0
+      assert result.latency_ms >= 0
     end
 
-    @tag :openai_integration
     test "executes run with multiple providers concurrently", %{
       run: run,
       provider: provider1
     } do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(HttpClientMock, :request, 3, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider2 = provider_fixture(%{name: "Provider 2"})
       provider3 = provider_fixture(%{name: "Provider 3"})
 
@@ -317,11 +333,16 @@ defmodule Aludel.RunsTest do
       end
     end
 
-    @tag :openai_integration
     test "broadcasts PubSub updates during execution", %{
       run: run,
       provider: provider
     } do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       Phoenix.PubSub.subscribe(Aludel.PubSub, "run:#{run.id}")
 
       run = Repo.preload(run, :prompt_version)
@@ -332,11 +353,16 @@ defmodule Aludel.RunsTest do
                      1000
     end
 
-    @tag :openai_integration
     test "renders template with variable values", %{
       run: run,
       provider: provider
     } do
+      mock_response = build_mock_response("Hello Alice", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       run = Repo.preload(run, :prompt_version)
       assert {:ok, result_run} = Runs.execute_run(run, [provider])
 
@@ -361,5 +387,13 @@ defmodule Aludel.RunsTest do
       # For now, this should still succeed but handle errors per-provider
       assert {:ok, _result_run} = Runs.execute_run(run, [provider])
     end
+  end
+
+  defp build_mock_response(text, input_tokens, output_tokens) do
+    %{
+      content: text,
+      input_tokens: input_tokens,
+      output_tokens: output_tokens
+    }
   end
 end

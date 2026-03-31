@@ -1,8 +1,14 @@
 defmodule Aludel.EvalsTest do
-  use Aludel.DataCase, async: true
+  use Aludel.DataCase
 
+  import Mox
+
+  alias Aludel.Interfaces.HttpClientMock
   alias Aludel.Evals
   alias Aludel.Evals.SuiteRun
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   describe "suites" do
     test "create_suite/1 creates a suite with valid attributes" do
@@ -293,8 +299,13 @@ defmodule Aludel.EvalsTest do
   end
 
   describe "execute_suite/3" do
-    @tag :openai_integration
     test "execute_suite captures avg_cost_usd and avg_latency_ms" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Test {{input}}")
@@ -320,11 +331,16 @@ defmodule Aludel.EvalsTest do
       assert suite_run.avg_cost_usd != nil
       assert suite_run.avg_latency_ms != nil
       assert Decimal.compare(suite_run.avg_cost_usd, Decimal.new("0")) == :gt
-      assert suite_run.avg_latency_ms > 0
+      assert suite_run.avg_latency_ms >= 0
     end
 
-    @tag :openai_integration
     test "execute_suite handles partial failures in metrics" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Test {{input}}")
@@ -351,11 +367,16 @@ defmodule Aludel.EvalsTest do
       assert is_nil(suite_run.avg_cost_usd) or
                Decimal.compare(suite_run.avg_cost_usd, Decimal.new("0")) == :gt
 
-      assert is_nil(suite_run.avg_latency_ms) or suite_run.avg_latency_ms > 0
+      assert is_nil(suite_run.avg_latency_ms) or suite_run.avg_latency_ms >= 0
     end
 
-    @tag :openai_integration
     test "executes suite with passing test cases" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Hello {{name}}")
@@ -387,6 +408,12 @@ defmodule Aludel.EvalsTest do
     end
 
     test "executes suite with failing test cases" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Say {{word}}")
@@ -404,8 +431,13 @@ defmodule Aludel.EvalsTest do
       assert suite_run.failed == 1
     end
 
-    @tag :openai_integration
     test "evaluates contains assertion" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Test {{input}}")
@@ -423,8 +455,13 @@ defmodule Aludel.EvalsTest do
       assert suite_run.failed == 0
     end
 
-    @tag :openai_integration
     test "evaluates not_contains assertion" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Test {{input}}")
@@ -441,8 +478,13 @@ defmodule Aludel.EvalsTest do
       assert suite_run.passed == 1
     end
 
-    @tag :openai_integration
     test "evaluates regex assertion" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Test {{input}}")
@@ -459,8 +501,13 @@ defmodule Aludel.EvalsTest do
       assert suite_run.passed == 1
     end
 
-    @tag :openai_integration
     test "evaluates exact_match assertion" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Test {{input}}")
@@ -470,17 +517,20 @@ defmodule Aludel.EvalsTest do
         test_case_fixture(%{
           suite_id: suite.id,
           variable_values: %{"input" => "value"},
-          assertions: [
-            %{"type" => "exact_match", "value" => "Mock OpenAI response for: Test value"}
-          ]
+          assertions: [%{"type" => "exact_match", "value" => "Mock response"}]
         })
 
       assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
       assert suite_run.passed == 1
     end
 
-    @tag :openai_integration
     test "evaluates multiple assertions per test case" do
+      mock_response = build_mock_response("Mock response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Test {{input}}")
@@ -612,5 +662,13 @@ defmodule Aludel.EvalsTest do
       assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
       assert suite_run.passed + suite_run.failed > 0
     end
+  end
+
+  defp build_mock_response(text, input_tokens, output_tokens) do
+    %{
+      content: text,
+      input_tokens: input_tokens,
+      output_tokens: output_tokens
+    }
   end
 end
