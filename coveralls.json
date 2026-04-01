@@ -13,6 +13,7 @@
     "lib/aludel/web/endpoint.ex",
     "lib/aludel/web/gettext.ex",
     "lib/aludel/web/telemetry.ex",
+    "lib/aludel/web/router.ex",
     "lib/aludel/application.ex",
     "lib/aludel/mailer.ex",
     "lib/aludel/repo.ex",
@@ -21,6 +22,7 @@
     "lib/aludel/web/components/core_components.ex",
     "lib/aludel/web/components/layouts.ex",
     "lib/aludel/web.ex",
+    "lib/aludel/web/assets.ex",
     "lib/aludel/document_converter/imagemagick_adapter.ex",
     "lib/aludel/interfaces/llm/adapters/http/default.ex",
     "lib/mix/tasks/"

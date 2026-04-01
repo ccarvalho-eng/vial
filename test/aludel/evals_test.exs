@@ -302,7 +302,8 @@ defmodule Aludel.EvalsTest do
     test "execute_suite captures avg_cost_usd and avg_latency_ms" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+      # Use stub for concurrent test case execution
+      stub(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -337,7 +338,8 @@ defmodule Aludel.EvalsTest do
     test "execute_suite handles partial failures in metrics" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+      # Use stub for concurrent test case execution
+      stub(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
@@ -373,7 +375,8 @@ defmodule Aludel.EvalsTest do
     test "executes suite with passing test cases" do
       mock_response = build_mock_response("Mock response", 5, 10)
 
-      expect(HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+      # Use stub for concurrent test case execution
+      stub(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 
