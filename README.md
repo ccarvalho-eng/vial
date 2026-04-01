@@ -179,6 +179,28 @@ Edit `standalone/config/dev.exs` to configure:
 - **Port** — Default: `4000`
 - **API Keys** — Set `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` environment variables
 
+### Docker
+
+A `docker-compose.yaml` is provided at the project root for running the standalone app with PostgreSQL in containers.
+
+```bash
+# 1. Copy the example env file and edit as needed
+cp .env.example .env
+
+# 2. Start the app (builds the image on first run)
+docker-compose up -d
+
+# 3. Visit http://localhost:4000
+```
+
+Environment variables are loaded from the `.env` file. Edit it to configure API keys, basic auth, and other settings. See `.env.example` for all available options.
+
+To stop and remove all data:
+
+```bash
+docker-compose down -v
+```
+
 ### Production Deployment
 
 ```bash
