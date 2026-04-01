@@ -36,15 +36,6 @@ defmodule Aludel.DocumentConverter do
 
   @default_adapter Aludel.DocumentConverter.ImagemagickAdapter
 
-  defp adapter do
-    Application.get_env(
-      :aludel,
-      :document_converter,
-      []
-    )
-    |> Keyword.get(:adapter, @default_adapter)
-  end
-
   @doc """
   Converts a PDF document to PNG format.
 
@@ -74,4 +65,13 @@ defmodule Aludel.DocumentConverter do
   end
 
   def pdf_to_image(doc), do: {:ok, doc}
+
+  defp adapter do
+    Application.get_env(
+      :aludel,
+      :document_converter,
+      []
+    )
+    |> Keyword.get(:adapter, @default_adapter)
+  end
 end
