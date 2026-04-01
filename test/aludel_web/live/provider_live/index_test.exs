@@ -41,4 +41,32 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
       assert html =~ "gpt-4o"
     end
   end
+
+  describe "delete functionality" do
+    test "deletes provider successfully", %{conn: conn} do
+      provider = provider_fixture(%{name: "Delete Me"})
+
+      {:ok, view, _html} = live(conn, "/providers")
+
+      html = render_click(view, "delete", %{"id" => provider.id})
+
+      assert html =~ "Provider deleted successfully"
+      refute html =~ "Delete Me"
+    end
+
+    test "refreshes provider list after deletion", %{conn: conn} do
+      provider1 = provider_fixture(%{name: "Provider 1"})
+      _provider2 = provider_fixture(%{name: "Provider 2"})
+
+      {:ok, view, _html} = live(conn, "/providers")
+
+      assert render(view) =~ "Provider 1"
+      assert render(view) =~ "Provider 2"
+
+      html = render_click(view, "delete", %{"id" => provider1.id})
+
+      refute html =~ "Provider 1"
+      assert html =~ "Provider 2"
+    end
+  end
 end

@@ -105,6 +105,23 @@ defmodule Aludel.EvalsTest do
       assert [test_case] = loaded.test_cases
       assert [%Aludel.Evals.TestCaseDocument{filename: "test.pdf"}] = test_case.documents
     end
+
+    test "list_suites_with_prompt/0 returns suites with prompts preloaded" do
+      suite = suite_fixture()
+      suites = Evals.list_suites_with_prompt()
+
+      assert length(suites) == 1
+      assert hd(suites).id == suite.id
+      refute match?(%Ecto.Association.NotLoaded{}, hd(suites).prompt)
+    end
+
+    test "get_suite_with_prompt!/1 preloads prompt" do
+      suite = suite_fixture()
+      loaded = Evals.get_suite_with_prompt!(suite.id)
+
+      assert loaded.id == suite.id
+      refute match?(%Ecto.Association.NotLoaded{}, loaded.prompt)
+    end
   end
 
   describe "test_cases" do
@@ -295,6 +312,75 @@ defmodule Aludel.EvalsTest do
       assert changeset.valid?
       assert Ecto.Changeset.get_change(changeset, :avg_cost_usd) == Decimal.new("0.0042")
       assert Ecto.Changeset.get_change(changeset, :avg_latency_ms) == 350
+    end
+
+    test "list_suite_runs_for_suite/1 returns runs for specific suite" do
+      suite1 = suite_fixture(%{name: "Suite 1"})
+      suite2 = suite_fixture(%{name: "Suite 2"})
+      run1 = suite_run_fixture(%{suite_id: suite1.id})
+      _run2 = suite_run_fixture(%{suite_id: suite2.id})
+
+      runs = Evals.list_suite_runs_for_suite(suite1.id)
+
+      assert length(runs) == 1
+      assert hd(runs).id == run1.id
+    end
+
+    test "list_suite_runs_for_suite_with_associations/1 preloads associations" do
+      suite = suite_fixture()
+      run = suite_run_fixture(%{suite_id: suite.id})
+
+      runs = Evals.list_suite_runs_for_suite_with_associations(suite.id)
+
+      assert length(runs) == 1
+      loaded_run = hd(runs)
+      assert loaded_run.id == run.id
+      refute match?(%Ecto.Association.NotLoaded{}, loaded_run.prompt_version)
+      refute match?(%Ecto.Association.NotLoaded{}, loaded_run.provider)
+    end
+
+    test "reload_suite_run_with_associations/1 reloads associations" do
+      run = suite_run_fixture()
+
+      loaded = Evals.reload_suite_run_with_associations(run)
+
+      refute match?(%Ecto.Association.NotLoaded{}, loaded.prompt_version)
+      refute match?(%Ecto.Association.NotLoaded{}, loaded.provider)
+    end
+
+    test "pass_rates_by_prompt/0 calculates pass rates grouped by prompt" do
+      prompt = prompt_fixture(%{name: "Test Prompt"})
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Template {{var}}")
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      provider = provider_fixture()
+
+      # Create suite runs with different pass/fail counts
+      _run1 =
+        suite_run_fixture(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider.id,
+          passed: 8,
+          failed: 2
+        })
+
+      _run2 =
+        suite_run_fixture(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider.id,
+          passed: 7,
+          failed: 3
+        })
+
+      results = Evals.pass_rates_by_prompt()
+
+      assert length(results) == 1
+      result = hd(results)
+      assert result.prompt_id == prompt.id
+      assert result.prompt_name == "Test Prompt"
+      assert result.total_passed == 15
+      assert result.total_failed == 5
     end
   end
 

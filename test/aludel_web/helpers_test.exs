@@ -3,6 +3,25 @@ defmodule Aludel.Web.HelpersTest do
 
   alias Aludel.Web.Helpers
 
+  describe "aludel_path/2" do
+    test "returns / when routing is :nowhere" do
+      Process.put(:routing, :nowhere)
+
+      on_exit(fn -> Process.delete(:routing) end)
+
+      path = Helpers.aludel_path("prompts")
+      assert path == "/"
+    end
+
+    test "raises when routing is not set" do
+      Process.delete(:routing)
+
+      assert_raise RuntimeError, "nothing stored in the :routing key", fn ->
+        Helpers.aludel_path("prompts")
+      end
+    end
+  end
+
   describe "provider_icon/1" do
     test "returns OpenAI icon path" do
       assert Helpers.provider_icon(:openai) == "/images/open-ai-icon.svg"
