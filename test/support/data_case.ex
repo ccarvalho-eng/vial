@@ -26,6 +26,7 @@ defmodule Aludel.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Aludel.DataCase
+      import Aludel.LlmCase
       import Aludel.PromptsFixtures
       import Aludel.ProvidersFixtures
       import Aludel.EvalsFixtures
