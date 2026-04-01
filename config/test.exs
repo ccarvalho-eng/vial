@@ -39,3 +39,6 @@ config :aludel, :llm,
 # Use mocked HTTP client for all tests
 config :aludel,
   http_client: Aludel.Interfaces.HttpClientMock
+
+# Use stub document converter adapter for tests
+config :aludel, :document_converter, adapter: Aludel.Test.StubDocumentConverterAdapter

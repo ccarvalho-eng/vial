@@ -3,19 +3,6 @@ defmodule Aludel.DocumentConverterTest do
 
   alias Aludel.DocumentConverter
 
-  setup do
-    # Configure stub adapter for tests
-    Application.put_env(:aludel, :document_converter,
-      adapter: Aludel.Test.StubDocumentConverterAdapter
-    )
-
-    on_exit(fn ->
-      Application.delete_env(:aludel, :document_converter)
-    end)
-
-    :ok
-  end
-
   describe "pdf_to_image/1" do
     test "converts PDF to PNG using adapter" do
       pdf_doc = %{

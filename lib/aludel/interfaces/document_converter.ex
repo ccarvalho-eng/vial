@@ -67,11 +67,15 @@ defmodule Aludel.DocumentConverter do
   def pdf_to_image(doc), do: {:ok, doc}
 
   defp adapter do
-    Application.get_env(
-      :aludel,
-      :document_converter,
-      []
-    )
-    |> Keyword.get(:adapter, @default_adapter)
+    case Application.get_env(:aludel, :document_converter, []) do
+      adapter when is_atom(adapter) and not is_nil(adapter) ->
+        adapter
+
+      config when is_list(config) ->
+        Keyword.get(config, :adapter, @default_adapter)
+
+      _ ->
+        @default_adapter
+    end
   end
 end
