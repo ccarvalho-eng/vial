@@ -23,11 +23,8 @@ services:
       - "4000:4000"
     command: >
       sh -c '/app/bin/aludel_dash eval "Ecto.Migrator.with_repo(AludelDash.Repo, &Ecto.Migrator.run(&1, :up, all: true))" && /app/bin/aludel_dash start'
-    environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/aludel_dash
-      SECRET_KEY_BASE: "dev-only-secret-key-base-that-is-at-least-64-bytes-long-for-phoenix-to-accept-it"
-      PHX_HOST: localhost
-      PORT: "4000"
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
