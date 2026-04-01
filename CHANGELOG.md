@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2026-04-01
+
+### Added
+- Comprehensive test coverage for LiveView pages (Suite, Provider, Evolution)
+- Tests for Evals context functions (preloading, statistics)
+- FileValidation and DocumentConverter test coverage
+- Web helpers test coverage for routing edge cases
+- LlmStubs module for organized test responses
+- Generic interfaces README documenting adapter pattern
+
+### Changed
+- Consolidated LLM and DocumentConverter under `lib/aludel/interfaces/`
+- Renamed `Adapter` behaviour to `Behaviour` for consistency
+- Improved adapter config to handle both module and keyword list formats
+- CodeCov threshold set to 0% (enforces strict 75% minimum)
+- Test coverage improved to 75.2% (up from 71.1%)
+
+### Fixed
+- OpenAI PDF handling: Chat API now converts PDFs to images (only Anthropic
+  supports native PDFs)
+- Mox usage in concurrent tests (switched from expect to stub)
+- Excluded router.ex and hooks.ex from coverage reporting
+
 ## [0.1.11] - 2026-03-30
 
 ### Added
