@@ -14,6 +14,7 @@
     "lib/aludel/web/gettext.ex",
     "lib/aludel/web/telemetry.ex",
     "lib/aludel/web/router.ex",
+    "lib/aludel/web/hooks.ex",
     "lib/aludel/application.ex",
     "lib/aludel/mailer.ex",
     "lib/aludel/repo.ex",
