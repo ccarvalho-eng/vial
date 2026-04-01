@@ -26,7 +26,7 @@ defmodule Aludel.DocumentConverter do
   The conversion adapter can be configured in config files:
 
       config :aludel, :document_converter,
-        adapter: Aludel.DocumentConverter.ImagemagickAdapter
+        adapter: Aludel.Interfaces.DocumentConverter.Adapters.Imagemagick
 
   For testing, use a stub adapter.
   """
@@ -34,7 +34,7 @@ defmodule Aludel.DocumentConverter do
   @type document :: %{data: binary(), content_type: String.t()}
   @type convert_result :: {:ok, document()} | {:error, term()}
 
-  @default_adapter Aludel.DocumentConverter.ImagemagickAdapter
+  @default_adapter Aludel.Interfaces.DocumentConverter.Adapters.Imagemagick
 
   @doc """
   Converts a PDF document to PNG format.

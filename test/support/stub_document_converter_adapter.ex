@@ -3,7 +3,7 @@ defmodule Aludel.Test.StubDocumentConverterAdapter do
   Stub adapter for testing document conversion without ImageMagick.
   """
 
-  @behaviour Aludel.DocumentConverter.Adapter
+  @behaviour Aludel.Interfaces.DocumentConverter.Behaviour
 
   @impl true
   def convert_pdf_to_png(pdf_data, _opts) do

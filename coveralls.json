@@ -24,7 +24,7 @@
     "lib/aludel/web/components/layouts.ex",
     "lib/aludel/web.ex",
     "lib/aludel/web/assets.ex",
-    "lib/aludel/document_converter/imagemagick_adapter.ex",
+    "lib/aludel/interfaces/document_converter/adapters/imagemagick.ex",
     "lib/aludel/interfaces/llm/adapters/http/default.ex",
     "lib/mix/tasks/"
   ],

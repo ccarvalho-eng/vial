@@ -1,4 +1,4 @@
-defmodule Aludel.DocumentConverter.Adapter do
+defmodule Aludel.Interfaces.DocumentConverter.Behaviour do
   @moduledoc """
   Behaviour for document conversion adapters.
 

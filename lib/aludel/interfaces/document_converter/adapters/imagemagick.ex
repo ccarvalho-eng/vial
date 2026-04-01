@@ -1,11 +1,11 @@
-defmodule Aludel.DocumentConverter.ImagemagickAdapter do
+defmodule Aludel.Interfaces.DocumentConverter.Adapters.Imagemagick do
   @moduledoc """
   ImageMagick adapter for document conversion.
 
   Requires ImageMagick v7+ to be installed on the system.
   """
 
-  @behaviour Aludel.DocumentConverter.Adapter
+  @behaviour Aludel.Interfaces.DocumentConverter.Behaviour
 
   require Logger
 
