@@ -1,7 +1,12 @@
 defmodule Aludel.LLMTest do
   use Aludel.DataCase, async: true
 
+  import Mox
+
   alias Aludel.LLM
+  alias Aludel.Interfaces.HttpClientMock
+
+  setup :verify_on_exit!
 
   describe "call/3 with OpenAI provider" do
     test "returns error when API key is missing" do
@@ -39,6 +44,12 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns structured response with all required fields" do
+      mock_response = build_mock_response("Hello! How can I help?", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -57,6 +68,12 @@ defmodule Aludel.LLMTest do
     end
 
     test "calculates cost for OpenAI" do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -69,6 +86,12 @@ defmodule Aludel.LLMTest do
     end
 
     test "calls OpenAI adapter successfully" do
+      mock_response = build_mock_response("Hello!", 3, 2)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -84,6 +107,10 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns auth error for invalid API key" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, %{status: 401}}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -97,6 +124,10 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns invalid_request error for bad parameters" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, %{status: 400}}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -151,6 +182,12 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns structured response" do
+      mock_response = build_mock_response("Hello! I'm Claude.", 8, 6)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -170,6 +207,12 @@ defmodule Aludel.LLMTest do
     end
 
     test "calculates cost for Anthropic" do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -182,6 +225,10 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns auth error for invalid API key" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, %{status: 401}}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -195,6 +242,10 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns invalid_request error for bad parameters" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, %{status: 400}}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :anthropic,
@@ -210,6 +261,12 @@ defmodule Aludel.LLMTest do
 
   describe "call/3 with Ollama provider" do
     test "returns structured response" do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :ollama,
@@ -226,6 +283,12 @@ defmodule Aludel.LLMTest do
     end
 
     test "returns zero cost for Ollama (local)" do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :ollama,
@@ -240,6 +303,10 @@ defmodule Aludel.LLMTest do
 
   describe "call/3 error handling" do
     test "handles network errors gracefully" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, :timeout}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -254,6 +321,12 @@ defmodule Aludel.LLMTest do
 
   describe "call/3 token counting" do
     test "counts tokens for input and output" do
+      mock_response = build_mock_response("Response", 10, 15)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :openai,
@@ -269,6 +342,12 @@ defmodule Aludel.LLMTest do
 
   describe "call/3 latency measurement" do
     test "measures execution time in milliseconds" do
+      mock_response = build_mock_response("Response", 5, 5)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
       provider =
         provider_fixture(%{
           provider: :ollama,
@@ -284,6 +363,8 @@ defmodule Aludel.LLMTest do
 
   describe "call/3 with documents option" do
     test "forwards documents to HTTP adapter" do
+      mock_response = build_mock_response("The image is red", 100, 20)
+
       # Sample 1x1 red PNG
       image_data =
         Base.decode64!(
@@ -291,6 +372,13 @@ defmodule Aludel.LLMTest do
         )
 
       document = %{data: image_data, content_type: "image/png"}
+
+      expect(HttpClientMock, :request, fn _model, _prompt, opts ->
+        # Verify documents are forwarded to adapter
+        assert Keyword.has_key?(opts, :documents)
+        assert opts[:documents] == [document]
+        {:ok, mock_response}
+      end)
 
       provider =
         provider_fixture(%{
@@ -303,8 +391,17 @@ defmodule Aludel.LLMTest do
                LLM.call(provider, "What color is this image?", documents: [document])
 
       assert is_binary(result.output)
-      assert result.input_tokens > 0
-      assert result.output_tokens > 0
+      assert result.output == "The image is red"
+      assert result.input_tokens == 100
+      assert result.output_tokens == 20
     end
+  end
+
+  defp build_mock_response(text, input_tokens, output_tokens) do
+    %{
+      content: text,
+      input_tokens: input_tokens,
+      output_tokens: output_tokens
+    }
   end
 end

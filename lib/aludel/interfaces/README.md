@@ -32,8 +32,8 @@ config :aludel,
   http_client: Aludel.Interfaces.LLM.Adapters.Http.Default
 
 # config/test.exs
-# For testing, you can create a custom adapter that returns
-# controlled responses
+config :aludel,
+  http_client: Aludel.Interfaces.HttpClientMock
 ```
 
 ## Adding a Provider
