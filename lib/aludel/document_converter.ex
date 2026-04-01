@@ -20,12 +20,30 @@ defmodule Aludel.DocumentConverter do
   - macOS: `brew install imagemagick`
   - Ubuntu/Debian: `apt-get install imagemagick`
   - Docker: Install in runtime image
-  """
 
-  require Logger
+  ## Configuration
+
+  The conversion adapter can be configured in config files:
+
+      config :aludel, :document_converter,
+        adapter: Aludel.DocumentConverter.ImagemagickAdapter
+
+  For testing, use a stub adapter.
+  """
 
   @type document :: %{data: binary(), content_type: String.t()}
   @type convert_result :: {:ok, document()} | {:error, term()}
+
+  @default_adapter Aludel.DocumentConverter.ImagemagickAdapter
+
+  defp adapter do
+    Application.get_env(
+      :aludel,
+      :document_converter,
+      []
+    )
+    |> Keyword.get(:adapter, @default_adapter)
+  end
 
   @doc """
   Converts a PDF document to PNG format.
@@ -46,60 +64,12 @@ defmodule Aludel.DocumentConverter do
   """
   @spec pdf_to_image(document()) :: convert_result()
   def pdf_to_image(%{content_type: "application/pdf", data: pdf_data}) do
-    # Create temp files for PDF and PNG conversion with unique IDs
-    unique_id = :erlang.unique_integer([:positive, :monotonic])
-    pdf_path = System.tmp_dir!() |> Path.join("aludel_pdf_#{unique_id}.pdf")
-    png_path = System.tmp_dir!() |> Path.join("aludel_png_#{unique_id}.png")
+    case adapter().convert_pdf_to_png(pdf_data, []) do
+      {:ok, png_data} ->
+        {:ok, %{data: png_data, content_type: "image/png"}}
 
-    try do
-      # Write PDF to temp file
-      File.write!(pdf_path, pdf_data)
-
-      # Convert PDF to PNG using ImageMagick
-      # -density 150: good quality for text
-      # -flatten: merge layers
-      # [0]: only first page
-      case System.cmd(
-             "magick",
-             [
-               "-density",
-               "150",
-               pdf_path <> "[0]",
-               "-flatten",
-               png_path
-             ],
-             stderr_to_stdout: true
-           ) do
-        {_output, 0} ->
-          # Read converted PNG
-          png_data = File.read!(png_path)
-          {:ok, %{data: png_data, content_type: "image/png"}}
-
-        {error_output, exit_code} ->
-          Logger.error("ImageMagick conversion failed with code #{exit_code}: #{error_output}")
-          {:error, {:conversion_failed, exit_code, error_output}}
-      end
-    catch
-      kind, reason ->
-        Logger.error("Document conversion crashed: #{inspect(kind)} - #{inspect(reason)}")
-        {:error, {:conversion_crashed, kind, reason}}
-    after
-      # Clean up temp files and log any cleanup failures
-      case File.rm(pdf_path) do
-        :ok ->
-          :ok
-
-        {:error, reason} ->
-          Logger.warning("Failed to delete temp PDF file #{pdf_path}: #{inspect(reason)}")
-      end
-
-      case File.rm(png_path) do
-        :ok ->
-          :ok
-
-        {:error, reason} ->
-          Logger.warning("Failed to delete temp PNG file #{png_path}: #{inspect(reason)}")
-      end
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
