@@ -631,6 +631,17 @@ defmodule Aludel.EvalsTest do
       refute match?(%Ecto.Association.NotLoaded{}, loaded.documents)
       assert length(loaded.documents) == 2
     end
+
+    test "max_size_bytes/0 returns correct limit" do
+      assert Aludel.Evals.TestCaseDocument.max_size_bytes() == 10 * 1024 * 1024
+    end
+
+    test "supported_types/0 returns list of MIME types" do
+      types = Aludel.Evals.TestCaseDocument.supported_types()
+      assert is_list(types)
+      assert "application/pdf" in types
+      assert "image/png" in types
+    end
   end
 
   describe "execute_suite with documents" do
