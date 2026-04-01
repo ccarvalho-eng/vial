@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aludel_dash
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: standalone/Dockerfile
+    ports:
+      - "4000:4000"
+    command: >
+      sh -c '/app/bin/aludel_dash eval "Ecto.Migrator.with_repo(AludelDash.Repo, &Ecto.Migrator.run(&1, :up, all: true))" && /app/bin/aludel_dash start'
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/aludel_dash
+      SECRET_KEY_BASE: "dev-only-secret-key-base-that-is-at-least-64-bytes-long-for-phoenix-to-accept-it"
+      PHX_HOST: localhost
+      PORT: "4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
