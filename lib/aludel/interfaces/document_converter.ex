@@ -7,16 +7,16 @@ defmodule Aludel.DocumentConverter do
 
   ## Usage
 
-  PDF-to-image conversion is only used for:
+  PDF-to-image conversion is used for:
+  - **OpenAI**: Chat API only supports images (PDFs work in Assistants API)
   - **Ollama**: Vision models require image formats
 
-  Modern LLM providers accept PDFs natively:
+  Native PDF support:
   - **Anthropic Claude 4.5+**: Supports PDFs via document API
-  - **OpenAI**: Accepts PDFs directly via file input API
 
   ## Requirements
 
-  Requires ImageMagick v7+ to be installed (only needed for Ollama):
+  Requires ImageMagick v7+ to be installed:
   - macOS: `brew install imagemagick`
   - Ubuntu/Debian: `apt-get install imagemagick`
   - Docker: Install in runtime image
