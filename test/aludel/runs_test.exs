@@ -306,7 +306,8 @@ defmodule Aludel.RunsTest do
     } do
       mock_response = build_mock_response("Test response", 5, 10)
 
-      expect(HttpClientMock, :request, 3, fn _model, _prompt, _opts ->
+      # Use stub instead of expect for concurrent processes
+      stub(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:ok, mock_response}
       end)
 

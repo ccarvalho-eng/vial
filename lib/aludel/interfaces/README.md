@@ -1,118 +1,63 @@
-# LLM Interfaces
+# Interfaces
 
-Clean adapter pattern separating HTTP transport from provider logic.
+Clean adapter patterns for external integrations, allowing dependency injection and easy testing.
 
 ## Structure
 
 ```
 lib/aludel/interfaces/
-├── adapters/http.ex           # Generic HTTP behaviour
-└── llm/
-    ├── adapters/http/
-    │   └── default.ex          # ReqLLM + telemetry
-    ├── providers/
-    │   ├── openai.ex
-    │   ├── anthropic.ex
-    │   └── ollama.ex
-    ├── behaviour.ex            # Provider contract
-    ├── config.ex               # HTTP adapter + API key utils
-    └── error_parser.ex
-```
-
-**Layers:**
-- **HTTP** (`adapters/http/`): Transport, normalization, telemetry
-- **Providers** (`llm/providers/`): Auth, validation
-- **Utilities** (`config.ex`, `error_parser.ex`): Shared helpers
-
-## Configuration
-
-```elixir
-# config/config.exs
-config :aludel,
-  http_client: Aludel.Interfaces.LLM.Adapters.Http.Default
-
-# config/test.exs
-config :aludel,
-  http_client: Aludel.Interfaces.HttpClientMock
-```
-
-## Adding a Provider
-
-Create `lib/aludel/interfaces/llm/providers/gemini.ex`:
-
-```elixir
-defmodule Aludel.Interfaces.LLM.Providers.Gemini do
-  alias Aludel.Interfaces.LLM.{Config, ErrorParser}
-
-  @behaviour Aludel.Interfaces.LLM.Behaviour
-
-  @impl true
-  def generate(model, prompt, config, _opts) do
-    with {:ok, api_key} <- Config.get_api_key(config) do
-      opts = [api_key: api_key, temperature: config["temperature"] || 0.7]
-
-      case Config.http_adapter().request("gemini:#{model}", prompt, opts) do
-        {:ok, response} -> {:ok, response}
-        {:error, reason} -> ErrorParser.parse_error(reason)
-      end
-    end
-  end
-end
-```
-
-Register in `lib/aludel/llm.ex`:
-
-```elixir
-@providers %{
-  openai: OpenAI,
-  anthropic: Anthropic,
-  ollama: Ollama,
-  gemini: Gemini
-}
-```
-
-## Swapping HTTP Client
-
-Create adapter implementing `Aludel.Interfaces.Adapters.Http`:
-
-```elixir
-defmodule Aludel.Interfaces.LLM.Adapters.Http.HTTPoison do
-  @behaviour Aludel.Interfaces.Adapters.Http
-
-  @impl true
-  def request(model_spec, prompt, opts) do
-    # HTTP call, normalize response
-    {:ok, %{content: "...", input_tokens: 0, output_tokens: 0}}
-  end
-end
-```
-
-Update config:
-
-```elixir
-config :aludel, http_client: Aludel.Interfaces.LLM.Adapters.Http.HTTPoison
-```
-
-## Telemetry Events
-
-- `[:aludel, :llm, :http, :start]` - Request begins
-- `[:aludel, :llm, :http, :stop]` - Request succeeds (includes tokens)
-- `[:aludel, :llm, :http, :exception]` - Request fails
-
-Example handler:
-
-```elixir
-:telemetry.attach_many("aludel-llm", [
-  [:aludel, :llm, :http, :stop]
-], fn [:aludel, :llm, :http, :stop], measurements, metadata, _ ->
-  Logger.info("LLM call: #{metadata.model_spec}, tokens: #{measurements.input_tokens + measurements.output_tokens}")
-end, nil)
+├── llm.ex                          # LLM client (public API)
+├── llm/                            # LLM adapters
+│   ├── README.md                   # LLM-specific docs
+│   ├── behaviour.ex                # Provider contract
+│   ├── providers/
+│   │   ├── openai.ex
+│   │   ├── anthropic.ex
+│   │   └── ollama.ex
+│   ├── adapters/http/
+│   │   └── default.ex              # ReqLLM + telemetry
+│   ├── config.ex
+│   └── error_parser.ex
+├── document_converter.ex           # Document converter (public API)
+└── document_converter/             # Document conversion adapters
+    ├── behaviour.ex                # Adapter contract
+    └── adapters/
+        └── imagemagick.ex          # ImageMagick PDF→PNG
 ```
 
 ## Design Principles
 
-- Generic HTTP behaviour (not LLM-specific)
-- No type leakage (providers never see library types)
-- Dependency injection via config
-- Mock at HTTP layer for tests
-- Telemetry for observability
+All interfaces follow these patterns:
+
+1. **Behaviour-based**: Define contracts via `@behaviour`
+2. **Dependency injection**: Configure adapters via Application config
+3. **Runtime swappable**: Replace implementations for testing or different environments
+4. **No type leakage**: Adapters never see library-specific types
+5. **Testability**: Mock at adapter layer, not implementation
+
+## Adding a New Interface
+
+1. Create the public API module (e.g., `lib/aludel/interfaces/my_service.ex`)
+2. Define the behaviour (e.g., `lib/aludel/interfaces/my_service/behaviour.ex`)
+3. Implement adapters (e.g., `lib/aludel/interfaces/my_service/adapters/impl.ex`)
+4. Configure default in public API module:
+   ```elixir
+   @default_adapter Aludel.Interfaces.MyService.Adapters.Impl
+
+   defp adapter do
+     Application.get_env(:aludel, :my_service, [])
+     |> Keyword.get(:adapter, @default_adapter)
+   end
+   ```
+5. Allow runtime override:
+   ```elixir
+   # config/config.exs
+   config :aludel, :my_service,
+     adapter: MyApp.CustomAdapter
+   ```
+
+## Examples
+
+See subdirectories for specific interface documentation:
+- [LLM Interfaces](llm/README.md) - Multi-provider LLM client
+- Document Converter - PDF conversion for vision models

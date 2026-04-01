@@ -111,13 +111,12 @@ defmodule Aludel.Interfaces.LLM.Adapters.Http.Default do
 
   defp extract_provider(model_spec), do: model_spec |> String.split(":") |> hd()
 
-  # Anthropic and OpenAI support PDFs natively
-  defp to_content_part(%{content_type: "application/pdf", data: data}, provider)
-       when provider in ["anthropic", "openai"] do
+  # Anthropic supports PDFs natively
+  defp to_content_part(%{content_type: "application/pdf", data: data}, "anthropic") do
     [ContentPart.file(data, "document.pdf", "application/pdf")]
   end
 
-  # Ollama needs PDFs converted to images
+  # OpenAI and Ollama need PDFs converted to images
   defp to_content_part(%{content_type: "application/pdf"} = doc, _provider) do
     case Aludel.DocumentConverter.pdf_to_image(doc) do
       {:ok, converted} -> to_image_part(converted.data, converted.content_type)

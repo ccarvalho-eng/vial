@@ -27,6 +27,7 @@ defmodule Aludel.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Aludel.DataCase
+      import Aludel.LlmStubs
       import Aludel.PromptsFixtures
       import Aludel.ProvidersFixtures
       import Aludel.EvalsFixtures
@@ -48,19 +49,12 @@ defmodule Aludel.DataCase do
   end
 
   @doc """
-  Sets up default Mox stub for HTTP client calls.
+  Sets up default Mox stub for HTTP client calls using LlmStubs.
   This provides a fallback response for tests that don't set explicit
   expectations.
   """
   def setup_mox_stub do
-    Mox.stub(HttpClientMock, :request, fn _model, _prompt, _opts ->
-      {:ok,
-       %{
-         content: "Test response",
-         input_tokens: 10,
-         output_tokens: 5
-       }}
-    end)
+    Aludel.LlmStubs.setup_default_stub(HttpClientMock)
   end
 
   @doc """
