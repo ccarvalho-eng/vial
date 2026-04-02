@@ -32,14 +32,7 @@
               <% end %>
             </select>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button
-              type="submit"
-              class="button-primary"
-              style="font-size: 13px; padding: 6px 12px;"
-            >
-              Save
-            </button>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
             <button
               type="button"
               phx-click="cancel_edit_suite_metadata"
@@ -47,6 +40,13 @@
               style="font-size: 13px; padding: 6px 12px;"
             >
               Cancel
+            </button>
+            <button
+              type="submit"
+              class="button-primary"
+              style="font-size: 13px; padding: 6px 12px;"
+            >
+              Save
             </button>
           </div>
         </form>

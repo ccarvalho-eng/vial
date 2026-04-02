@@ -34,7 +34,7 @@
           </div>
         </div>
 
-        <div style="margin-bottom: 16px;">
+        <div>
           <label for="provider_config">Configuration (JSON)</label>
           <textarea
             name="provider[config]"
@@ -47,15 +47,15 @@
             Optional: Model parameters as JSON (temperature, max_tokens, etc.). API keys are set via environment variables.
           </div>
         </div>
-      </div>
 
-      <div style="display: flex; gap: 12px; margin-top: 20px;">
-        <button type="submit" class="button-primary">
-          {if @live_action == :new, do: "Create Provider", else: "Update Provider"}
-        </button>
-        <.link navigate={aludel_path("providers")} class="button-secondary">
-          Cancel
-        </.link>
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+          <.link navigate={aludel_path("providers")} class="button-secondary">
+            Cancel
+          </.link>
+          <button type="submit" class="button-primary">
+            {if @live_action == :new, do: "Create Provider", else: "Update Provider"}
+          </button>
+        </div>
       </div>
     </.form>
   </div>
