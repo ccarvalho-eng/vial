@@ -67,11 +67,10 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
-        continue-on-error: true
         with:
           files: ./cover/excoveralls.json
           flags: elixir
-          fail_ci_if_error: false
+          fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
