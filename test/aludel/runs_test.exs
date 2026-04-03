@@ -1,6 +1,7 @@
 defmodule Aludel.RunsTest do
   use Aludel.DataCase
 
+  import ExUnit.CaptureLog
   import Mox
 
   alias Aludel.Interfaces.HttpClientMock
@@ -387,6 +388,50 @@ defmodule Aludel.RunsTest do
 
       # For now, this should still succeed but handle errors per-provider
       assert {:ok, _result_run} = Runs.execute_run(run, [provider])
+    end
+
+    test "logs warning when run result creation fails on success", %{
+      run: run,
+      provider: provider
+    } do
+      mock_response = build_mock_response("Test output", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
+      run = Repo.preload(run, :prompt_version)
+
+      # Delete the run to cause create_run_result to fail
+      Runs.delete_run(run)
+
+      log =
+        capture_log([level: :warning], fn ->
+          Runs.execute_run(run, [provider])
+        end)
+
+      assert log =~ "Failed to create run result for run #{run.id}"
+    end
+
+    test "logs warning when run result creation fails on error", %{
+      run: run,
+      provider: provider
+    } do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, "API timeout"}
+      end)
+
+      run = Repo.preload(run, :prompt_version)
+
+      # Delete the run to cause create_run_result to fail
+      Runs.delete_run(run)
+
+      log =
+        capture_log([level: :warning], fn ->
+          Runs.execute_run(run, [provider])
+        end)
+
+      assert log =~ "Failed to create run result for run #{run.id}"
     end
   end
 
