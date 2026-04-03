@@ -132,10 +132,21 @@ defmodule Aludel.Prompts.Evolution do
   defp build_provider_breakdown([]), do: []
 
   defp build_provider_breakdown(suite_runs) do
+    provider_ids =
+      suite_runs
+      |> Enum.map(& &1.provider_id)
+      |> Enum.uniq()
+
+    providers =
+      Provider
+      |> where([p], p.id in ^provider_ids)
+      |> repo().all()
+      |> Map.new(&{&1.id, &1})
+
     suite_runs
     |> Enum.group_by(& &1.provider_id)
     |> Enum.map(fn {provider_id, runs} ->
-      provider = repo().get!(Provider, provider_id)
+      provider = Map.fetch!(providers, provider_id)
 
       total_tests = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed + sr.failed end)
       total_passed = Enum.reduce(runs, 0, fn sr, acc -> acc + sr.passed end)
