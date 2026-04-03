@@ -65,7 +65,10 @@ jobs:
       - name: Run tests with coverage
         run: mix coveralls.json
 
+      # Only upload coverage for pushes and PRs from the same repository
+      # Fork PRs don't have access to CODECOV_TOKEN and would fail
       - name: Upload coverage to Codecov
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: codecov/codecov-action@v6
         with:
           files: ./cover/excoveralls.json
