@@ -20,7 +20,7 @@ defmodule Aludel.Evals.SuiteTest do
 
     test "valid changeset with project_id" do
       prompt = prompt_fixture()
-      {:ok, project} = Projects.create_project(%{name: "Test Project"})
+      {:ok, project} = Projects.create_project(%{name: "Test Project", type: :suite})
 
       changeset =
         Suite.changeset(%Suite{}, %{
@@ -65,8 +65,8 @@ defmodule Aludel.Evals.SuiteTest do
   describe "update with project_id" do
     test "can update suite project_id" do
       prompt = prompt_fixture()
-      {:ok, project1} = Projects.create_project(%{name: "Project 1"})
-      {:ok, project2} = Projects.create_project(%{name: "Project 2"})
+      {:ok, project1} = Projects.create_project(%{name: "Project 1", type: :suite})
+      {:ok, project2} = Projects.create_project(%{name: "Project 2", type: :suite})
 
       {:ok, suite} =
         Evals.create_suite(%{
@@ -84,7 +84,7 @@ defmodule Aludel.Evals.SuiteTest do
 
     test "can set project_id to nil" do
       prompt = prompt_fixture()
-      {:ok, project} = Projects.create_project(%{name: "Test Project"})
+      {:ok, project} = Projects.create_project(%{name: "Test Project", type: :suite})
 
       {:ok, suite} =
         Evals.create_suite(%{

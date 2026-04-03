@@ -26,7 +26,7 @@ defmodule Aludel.Web.SuiteLive.Show do
     prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
     providers = Providers.list_providers()
     all_prompts = Prompts.list_prompts()
-    projects = Projects.list_projects()
+    projects = Projects.list_projects(type: :suite)
 
     # Load existing suite runs
     suite_runs = Evals.list_suite_runs_for_suite_with_associations(id)

@@ -21,7 +21,7 @@ defmodule Aludel.Web.PromptLive.Index do
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
     selected_project_id = params["project_id"]
 
-    projects = Projects.list_projects()
+    projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
     all_tags = extract_all_tags(all_prompts)
 
@@ -138,9 +138,9 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("create_project", %{"project" => project_params}, socket) do
-    case Projects.create_project(project_params) do
+    case Projects.create_project(Map.put(project_params, "type", "prompt")) do
       {:ok, _project} ->
-        projects = Projects.list_projects()
+        projects = Projects.list_projects(type: :prompt)
 
         {:noreply,
          socket

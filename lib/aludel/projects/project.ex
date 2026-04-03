@@ -12,7 +12,8 @@ defmodule Aludel.Projects.Project do
 
   @type t :: %__MODULE__{}
 
-  @required_fields ~w(name)a
+  @types [:prompt, :suite]
+  @required_fields ~w(name type)a
   @optional_fields ~w()a
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -20,6 +21,7 @@ defmodule Aludel.Projects.Project do
 
   schema "projects" do
     field(:name, :string)
+    field(:type, Ecto.Enum, values: @types)
 
     has_many(:prompts, Prompt)
     has_many(:suites, Suite)
@@ -38,4 +40,8 @@ defmodule Aludel.Projects.Project do
     |> validate_required(@required_fields)
     |> validate_length(:name, min: 1, max: 255)
   end
+
+  @doc false
+  @spec types() :: [atom()]
+  def types, do: @types
 end

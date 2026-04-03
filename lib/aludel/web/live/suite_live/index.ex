@@ -18,7 +18,7 @@ defmodule Aludel.Web.SuiteLive.Index do
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
     suites = Evals.list_suites_with_prompt()
-    projects = Projects.list_projects()
+    projects = Projects.list_projects(type: :suite)
 
     socket =
       socket
@@ -39,7 +39,7 @@ defmodule Aludel.Web.SuiteLive.Index do
         {:noreply,
          socket
          |> assign(:suites, Evals.list_suites_with_prompt())
-         |> assign(:projects, Projects.list_projects())
+         |> assign(:projects, Projects.list_projects(type: :suite))
          |> put_flash(:info, "Suite deleted successfully")}
 
       {:error, _changeset} ->
@@ -61,11 +61,11 @@ defmodule Aludel.Web.SuiteLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("create_project", %{"project" => project_params}, socket) do
-    case Projects.create_project(project_params) do
+    case Projects.create_project(Map.put(project_params, "type", "suite")) do
       {:ok, _project} ->
         {:noreply,
          socket
-         |> assign(:projects, Projects.list_projects())
+         |> assign(:projects, Projects.list_projects(type: :suite))
          |> assign(:suites, Evals.list_suites_with_prompt())
          |> put_flash(:info, "Project created successfully")}
 
@@ -82,7 +82,7 @@ defmodule Aludel.Web.SuiteLive.Index do
       {:ok, _project} ->
         {:noreply,
          socket
-         |> assign(:projects, Projects.list_projects())
+         |> assign(:projects, Projects.list_projects(type: :suite))
          |> assign(:suites, Evals.list_suites_with_prompt())
          |> put_flash(:info, "Project updated successfully")}
 
@@ -99,7 +99,7 @@ defmodule Aludel.Web.SuiteLive.Index do
       {:ok, _} ->
         {:noreply,
          socket
-         |> assign(:projects, Projects.list_projects())
+         |> assign(:projects, Projects.list_projects(type: :suite))
          |> assign(:suites, Evals.list_suites_with_prompt())
          |> put_flash(:info, "Project deleted successfully")}
 

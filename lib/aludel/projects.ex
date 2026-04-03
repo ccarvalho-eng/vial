@@ -8,17 +8,18 @@ defmodule Aludel.Projects do
   alias Aludel.Projects.Project
 
   @doc """
-  Returns the list of projects with prompts and suites preloaded.
+  Returns the list of projects, optionally filtered by type.
 
   Projects are ordered alphabetically by name.
-  Suites are preloaded with their associated prompt.
   """
-  @spec list_projects() :: [Project.t()]
-  def list_projects do
-    from(p in Project,
-      order_by: p.name,
-      preload: [:prompts, suites: :prompt]
-    )
+  @spec list_projects(keyword()) :: [Project.t()]
+  def list_projects(opts \\ []) do
+    type = Keyword.get(opts, :type)
+
+    Project
+    |> order_by([p], asc: p.name)
+    |> maybe_filter_by_type(type)
+    |> maybe_preload(type)
     |> repo().all()
   end
 
@@ -65,6 +66,13 @@ defmodule Aludel.Projects do
   def change_project(%Project{} = project, attrs \\ %{}) do
     Project.changeset(project, attrs)
   end
+
+  defp maybe_filter_by_type(query, nil), do: query
+  defp maybe_filter_by_type(query, type), do: where(query, [p], p.type == ^type)
+
+  defp maybe_preload(query, :prompt), do: preload(query, [:prompts])
+  defp maybe_preload(query, :suite), do: preload(query, suites: :prompt)
+  defp maybe_preload(query, nil), do: preload(query, [:prompts, suites: :prompt])
 
   defp repo, do: Aludel.Repo.get()
 end

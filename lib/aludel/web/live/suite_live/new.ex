@@ -141,14 +141,17 @@ defmodule Aludel.Web.SuiteLive.New do
     save_suite(socket, socket.assigns.live_action, suite_params)
   end
 
-  defp apply_action(socket, :new, _params) do
-    changeset = Evals.change_suite(%Suite{})
+  defp apply_action(socket, :new, params) do
+    project_id = Map.get(params, "project_id")
+    initial_data = if project_id, do: %{"project_id" => project_id}, else: %{}
+    suite = %Suite{project_id: project_id}
+    changeset = Evals.change_suite(suite, initial_data)
     prompts = Prompts.list_prompts_with_versions()
-    projects = Projects.list_projects()
+    projects = Projects.list_projects(type: :suite)
 
     socket
     |> assign(:page_title, "New Suite")
-    |> assign(:suite, %Suite{})
+    |> assign(:suite, suite)
     |> assign(:form, to_form(changeset))
     |> assign(:prompts, prompts)
     |> assign(:projects, projects)
@@ -161,7 +164,7 @@ defmodule Aludel.Web.SuiteLive.New do
     suite = Evals.get_suite_with_test_cases_and_prompt!(id)
     changeset = Evals.change_suite(suite)
     prompts = Prompts.list_prompts_with_versions()
-    projects = Projects.list_projects()
+    projects = Projects.list_projects(type: :suite)
 
     # Get the selected prompt if suite has one
     selected_prompt =
