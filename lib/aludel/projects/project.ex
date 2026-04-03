@@ -34,8 +34,8 @@ defmodule Aludel.Projects.Project do
   def changeset(project, attrs) do
     project
     |> cast(attrs, @required_fields ++ @optional_fields)
+    |> update_change(:name, &String.trim/1)
     |> validate_required(@required_fields)
     |> validate_length(:name, min: 1, max: 255)
-    |> update_change(:name, &String.trim/1)
   end
 end

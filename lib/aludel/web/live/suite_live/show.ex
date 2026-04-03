@@ -56,7 +56,12 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_event("edit_suite_metadata", _params, socket) do
-    {:noreply, assign(socket, :editing_suite_metadata, true)}
+    changeset = Evals.change_suite(socket.assigns.suite)
+
+    {:noreply,
+     socket
+     |> assign(:editing_suite_metadata, true)
+     |> assign(:suite_form, to_form(changeset))}
   end
 
   @impl Phoenix.LiveView
@@ -65,32 +70,38 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("save_suite_metadata", params, socket) do
-    name = Map.fetch!(params, "name")
-    prompt_id = Map.fetch!(params, "prompt_id")
-    project_id = Map.get(params, "project_id", nil)
+  def handle_event("validate_suite_metadata", %{"suite" => suite_params}, socket) do
+    changeset =
+      socket.assigns.suite
+      |> Evals.change_suite(suite_params)
+      |> Map.put(:action, :validate)
 
+    {:noreply, assign(socket, :suite_form, to_form(changeset))}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("save_suite_metadata", %{"suite" => suite_params}, socket) do
     # Handle empty string as nil for optional project_id
-    project_id = if project_id == "", do: nil, else: project_id
+    suite_params =
+      Map.update(suite_params, "project_id", nil, fn
+        "" -> nil
+        val -> val
+      end)
 
-    case Evals.update_suite(socket.assigns.suite, %{
-           name: name,
-           prompt_id: prompt_id,
-           project_id: project_id
-         }) do
+    case Evals.update_suite(socket.assigns.suite, suite_params) do
       {:ok, suite} ->
-        prompt = Prompts.get_prompt_with_versions!(prompt_id)
+        prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
 
         {:noreply,
          socket
          |> assign(:suite, suite)
          |> assign(:prompt, prompt)
-         |> assign(:page_title, name)
+         |> assign(:page_title, suite.name)
          |> assign(:editing_suite_metadata, false)
          |> put_flash(:info, "Suite updated successfully")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update suite")}
+      {:error, changeset} ->
+        {:noreply, assign(socket, :suite_form, to_form(changeset))}
     end
   end
 

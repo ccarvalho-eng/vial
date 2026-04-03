@@ -390,8 +390,10 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       html =
         view
         |> render_click("save_suite_metadata", %{
-          "name" => "Updated Name",
-          "prompt_id" => prompt2.id
+          "suite" => %{
+            "name" => "Updated Name",
+            "prompt_id" => prompt2.id
+          }
         })
 
       assert html =~ "Suite updated successfully"

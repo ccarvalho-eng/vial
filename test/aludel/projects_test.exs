@@ -29,6 +29,12 @@ defmodule Aludel.ProjectsTest do
       refute changeset.valid?
       assert "should be at most 255 character(s)" in errors_on(changeset).name
     end
+
+    test "rejects whitespace-only name" do
+      changeset = Project.changeset(%Project{}, %{name: "   "})
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset).name
+    end
   end
 
   describe "list_projects/0" do
