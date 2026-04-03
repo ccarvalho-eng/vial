@@ -140,7 +140,7 @@ sudo apt-get install imagemagick
 magick -version
 ```
 
-**Note:** PDF-to-image conversion is only required for **Ollama** vision models. **OpenAI** and **Anthropic Claude 4.5+** accept PDFs directly in their APIs without conversion. For Ollama, PDFs are converted to PNG (first page only, 150 DPI) before being sent to the model.
+**Note:** PDF-to-image conversion is required for **Ollama** and **OpenAI** vision models. Only **Anthropic Claude 4.5+** accepts PDFs directly in its API without conversion. For Ollama and OpenAI, PDFs are converted to PNG (first page only, 150 DPI) before being sent to the model.
 
 ### 8. Seed demo data (optional)
 
