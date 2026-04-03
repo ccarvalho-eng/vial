@@ -3,6 +3,8 @@ defmodule Aludel.Runs do
   Context for managing runs and run results.
   """
 
+  require Logger
+
   import Ecto.Query
 
   alias Aludel.Evals.SuiteRun
@@ -215,8 +217,12 @@ defmodule Aludel.Runs do
             broadcast_update(run.id, run_result.id, :completed, result.output)
             {:ok, run_result}
 
-          {:error, _changeset} ->
-            # Run might have been deleted, ignore
+          {:error, changeset} ->
+            Logger.warning("Failed to create run result for run #{run.id}",
+              reason: inspect(changeset.errors),
+              provider_id: provider.id
+            )
+
             {:ok, nil}
         end
 
@@ -231,8 +237,12 @@ defmodule Aludel.Runs do
             broadcast_update(run.id, run_result.id, :error, inspect(reason))
             {:error, reason}
 
-          {:error, _changeset} ->
-            # Run might have been deleted, ignore
+          {:error, changeset} ->
+            Logger.warning("Failed to create run result for run #{run.id}",
+              reason: inspect(changeset.errors),
+              provider_id: provider.id
+            )
+
             {:error, reason}
         end
     end
