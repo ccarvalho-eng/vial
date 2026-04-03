@@ -29,6 +29,18 @@
           </select>
         </div>
 
+        <div style="margin-bottom: 16px;">
+          <label for="suite_project_id">Project (optional)</label>
+          <select name="suite[project_id]" id="suite_project_id">
+            <option value="">No Project</option>
+            <%= for project <- @projects do %>
+              <option value={project.id} selected={@suite.project_id == project.id}>
+                {project.name}
+              </option>
+            <% end %>
+          </select>
+        </div>
+
         <%= if @selected_prompt do %>
           <div style="margin-bottom: 16px;">
             <label>Prompt Template Preview</label>

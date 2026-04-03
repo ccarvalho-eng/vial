@@ -5,6 +5,7 @@ defmodule Aludel.Web.PromptLive.Index do
 
   use Aludel.Web, :live_view
 
+  alias Aludel.Projects
   alias Aludel.Prompts
 
   @impl Phoenix.LiveView
@@ -20,7 +21,7 @@ defmodule Aludel.Web.PromptLive.Index do
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
     selected_project_id = params["project_id"]
 
-    projects = Prompts.list_projects_with_prompts()
+    projects = Projects.list_projects()
     all_prompts = Prompts.list_prompts()
     all_tags = extract_all_tags(all_prompts)
 
@@ -137,9 +138,9 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("create_project", %{"project" => project_params}, socket) do
-    case Prompts.create_project(project_params) do
+    case Projects.create_project(project_params) do
       {:ok, _project} ->
-        projects = Prompts.list_projects_with_prompts()
+        projects = Projects.list_projects()
 
         {:noreply,
          socket
@@ -153,9 +154,9 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("update_project", %{"project" => project_params}, socket) do
-    project = Prompts.get_project!(project_params["id"])
+    project = Projects.get_project!(project_params["id"])
 
-    case Prompts.update_project(project, project_params) do
+    case Projects.update_project(project, project_params) do
       {:ok, _project} ->
         {:noreply,
          socket
@@ -169,8 +170,8 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("delete_project", %{"id" => id}, socket) do
-    project = Prompts.get_project!(id)
-    {:ok, _} = Prompts.delete_project(project)
+    project = Projects.get_project!(id)
+    {:ok, _} = Projects.delete_project(project)
 
     {:noreply,
      socket

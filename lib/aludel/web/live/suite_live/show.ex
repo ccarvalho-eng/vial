@@ -10,6 +10,7 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   alias Aludel.Evals
   alias Aludel.FileValidation
+  alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Providers
   alias Aludel.TaskSupervisor
@@ -25,6 +26,7 @@ defmodule Aludel.Web.SuiteLive.Show do
     prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
     providers = Providers.list_providers()
     all_prompts = Prompts.list_prompts()
+    projects = Projects.list_projects()
 
     # Load existing suite runs
     suite_runs = Evals.list_suite_runs_for_suite_with_associations(id)
@@ -39,6 +41,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:suite, suite)
       |> assign(:prompt, prompt)
       |> assign(:all_prompts, all_prompts)
+      |> assign(:projects, projects)
       |> assign(:providers, providers)
       |> assign(:suite_runs, suite_runs)
       |> assign(:running, false)
@@ -62,8 +65,19 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("save_suite_metadata", %{"name" => name, "prompt_id" => prompt_id}, socket) do
-    case Evals.update_suite(socket.assigns.suite, %{name: name, prompt_id: prompt_id}) do
+  def handle_event("save_suite_metadata", params, socket) do
+    name = Map.fetch!(params, "name")
+    prompt_id = Map.fetch!(params, "prompt_id")
+    project_id = Map.get(params, "project_id", nil)
+
+    # Handle empty string as nil for optional project_id
+    project_id = if project_id == "", do: nil, else: project_id
+
+    case Evals.update_suite(socket.assigns.suite, %{
+           name: name,
+           prompt_id: prompt_id,
+           project_id: project_id
+         }) do
       {:ok, suite} ->
         prompt = Prompts.get_prompt_with_versions!(prompt_id)
 

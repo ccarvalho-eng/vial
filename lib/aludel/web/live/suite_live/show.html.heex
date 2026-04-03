@@ -32,6 +32,22 @@
               <% end %>
             </select>
           </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
+              Project (optional)
+            </label>
+            <select
+              name="project_id"
+              style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
+            >
+              <option value="">No Project</option>
+              <%= for project <- @projects do %>
+                <option value={project.id} selected={project.id == @suite.project_id}>
+                  {project.name}
+                </option>
+              <% end %>
+            </select>
+          </div>
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
             <button
               type="button"

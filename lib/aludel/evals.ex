@@ -532,14 +532,5 @@ defmodule Aludel.Evals do
     to_string(actual) == to_string(expected)
   end
 
-  defp repo do
-    Application.get_env(:aludel, :repo) ||
-      raise """
-      Aludel repo not configured.
-
-      Add to your config:
-
-          config :aludel, repo: YourApp.Repo
-      """
-  end
+  defp repo, do: Aludel.Repo.get()
 end

@@ -1,11 +1,12 @@
-defmodule Aludel.Prompts.Project do
+defmodule Aludel.Projects.Project do
   @moduledoc """
-  Schema for organizing prompts into projects.
+  Schema for organizing prompts and test suites into projects.
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Aludel.Evals.Suite
   alias Aludel.Prompts.Prompt
   alias Ecto.Changeset
 
@@ -18,9 +19,10 @@ defmodule Aludel.Prompts.Project do
   @foreign_key_type :binary_id
 
   schema "projects" do
-    field :name, :string
+    field(:name, :string)
 
     has_many(:prompts, Prompt)
+    has_many(:suites, Suite)
 
     timestamps(type: :utc_datetime)
   end
@@ -33,5 +35,7 @@ defmodule Aludel.Prompts.Project do
     project
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_length(:name, min: 1, max: 255)
+    |> update_change(:name, &String.trim/1)
   end
 end
