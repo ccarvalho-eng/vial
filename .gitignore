@@ -52,3 +52,6 @@ assets/.DS_Store
 # Claude Code configuration
 .claude
 CLAUDE.md
+
+# Code configuration
+CODEX.md
