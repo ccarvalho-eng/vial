@@ -100,9 +100,11 @@ defmodule Aludel.Web.PromptLive.IndexTest do
     render_click(view, "delete", %{"id" => prompt.id})
 
     refute has_element?(view, "tr", "Prompt In Project")
+
     assert Projects.list_projects(type: :prompt)
            |> Enum.find(&(&1.id == project.id))
            |> Map.get(:prompts) == []
+
     assert_raise Ecto.NoResultsError, fn -> Prompts.get_prompt!(prompt.id) end
   end
 end
