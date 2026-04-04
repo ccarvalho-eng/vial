@@ -43,6 +43,14 @@ defmodule Aludel.ProjectsTest do
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset).name
     end
+
+    test "handles nil name when validating updates" do
+      project = %Project{name: "Existing Project", type: :prompt}
+      changeset = Project.changeset(project, %{name: nil})
+
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset).name
+    end
   end
 
   describe "list_projects/0" do

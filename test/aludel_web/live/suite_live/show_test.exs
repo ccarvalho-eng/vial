@@ -234,13 +234,17 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       |> render_click(%{"id" => test_case.id})
 
       view
-      |> element("form[phx-submit='save_test_case']")
-      |> render_submit(%{
-        "id" => test_case.id,
-        "var_value_name" => "Updated Bob",
-        "assertion_type_0" => "contains",
-        "assertion_value_0" => "test"
-      })
+      |> form("#test-case-form-#{test_case.id}",
+        test_case: %{
+          id: test_case.id,
+          variable_values: %{"name" => "Updated Bob"},
+          assertions: %{
+            "assertion_type_0" => "contains",
+            "assertion_value_0" => "test"
+          }
+        }
+      )
+      |> render_submit()
 
       assert render(view) =~ "Test case updated successfully"
     end
@@ -318,12 +322,14 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
 
       html =
         view
-        |> element("form[phx-submit='save_test_case']")
-        |> render_submit(%{
-          "id" => test_case.id,
-          "var_value_name" => "Test",
-          "assertions_json" => ~s([{"type": "contains", "value": "test"}])
-        })
+        |> form("#test-case-form-#{test_case.id}",
+          test_case: %{
+            id: test_case.id,
+            variable_values: %{"name" => "Test"},
+            assertions_json: ~s([{"type": "contains", "value": "test"}])
+          }
+        )
+        |> render_submit()
 
       assert html =~ "Test case updated successfully"
     end
@@ -342,11 +348,13 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
 
       html =
         view
-        |> element("form[phx-submit='save_test_case']")
-        |> render_submit(%{
-          "id" => test_case.id,
-          "assertions_json" => "{invalid json}"
-        })
+        |> form("#test-case-form-#{test_case.id}",
+          test_case: %{
+            id: test_case.id,
+            assertions_json: "{invalid json}"
+          }
+        )
+        |> render_submit()
 
       assert html =~ "Invalid JSON" or html =~ "syntax"
     end
@@ -365,11 +373,13 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
 
       html =
         view
-        |> element("form[phx-submit='save_test_case']")
-        |> render_submit(%{
-          "id" => test_case.id,
-          "assertions_json" => ~s([{"type": "invalid_type", "value": "test"}])
-        })
+        |> form("#test-case-form-#{test_case.id}",
+          test_case: %{
+            id: test_case.id,
+            assertions_json: ~s([{"type": "invalid_type", "value": "test"}])
+          }
+        )
+        |> render_submit()
 
       assert html =~ "Invalid assertion type"
     end

@@ -20,6 +20,19 @@ defmodule Aludel.Web.ProviderLive.New do
   end
 
   @impl Phoenix.LiveView
+  def handle_event("validate", %{"provider" => provider_params}, socket) do
+    changeset =
+      socket.assigns.provider
+      |> Providers.change_provider(provider_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     socket
+     |> assign(:form, to_form(changeset))
+     |> assign(:config_json, Map.get(provider_params, "config", ""))}
+  end
+
+  @impl Phoenix.LiveView
   def handle_event("save", %{"provider" => provider_params}, socket) do
     save_provider(socket, socket.assigns.live_action, provider_params)
   end
@@ -30,6 +43,7 @@ defmodule Aludel.Web.ProviderLive.New do
     socket
     |> assign(:page_title, "New Provider")
     |> assign(:provider, %Provider{})
+    |> assign(:config_json, "")
     |> assign(:form, to_form(changeset))
   end
 
@@ -40,10 +54,13 @@ defmodule Aludel.Web.ProviderLive.New do
     socket
     |> assign(:page_title, "Edit Provider")
     |> assign(:provider, provider)
+    |> assign(:config_json, encode_config(provider.config))
     |> assign(:form, to_form(changeset))
   end
 
   defp save_provider(socket, :new, provider_params) do
+    config_json = Map.get(provider_params, "config", "")
+
     # Parse config JSON if provided
     provider_params = parse_config(provider_params)
 
@@ -55,11 +72,16 @@ defmodule Aludel.Web.ProviderLive.New do
          |> push_navigate(to: aludel_path("providers"))}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+        {:noreply,
+         socket
+         |> assign(:form, to_form(changeset))
+         |> assign(:config_json, config_json)}
     end
   end
 
   defp save_provider(socket, :edit, provider_params) do
+    config_json = Map.get(provider_params, "config", "")
+
     # Parse config JSON if provided
     provider_params = parse_config(provider_params)
 
@@ -71,7 +93,10 @@ defmodule Aludel.Web.ProviderLive.New do
          |> push_navigate(to: aludel_path("providers"))}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+        {:noreply,
+         socket
+         |> assign(:form, to_form(changeset))
+         |> assign(:config_json, config_json)}
     end
   end
 
@@ -90,4 +115,8 @@ defmodule Aludel.Web.ProviderLive.New do
         end
     end
   end
+
+  defp encode_config(nil), do: ""
+  defp encode_config(config) when map_size(config) == 0, do: ""
+  defp encode_config(config), do: Jason.encode!(config, pretty: true)
 end

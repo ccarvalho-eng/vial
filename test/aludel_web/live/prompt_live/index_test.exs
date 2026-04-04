@@ -48,4 +48,36 @@ defmodule Aludel.Web.PromptLive.IndexTest do
     assert project.type == :prompt
     assert Projects.list_projects(type: :suite) == []
   end
+
+  test "updates prompt project from edit form", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Original Prompt Project", type: :prompt})
+
+    {:ok, view, _html} = live(conn, "/prompts")
+
+    html =
+      view
+      |> form("#edit-project-form-#{project.id}",
+        project: %{id: project.id, name: "Renamed Prompt Project"}
+      )
+      |> render_submit()
+
+    assert html =~ "Project updated successfully"
+    assert Projects.get_project!(project.id).name == "Renamed Prompt Project"
+  end
+
+  test "shows error when prompt project update is invalid", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Original Prompt Project", type: :prompt})
+
+    {:ok, view, _html} = live(conn, "/prompts")
+
+    html =
+      view
+      |> form("#edit-project-form-#{project.id}",
+        project: %{id: project.id, name: "   "}
+      )
+      |> render_submit()
+
+    assert html =~ "Failed to update project"
+    assert Projects.get_project!(project.id).name == "Original Prompt Project"
+  end
 end

@@ -2,30 +2,40 @@
   <div style="max-width: 800px; margin: 0 auto;">
     <h1>{if @live_action == :new, do: "New Provider", else: "Edit Provider"}</h1>
 
-    <.form for={@form} phx-submit="save" style="margin-top: 24px;">
+    <.form
+      for={@form}
+      id="provider-form"
+      phx-change="validate"
+      phx-submit="save"
+      style="margin-top: 24px;"
+    >
       <div class="aludel-card">
         <div style="margin-bottom: 16px;">
-          <label for="provider_name">Name</label>
-          <.input field={@form[:name]} type="text" required placeholder="My OpenAI Provider" />
+          <.input
+            field={@form[:name]}
+            type="text"
+            label="Name"
+            required
+            placeholder="My OpenAI Provider"
+          />
         </div>
 
         <div style="margin-bottom: 16px;">
-          <label for="provider_provider">Provider Type</label>
-          <select name="provider[provider]" id="provider_provider" required>
-            <option value="">Select a provider type</option>
-            <option value="openai" selected={@form[:provider].value == :openai}>OpenAI</option>
-            <option value="anthropic" selected={@form[:provider].value == :anthropic}>
-              Anthropic
-            </option>
-            <option value="ollama" selected={@form[:provider].value == :ollama}>Ollama</option>
-          </select>
+          <.input
+            field={@form[:provider]}
+            type="select"
+            label="Provider Type"
+            required
+            prompt="Select a provider type"
+            options={[{"OpenAI", "openai"}, {"Anthropic", "anthropic"}, {"Ollama", "ollama"}]}
+          />
         </div>
 
         <div style="margin-bottom: 16px;">
-          <label for="provider_model">Model</label>
           <.input
             field={@form[:model]}
             type="text"
+            label="Model"
             required
             placeholder="gpt-4o, claude-3-5-sonnet-20241022, llama2, etc."
           />
@@ -35,14 +45,18 @@
         </div>
 
         <div>
-          <label for="provider_config">Configuration (JSON)</label>
-          <textarea
-            name="provider[config]"
-            id="provider_config"
-            rows="6"
-            placeholder='{"temperature": 0.7, "max_tokens": 1000}'
-            style="font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; font-size: 13px;"
-          ><%= if @provider.config && map_size(@provider.config) > 0, do: Jason.encode!(@provider.config, pretty: true), else: "" %></textarea>
+          <div class="fieldset mb-2">
+            <label>
+              <span class="label mb-1">Configuration (JSON)</span>
+              <textarea
+                id={@form[:config].id}
+                name={@form[:config].name}
+                rows="6"
+                placeholder='{"temperature": 0.7, "max_tokens": 1000}'
+                class="w-full textarea font-mono text-[13px]"
+              >{@config_json}</textarea>
+            </label>
+          </div>
           <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
             Optional: Model parameters as JSON (temperature, max_tokens, etc.). API keys are set via environment variables.
           </div>

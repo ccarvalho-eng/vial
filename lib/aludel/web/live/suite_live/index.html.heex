@@ -189,15 +189,20 @@
       </div>
 
       <.form
-        for={%{}}
+        for={@create_project_form}
         id="new-project-form"
+        phx-change="validate_create_project"
         phx-submit="create_project"
         onsubmit="setTimeout(() => this.reset(), 100)"
       >
-        <div style="margin-bottom: 16px;">
-          <label for="project_name">Project Name</label>
-          <input type="text" name="project[name]" id="project_name" required phx-click-stop />
-        </div>
+        <.input
+          field={@create_project_form[:name]}
+          id="new-project-name"
+          type="text"
+          label="Project Name"
+          required
+          phx-click-stop
+        />
       </.form>
 
       <:confirm>Create Project</:confirm>
@@ -214,20 +219,26 @@
           <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">Edit Project</h3>
         </div>
 
-        <.form for={%{}} id={"edit-project-form-#{project.id}"} phx-submit="update_project">
-          <input type="hidden" name="project[id]" value={project.id} />
-
-          <div style="margin-bottom: 16px;">
-            <label for={"project_name_#{project.id}"}>Project Name</label>
-            <input
-              type="text"
-              name="project[name]"
-              id={"project_name_#{project.id}"}
-              value={project.name}
-              required
-              phx-click-stop
-            />
-          </div>
+        <.form
+          for={@edit_project_forms[project.id]}
+          id={"edit-project-form-#{project.id}"}
+          phx-change="validate_update_project"
+          phx-submit="update_project"
+        >
+          <input
+            type="hidden"
+            id={@edit_project_forms[project.id][:id].id}
+            name={@edit_project_forms[project.id][:id].name}
+            value={project.id}
+          />
+          <.input
+            field={@edit_project_forms[project.id][:name]}
+            id={"edit-project-name-#{project.id}"}
+            type="text"
+            label="Project Name"
+            required
+            phx-click-stop
+          />
         </.form>
 
         <:confirm>Update Project</:confirm>

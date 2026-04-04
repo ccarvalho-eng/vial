@@ -5,7 +5,7 @@
       Prompt: {@prompt.name} (v{@prompt_version.version})
     </p>
 
-    <.form for={@form} id="run-form" phx-submit="save">
+    <.form for={@form} id="run-form" phx-change="validate" phx-submit="save">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
         <%!-- Left column: Template Preview --%>
         <div class="aludel-card" style="height: fit-content;">
@@ -36,9 +36,10 @@
                     </label>
                     <input
                       type="text"
-                      name={"run[variables][#{variable}]"}
+                      name={"run[variable_values][#{variable}]"}
                       id={"variable-#{variable}"}
                       required
+                      value={Map.get(@variable_values, variable, "")}
                       style="width: 100%; padding: 8px 12px; background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; font-size: 14px; color: var(--text-primary);"
                       placeholder={"Enter value for {{#{variable}}}"}
                     />
@@ -74,6 +75,7 @@
                       name="run[provider_ids][]"
                       value={provider.id}
                       id={"provider-#{provider.id}"}
+                      checked={provider.id in @selected_provider_ids}
                       style="margin-right: 12px; width: 16px; height: 16px;"
                     />
                     <div>
