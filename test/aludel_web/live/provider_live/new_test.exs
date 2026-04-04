@@ -31,7 +31,7 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       {:ok, view, _html} = live(conn, "/providers/new")
 
       view
-      |> form("form", provider: valid_provider_params())
+      |> form("#provider-form", provider: valid_provider_params())
       |> render_submit()
 
       assert_redirect(view, "/providers")
@@ -46,18 +46,19 @@ defmodule Aludel.Web.ProviderLive.NewTest do
     test "shows validation errors for invalid data", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/providers/new")
 
-      html =
-        view
-        |> form("form",
-          provider: %{
-            name: "",
-            provider: "",
-            model: ""
-          }
-        )
-        |> render_submit()
+      view
+      |> form("#provider-form",
+        provider: %{
+          name: "",
+          provider: "",
+          model: ""
+        }
+      )
+      |> render_submit()
 
-      assert html =~ "can&#39;t be blank"
+      assert has_element?(view, "#provider_name.input-error")
+      assert has_element?(view, "#provider_provider.select-error")
+      assert has_element?(view, "#provider_model.input-error")
     end
   end
 
@@ -91,7 +92,7 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       {:ok, view, _html} = live(conn, "/providers/#{provider.id}/edit")
 
       view
-      |> form("form",
+      |> form("#provider-form",
         provider: %{
           name: "Updated Provider",
           provider: "anthropic",
@@ -115,18 +116,19 @@ defmodule Aludel.Web.ProviderLive.NewTest do
 
       {:ok, view, _html} = live(conn, "/providers/#{provider.id}/edit")
 
-      html =
-        view
-        |> form("form",
-          provider: %{
-            name: "",
-            provider: "",
-            model: ""
-          }
-        )
-        |> render_submit()
+      view
+      |> form("#provider-form",
+        provider: %{
+          name: "",
+          provider: "",
+          model: ""
+        }
+      )
+      |> render_submit()
 
-      assert html =~ "can&#39;t be blank"
+      assert has_element?(view, "#provider_name.input-error")
+      assert has_element?(view, "#provider_provider.select-error")
+      assert has_element?(view, "#provider_model.input-error")
 
       reloaded_provider = Providers.get_provider!(provider.id)
       assert reloaded_provider.name == "Existing Provider"
