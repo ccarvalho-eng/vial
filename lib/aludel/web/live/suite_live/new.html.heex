@@ -1,45 +1,31 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
-  <div style="display: grid; grid-template-columns: 400px 1fr; height: calc(100vh - 60px); overflow: hidden;">
-    <%!-- Column 1: Suite Details --%>
-    <div style="padding: 24px; overflow-y: auto; border-right: 1px solid var(--border);">
-      <h1 style="font-size: 24px; margin: 0 0 24px 0;">
-        {if @live_action == :new, do: "New Evaluation Suite", else: "Edit Evaluation Suite"}
-      </h1>
+  <.form for={@form} id="suite-form" phx-change="validate" phx-submit="save">
+    <div style="display: grid; grid-template-columns: 400px 1fr; height: calc(100vh - 60px); overflow: hidden;">
+      <%!-- Column 1: Suite Details --%>
+      <div style="padding: 24px; overflow-y: auto; border-right: 1px solid var(--border);">
+        <h1 style="font-size: 24px; margin: 0 0 24px 0;">
+          {if @live_action == :new, do: "New Evaluation Suite", else: "Edit Evaluation Suite"}
+        </h1>
 
-      <.form for={@form} phx-submit="save">
-        <div style="margin-bottom: 16px;">
-          <label for="suite_name">Name</label>
-          <.input field={@form[:name]} type="text" required />
-        </div>
+        <.input field={@form[:name]} type="text" label="Name" required />
 
-        <div style="margin-bottom: 16px;">
-          <label for="suite_prompt_id">Prompt</label>
-          <select
-            name="suite[prompt_id]"
-            id="suite_prompt_id"
-            required
-            phx-change="prompt_selected"
-          >
-            <option value="">Select a prompt</option>
-            <%= for prompt <- @prompts do %>
-              <option value={prompt.id} selected={@suite.prompt_id == prompt.id}>
-                {prompt.name}
-              </option>
-            <% end %>
-          </select>
-        </div>
+        <.input
+          field={@form[:prompt_id]}
+          type="select"
+          label="Prompt"
+          required
+          prompt="Select a prompt"
+          options={Enum.map(@prompts, &{&1.name, &1.id})}
+          phx-change="prompt_selected"
+        />
 
-        <div style="margin-bottom: 16px;">
-          <label for="suite_project_id">Project (optional)</label>
-          <select name="suite[project_id]" id="suite_project_id">
-            <option value="">No Project</option>
-            <%= for project <- @projects do %>
-              <option value={project.id} selected={@suite.project_id == project.id}>
-                {project.name}
-              </option>
-            <% end %>
-          </select>
-        </div>
+        <.input
+          field={@form[:project_id]}
+          type="select"
+          label="Project (optional)"
+          prompt="No Project"
+          options={Enum.map(@projects, &{&1.name, &1.id})}
+        />
 
         <%= if @selected_prompt do %>
           <div style="margin-bottom: 16px;">
@@ -56,214 +42,206 @@
             {if @live_action == :new, do: "Create Suite", else: "Update Suite"}
           </button>
         </div>
-      </.form>
-    </div>
-
-    <%!-- Column 2: Test Cases --%>
-    <div style="padding: 24px; overflow-y: auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Test Cases</h2>
-        <button
-          type="button"
-          phx-click="add_test_case"
-          class="button-secondary"
-          style="font-size: 13px; padding: 6px 12px;"
-        >
-          <.icon name="hero-plus" class="size-4" /> Add Test Case
-        </button>
       </div>
 
-      <%= if @test_cases == [] do %>
-        <div class="aludel-card" style="padding: 60px 20px; text-align: center;">
-          <.icon name="hero-beaker" class="size-12 text-muted empty-state-icon" />
-          <div class="empty-state-description">
-            No test cases yet. Add test cases to evaluate your prompt.
-          </div>
+      <%!-- Column 2: Test Cases --%>
+      <div style="padding: 24px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Test Cases</h2>
+          <button
+            type="button"
+            phx-click="add_test_case"
+            class="button-secondary"
+            style="font-size: 13px; padding: 6px 12px;"
+          >
+            <.icon name="hero-plus" class="size-4" /> Add Test Case
+          </button>
         </div>
-      <% else %>
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <%= for test_case <- @test_cases do %>
-            <div class="aludel-card" style="position: relative;">
-              <button
-                type="button"
-                phx-click="remove_test_case"
-                phx-value-id={test_case.id}
-                style="position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;"
-              >
-                ×
-              </button>
 
-              <h3 style="margin-bottom: 12px;">Test Case</h3>
+        <%= if @test_cases == [] do %>
+          <div class="aludel-card" style="padding: 60px 20px; text-align: center;">
+            <.icon name="hero-beaker" class="size-12 text-muted empty-state-icon" />
+            <div class="empty-state-description">
+              No test cases yet. Add test cases to evaluate your prompt.
+            </div>
+          </div>
+        <% else %>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <%= for test_case <- @test_cases do %>
+              <div class="aludel-card" style="position: relative;">
+                <button
+                  type="button"
+                  phx-click="remove_test_case"
+                  phx-value-id={test_case.id}
+                  style="position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;"
+                >
+                  ×
+                </button>
 
-              <div style="margin-bottom: 12px;">
-                <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
-                  Variables
-                </h4>
-                <%= if test_case[:variable_values] == %{} do %>
-                  <div style="color: var(--text-muted); font-size: 12px; font-style: italic;">
-                    No variables (select a prompt first)
-                  </div>
-                <% else %>
-                  <%= for {key, value} <- test_case[:variable_values] || %{} do %>
-                    <div style="margin-bottom: 8px;">
-                      <label
-                        for={"test_case_#{test_case.id}_var_#{key}"}
-                        style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px;"
-                      >
-                        {key}
-                      </label>
-                      <input
-                        type="text"
-                        name={"suite[test_cases][#{test_case.id}][var_value_#{key}]"}
-                        id={"test_case_#{test_case.id}_var_#{key}"}
-                        value={value}
-                        placeholder="Enter value for {key}"
-                        style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
-                      />
+                <h3 style="margin-bottom: 12px;">Test Case</h3>
+
+                <div style="margin-bottom: 12px;">
+                  <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+                    Variables
+                  </h4>
+                  <%= if test_case[:variable_values] == %{} do %>
+                    <div style="color: var(--text-muted); font-size: 12px; font-style: italic;">
+                      No variables (select a prompt first)
                     </div>
-                  <% end %>
-                <% end %>
-              </div>
-
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <label style="margin: 0;">Assertions</label>
-                  <div style="display: flex; gap: 6px;">
-                    <button
-                      type="button"
-                      phx-click="toggle_assertion_mode"
-                      phx-value-id={test_case.id}
-                      style="font-size: 11px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer; font-weight: 500;"
-                    >
-                      {if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual,
-                        do: "JSON",
-                        else: "Visual"}
-                    </button>
-                    <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
-                      <button
-                        type="button"
-                        phx-click="add_assertion"
-                        phx-value-id={test_case.id}
-                        style="font-size: 12px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer;"
-                      >
-                        +
-                      </button>
-                    <% end %>
-                  </div>
-                </div>
-                <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
-                  <%= for {assertion, idx} <- Enum.with_index(test_case[:assertions] || []) do %>
-                    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);">
-                      <div style="display: flex; gap: 8px; align-items: center;">
-                        <select
-                          name={"suite[test_cases][#{test_case.id}][assertion_type_#{idx}]"}
-                          phx-hook="AssertionTypeToggle"
-                          id={"assertion-type-#{test_case.id}-#{idx}"}
-                          data-index={idx}
-                          data-test-case-id={test_case.id}
-                          style="padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px; width: 110px; flex-shrink: 0;"
+                  <% else %>
+                    <%= for {key, value} <- test_case[:variable_values] || %{} do %>
+                      <div style="margin-bottom: 8px;">
+                        <label
+                          for={"test_case_#{test_case.id}_var_#{key}"}
+                          style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px;"
                         >
-                          <option value="contains" selected={assertion["type"] == "contains"}>
-                            contains
-                          </option>
-                          <option
-                            value="not_contains"
-                            selected={assertion["type"] == "not_contains"}
-                          >
-                            not contains
-                          </option>
-                          <option value="regex" selected={assertion["type"] == "regex"}>
-                            regex
-                          </option>
-                          <option
-                            value="exact_match"
-                            selected={assertion["type"] == "exact_match"}
-                          >
-                            exact
-                          </option>
-                          <option
-                            value="json_field"
-                            selected={assertion["type"] == "json_field"}
-                          >
-                            json field
-                          </option>
-                        </select>
-                        <button
-                          type="button"
-                          phx-click="remove_assertion"
-                          phx-value-id={test_case.id}
-                          phx-value-index={idx}
-                          style="padding: 6px 10px; border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; flex-shrink: 0; border-radius: 4px; font-weight: 600;"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <%!-- JSON field inputs --%>
-                      <div
-                        id={"json-fields-#{test_case.id}-#{idx}"}
-                        style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
-                      >
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                          <label style="font-size: 11px; color: var(--text-muted);">
-                            Field path (e.g., "user.name"):
-                          </label>
-                          <input
-                            type="text"
-                            name={"suite[test_cases][#{test_case.id}][assertion_field_#{idx}]"}
-                            value={assertion["field"] || ""}
-                            placeholder="invoice_number"
-                            style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
-                          />
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                          <label style="font-size: 11px; color: var(--text-muted);">
-                            Expected value:
-                          </label>
-                          <input
-                            type="text"
-                            name={"suite[test_cases][#{test_case.id}][assertion_expected_#{idx}]"}
-                            value={assertion["expected"] || ""}
-                            placeholder="INV-001"
-                            style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
-                          />
-                        </div>
-                      </div>
-                      <%!-- Regular assertion value input --%>
-                      <div
-                        id={"value-field-#{test_case.id}-#{idx}"}
-                        style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
-                      >
-                        <label style="font-size: 11px; color: var(--text-muted);">
-                          Value to match:
+                          {key}
                         </label>
-                        <input
+                        <.input
                           type="text"
-                          name={"suite[test_cases][#{test_case.id}][assertion_value_#{idx}]"}
-                          value={assertion["value"] || ""}
-                          placeholder="text to find"
-                          style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); font-size: 13px;"
+                          name={"suite[test_cases][#{test_case.id}][variable_values][#{key}]"}
+                          id={"test_case_#{test_case.id}_var_#{key}"}
+                          value={value}
+                          placeholder="Enter value for {key}"
+                          class="w-full input text-[13px]"
                         />
                       </div>
+                    <% end %>
+                  <% end %>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="margin: 0;">Assertions</label>
+                    <div style="display: flex; gap: 6px;">
+                      <button
+                        type="button"
+                        phx-click="toggle_assertion_mode"
+                        phx-value-id={test_case.id}
+                        style="font-size: 11px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer; font-weight: 500;"
+                      >
+                        {if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual,
+                          do: "JSON",
+                          else: "Visual"}
+                      </button>
+                      <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
+                        <button
+                          type="button"
+                          phx-click="add_assertion"
+                          phx-value-id={test_case.id}
+                          style="font-size: 12px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-secondary); cursor: pointer;"
+                        >
+                          +
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                  <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
+                    <%= for {assertion, idx} <- Enum.with_index(test_case[:assertions] || []) do %>
+                      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                          <.input
+                            type="select"
+                            name={"suite[test_cases][#{test_case.id}][assertions][assertion_type_#{idx}]"}
+                            phx-hook="AssertionTypeToggle"
+                            id={"assertion-type-#{test_case.id}-#{idx}"}
+                            data-index={idx}
+                            data-test-case-id={test_case.id}
+                            value={assertion["type"]}
+                            options={[
+                              {"contains", "contains"},
+                              {"not contains", "not_contains"},
+                              {"regex", "regex"},
+                              {"exact", "exact_match"},
+                              {"json field", "json_field"}
+                            ]}
+                            class="select text-[13px] w-[110px] flex-shrink-0"
+                          />
+                          <button
+                            type="button"
+                            phx-click="remove_assertion"
+                            phx-value-id={test_case.id}
+                            phx-value-index={idx}
+                            style="padding: 6px 10px; border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; flex-shrink: 0; border-radius: 4px; font-weight: 600;"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <%!-- JSON field inputs --%>
+                        <div
+                          id={"json-fields-#{test_case.id}-#{idx}"}
+                          style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
+                        >
+                          <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 11px; color: var(--text-muted);">
+                              Field path (e.g., "user.name"):
+                            </label>
+                            <.input
+                              type="text"
+                              name={"suite[test_cases][#{test_case.id}][assertions][assertion_field_#{idx}]"}
+                              value={assertion["field"] || ""}
+                              placeholder="invoice_number"
+                              id={"test_case_#{test_case.id}_assertion_field_#{idx}"}
+                              class="input text-[13px]"
+                            />
+                          </div>
+                          <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 11px; color: var(--text-muted);">
+                              Expected value:
+                            </label>
+                            <.input
+                              type="text"
+                              name={"suite[test_cases][#{test_case.id}][assertions][assertion_expected_#{idx}]"}
+                              value={assertion["expected"] || ""}
+                              placeholder="INV-001"
+                              id={"test_case_#{test_case.id}_assertion_expected_#{idx}"}
+                              class="input text-[13px]"
+                            />
+                          </div>
+                        </div>
+                        <%!-- Regular assertion value input --%>
+                        <div
+                          id={"value-field-#{test_case.id}-#{idx}"}
+                          style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
+                        >
+                          <label style="font-size: 11px; color: var(--text-muted);">
+                            Value to match:
+                          </label>
+                          <.input
+                            type="text"
+                            name={"suite[test_cases][#{test_case.id}][assertions][assertion_value_#{idx}]"}
+                            value={assertion["value"] || ""}
+                            placeholder="text to find"
+                            id={"test_case_#{test_case.id}_assertion_value_#{idx}"}
+                            class="input text-[13px]"
+                          />
+                        </div>
+                      </div>
+                    <% end %>
+                  <% else %>
+                    <.input
+                      type="textarea"
+                      name={"suite[test_cases][#{test_case.id}][assertions_json]"}
+                      id={"test_case_#{test_case.id}_assertions"}
+                      rows="6"
+                      value={
+                        if test_case[:assertions],
+                          do: Jason.encode!(test_case.assertions, pretty: true),
+                          else: ""
+                      }
+                      placeholder='[{"type": "contains", "value": "expected text"}]'
+                      class="json-editor"
+                    />
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                      Types: contains, not_contains, regex, exact_match, json_field
                     </div>
                   <% end %>
-                <% else %>
-                  <textarea
-                    name={"suite[test_cases][#{test_case.id}][assertions_json]"}
-                    id={"test_case_#{test_case.id}_assertions"}
-                    rows="6"
-                    placeholder='[{"type": "contains", "value": "expected text"}]'
-                    class="json-editor"
-                    style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-secondary); resize: vertical;"
-                  >{if test_case[:assertions], do: Jason.encode!(test_case.assertions, pretty: true), else: ""}</textarea>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                    Types: contains, not_contains, regex, exact_match, json_field
-                  </div>
-                <% end %>
+                </div>
               </div>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
     </div>
-  </div>
+  </.form>
 </Layouts.app>

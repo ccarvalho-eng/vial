@@ -32,7 +32,8 @@
                 <div class="tag-chips-container"></div>
                 <input
                   type="hidden"
-                  name="prompt[tags]"
+                  id={@form[:tags].id}
+                  name={@form[:tags].name}
                   class="tag-hidden-input"
                   value={@tags_input}
                 />
@@ -116,7 +117,8 @@
                 <div class="tag-chips-container"></div>
                 <input
                   type="hidden"
-                  name="prompt[tags]"
+                  id={@form[:tags].id}
+                  name={@form[:tags].name}
                   class="tag-hidden-input"
                   value={@tags_input}
                 />
