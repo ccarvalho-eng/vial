@@ -5,6 +5,7 @@ defmodule Aludel.Web.PromptLive.IndexTest do
   import Aludel.PromptsFixtures
 
   alias Aludel.Projects
+  alias Aludel.Prompts
 
   test "renders list of prompts", %{conn: conn} do
     _prompt = prompt_fixture(%{name: "Test Prompt", tags: ["test"]})
@@ -79,5 +80,29 @@ defmodule Aludel.Web.PromptLive.IndexTest do
 
     assert html =~ "Failed to update project"
     assert Projects.get_project!(project.id).name == "Original Prompt Project"
+  end
+
+  test "deleting a prompt refreshes expanded project contents", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    prompt =
+      prompt_fixture(%{
+        name: "Prompt In Project",
+        project_id: project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts")
+
+    render_click(view, "toggle_project", %{"project_id" => project.id})
+
+    assert has_element?(view, "tr", "Prompt In Project")
+
+    render_click(view, "delete", %{"id" => prompt.id})
+
+    refute has_element?(view, "tr", "Prompt In Project")
+    assert Projects.list_projects(type: :prompt)
+           |> Enum.find(&(&1.id == project.id))
+           |> Map.get(:prompts) == []
+    assert_raise Ecto.NoResultsError, fn -> Prompts.get_prompt!(prompt.id) end
   end
 end

@@ -61,6 +61,7 @@ defmodule Aludel.Web.PromptLive.Index do
     prompt = Prompts.get_prompt!(id)
     {:ok, _} = Prompts.delete_prompt(prompt)
 
+    projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
 
     filtered =
@@ -68,7 +69,9 @@ defmodule Aludel.Web.PromptLive.Index do
 
     {:noreply,
      socket
+     |> assign(:projects, projects)
      |> assign(:prompts, filtered)
+     |> assign(:edit_project_forms, build_edit_project_forms(projects))
      |> assign(:all_tags, extract_all_tags(all_prompts))
      |> put_flash(:info, "Prompt deleted successfully")}
   end
