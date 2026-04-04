@@ -73,18 +73,19 @@ defmodule Aludel.Web.RunLive.NewTest do
       {:ok, view, _html} =
         live(conn, "/runs/new?version=#{version.id}")
 
-      html =
-        view
-        |> form("#run-form",
-          run: %{
-            variable_values: %{"user" => "Alice", "topic" => "Elixir"},
-            provider_ids: [provider1.id]
-          }
-        )
-        |> render_change()
+      view
+      |> form("#run-form",
+        run: %{
+          variable_values: %{"user" => "Alice", "topic" => "Elixir"},
+          provider_ids: [provider1.id]
+        }
+      )
+      |> render_change()
 
-      assert html =~ ~s(name="run[provider_ids][]")
-      assert has_element?(view, ~s(input#provider-#{provider1.id}[checked]))
+      assert has_element?(
+               view,
+               ~s(input#provider-#{provider1.id}[name="run[provider_ids][]"][checked])
+             )
     end
 
     test "creates run and executes with selected providers", %{
