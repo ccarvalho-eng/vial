@@ -8,6 +8,7 @@ defmodule Aludel.Web.PromptLive.New do
 
   use Aludel.Web, :live_view
 
+  alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Prompts.Prompt
   alias Ecto.Changeset
@@ -56,7 +57,7 @@ defmodule Aludel.Web.PromptLive.New do
 
     initial_data = if project_id, do: %{"project_id" => project_id}, else: %{}
     changeset = Prompts.change_prompt(prompt, initial_data)
-    projects = Prompts.list_projects()
+    projects = Projects.list_projects(type: :prompt)
 
     socket
     |> assign(:page_title, "New Prompt")
@@ -88,7 +89,7 @@ defmodule Aludel.Web.PromptLive.New do
 
     # Extract variables from latest template
     variables = Prompts.extract_variables(latest_template)
-    projects = Prompts.list_projects()
+    projects = Projects.list_projects(type: :prompt)
 
     socket
     |> assign(:page_title, "Edit Prompt")

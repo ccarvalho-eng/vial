@@ -10,6 +10,7 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   alias Aludel.Evals
   alias Aludel.FileValidation
+  alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Providers
   alias Aludel.TaskSupervisor
@@ -25,6 +26,7 @@ defmodule Aludel.Web.SuiteLive.Show do
     prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
     providers = Providers.list_providers()
     all_prompts = Prompts.list_prompts()
+    projects = Projects.list_projects(type: :suite)
 
     # Load existing suite runs
     suite_runs = Evals.list_suite_runs_for_suite_with_associations(id)
@@ -39,6 +41,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:suite, suite)
       |> assign(:prompt, prompt)
       |> assign(:all_prompts, all_prompts)
+      |> assign(:projects, projects)
       |> assign(:providers, providers)
       |> assign(:suite_runs, suite_runs)
       |> assign(:running, false)
@@ -53,7 +56,12 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_event("edit_suite_metadata", _params, socket) do
-    {:noreply, assign(socket, :editing_suite_metadata, true)}
+    changeset = Evals.change_suite(socket.assigns.suite)
+
+    {:noreply,
+     socket
+     |> assign(:editing_suite_metadata, true)
+     |> assign(:suite_form, to_form(changeset))}
   end
 
   @impl Phoenix.LiveView
@@ -62,21 +70,38 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("save_suite_metadata", %{"name" => name, "prompt_id" => prompt_id}, socket) do
-    case Evals.update_suite(socket.assigns.suite, %{name: name, prompt_id: prompt_id}) do
+  def handle_event("validate_suite_metadata", %{"suite" => suite_params}, socket) do
+    changeset =
+      socket.assigns.suite
+      |> Evals.change_suite(suite_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :suite_form, to_form(changeset))}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("save_suite_metadata", %{"suite" => suite_params}, socket) do
+    # Handle empty string as nil for optional project_id
+    suite_params =
+      Map.update(suite_params, "project_id", nil, fn
+        "" -> nil
+        val -> val
+      end)
+
+    case Evals.update_suite(socket.assigns.suite, suite_params) do
       {:ok, suite} ->
-        prompt = Prompts.get_prompt_with_versions!(prompt_id)
+        prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
 
         {:noreply,
          socket
          |> assign(:suite, suite)
          |> assign(:prompt, prompt)
-         |> assign(:page_title, name)
+         |> assign(:page_title, suite.name)
          |> assign(:editing_suite_metadata, false)
          |> put_flash(:info, "Suite updated successfully")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update suite")}
+      {:error, changeset} ->
+        {:noreply, assign(socket, :suite_form, to_form(changeset))}
     end
   end
 

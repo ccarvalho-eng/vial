@@ -10,13 +10,14 @@ defmodule Aludel.Evals.Suite do
   import Ecto.Changeset
 
   alias Aludel.Evals.{SuiteRun, TestCase}
+  alias Aludel.Projects.Project
   alias Aludel.Prompts.Prompt
   alias Ecto.Changeset
 
   @type t :: %__MODULE__{}
 
   @required_fields ~w(name prompt_id)a
-  @optional_fields ~w()a
+  @optional_fields ~w(project_id)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -24,6 +25,7 @@ defmodule Aludel.Evals.Suite do
   schema "suites" do
     field(:name, :string)
 
+    belongs_to(:project, Project)
     belongs_to(:prompt, Prompt)
     has_many(:test_cases, TestCase)
     has_many(:suite_runs, SuiteRun)

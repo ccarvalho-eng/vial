@@ -223,14 +223,5 @@ defmodule Aludel.Prompts.Evolution do
     |> Map.new()
   end
 
-  defp repo do
-    Application.get_env(:aludel, :repo) ||
-      raise """
-      Aludel repo not configured.
-
-      Add to your config:
-
-          config :aludel, repo: YourApp.Repo
-      """
-  end
+  defp repo, do: Aludel.Repo.get()
 end

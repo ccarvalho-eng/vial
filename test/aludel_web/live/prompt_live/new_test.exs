@@ -4,6 +4,8 @@ defmodule Aludel.Web.PromptLive.NewTest do
   import Phoenix.LiveViewTest
   import Aludel.PromptsFixtures
 
+  alias Aludel.Projects
+
   describe "new prompt" do
     test "renders new prompt form", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/prompts/new")
@@ -63,6 +65,16 @@ defmodule Aludel.Web.PromptLive.NewTest do
 
       assert html =~ "user"
       assert html =~ "item"
+    end
+
+    test "shows only prompt projects in the project select", %{conn: conn} do
+      {:ok, _prompt_project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+      {:ok, _suite_project} = Projects.create_project(%{name: "Suite Project", type: :suite})
+
+      {:ok, view, _html} = live(conn, "/prompts/new")
+
+      assert has_element?(view, "#prompt_project_id option", "Prompt Project")
+      refute has_element?(view, "#prompt_project_id option", "Suite Project")
     end
   end
 

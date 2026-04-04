@@ -5,7 +5,7 @@ defmodule Aludel.Prompts do
 
   import Ecto.Query
 
-  alias Aludel.Prompts.{Evolution, Project, Prompt, PromptVersion}
+  alias Aludel.Prompts.{Evolution, Prompt, PromptVersion}
   alias Ecto.Changeset
 
   @doc """
@@ -192,73 +192,6 @@ defmodule Aludel.Prompts do
     Evolution.get_metrics(prompt_id)
   end
 
-  @doc """
-  Lists all projects ordered by creation date.
-  """
-  @spec list_projects() :: [Project.t()]
-  def list_projects do
-    Project
-    |> order_by([p], asc: p.inserted_at)
-    |> repo().all()
-  end
-
-  @doc """
-  Lists all projects with prompts preloaded.
-  """
-  @spec list_projects_with_prompts() :: [Project.t()]
-  def list_projects_with_prompts do
-    Project
-    |> order_by([p], asc: p.inserted_at)
-    |> preload(:prompts)
-    |> repo().all()
-  end
-
-  @doc """
-  Gets a project by ID, raising if not found.
-  """
-  @spec get_project!(binary()) :: Project.t()
-  def get_project!(id) do
-    repo().get!(Project, id)
-  end
-
-  @doc """
-  Returns a changeset for tracking project changes.
-  """
-  @spec change_project(Project.t(), map()) :: Changeset.t()
-  def change_project(%Project{} = project, attrs \\ %{}) do
-    Project.changeset(project, attrs)
-  end
-
-  @doc """
-  Creates a new project.
-  """
-  @spec create_project(map()) :: {:ok, Project.t()} | {:error, Changeset.t()}
-  def create_project(attrs \\ %{}) do
-    %Project{}
-    |> Project.changeset(attrs)
-    |> repo().insert()
-  end
-
-  @doc """
-  Updates an existing project.
-  """
-  @spec update_project(Project.t(), map()) ::
-          {:ok, Project.t()} | {:error, Changeset.t()}
-  def update_project(%Project{} = project, attrs) do
-    project
-    |> Project.changeset(attrs)
-    |> repo().update()
-  end
-
-  @doc """
-  Deletes a project.
-  """
-  @spec delete_project(Project.t()) ::
-          {:ok, Project.t()} | {:error, Changeset.t()}
-  def delete_project(%Project{} = project) do
-    repo().delete(project)
-  end
-
   # Private functions
 
   defp get_next_version_number(prompt_id) do
@@ -273,14 +206,5 @@ defmodule Aludel.Prompts do
     end
   end
 
-  defp repo do
-    Application.get_env(:aludel, :repo) ||
-      raise """
-      Aludel repo not configured.
-
-      Add to your config:
-
-          config :aludel, repo: YourApp.Repo
-      """
-  end
+  defp repo, do: Aludel.Repo.get()
 end

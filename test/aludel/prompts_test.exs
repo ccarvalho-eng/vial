@@ -1,6 +1,7 @@
 defmodule Aludel.PromptsTest do
   use Aludel.DataCase, async: true
 
+  alias Aludel.Projects
   alias Aludel.Prompts
 
   describe "prompts" do
@@ -119,60 +120,48 @@ defmodule Aludel.PromptsTest do
 
   describe "projects" do
     test "create_project/1 creates a project with valid attributes" do
-      attrs = %{name: "Customer Support"}
+      attrs = %{name: "Customer Support", type: :prompt}
 
-      assert {:ok, project} = Prompts.create_project(attrs)
+      assert {:ok, project} = Projects.create_project(attrs)
       assert project.name == "Customer Support"
     end
 
     test "create_project/1 requires name" do
-      assert {:error, changeset} = Prompts.create_project(%{})
+      assert {:error, changeset} = Projects.create_project(%{})
       assert "can't be blank" in errors_on(changeset).name
     end
 
     test "list_projects/0 returns all projects ordered by creation" do
-      {:ok, p1} = Prompts.create_project(%{name: "Project A"})
-      {:ok, p2} = Prompts.create_project(%{name: "Project B"})
+      {:ok, p1} = Projects.create_project(%{name: "Project A", type: :prompt})
+      {:ok, p2} = Projects.create_project(%{name: "Project B", type: :prompt})
 
-      projects = Prompts.list_projects()
+      projects = Projects.list_projects()
       assert length(projects) == 2
       assert Enum.at(projects, 0).id == p1.id
       assert Enum.at(projects, 1).id == p2.id
     end
 
     test "get_project!/1 returns project with given id" do
-      {:ok, project} = Prompts.create_project(%{name: "Test Project"})
-      assert Prompts.get_project!(project.id).name == "Test Project"
+      {:ok, project} = Projects.create_project(%{name: "Test Project", type: :prompt})
+      assert Projects.get_project!(project.id).name == "Test Project"
     end
 
     test "update_project/2 updates project" do
-      {:ok, project} = Prompts.create_project(%{name: "Old Name"})
-      assert {:ok, updated} = Prompts.update_project(project, %{name: "New Name"})
+      {:ok, project} = Projects.create_project(%{name: "Old Name", type: :prompt})
+      assert {:ok, updated} = Projects.update_project(project, %{name: "New Name"})
       assert updated.name == "New Name"
     end
 
     test "delete_project/1 deletes project" do
-      {:ok, project} = Prompts.create_project(%{name: "To Delete"})
-      assert {:ok, _} = Prompts.delete_project(project)
-      assert_raise Ecto.NoResultsError, fn -> Prompts.get_project!(project.id) end
-    end
-
-    test "list_projects_with_prompts/0 preloads prompts" do
-      {:ok, project} = Prompts.create_project(%{name: "Test Project"})
-
-      {:ok, _prompt} =
-        Prompts.create_prompt(%{name: "Test Prompt", project_id: project.id})
-
-      projects = Prompts.list_projects_with_prompts()
-      project_with_prompts = Enum.find(projects, &(&1.id == project.id))
-
-      assert length(project_with_prompts.prompts) == 1
+      {:ok, project} = Projects.create_project(%{name: "To Delete", type: :prompt})
+      assert {:ok, _} = Projects.delete_project(project)
+      assert_raise Ecto.NoResultsError, fn -> Projects.get_project!(project.id) end
     end
   end
 
   describe "pagination" do
     test "list_prompts/1 returns paginated results" do
-      {:ok, project} = Prompts.create_project(%{name: "Test"})
+      {:ok, project} = Projects.create_project(%{name: "Test", type: :prompt})
 
       for i <- 1..15 do
         Prompts.create_prompt(%{
@@ -193,8 +182,8 @@ defmodule Aludel.PromptsTest do
     end
 
     test "list_prompts/1 filters by project_id" do
-      {:ok, project1} = Prompts.create_project(%{name: "Project 1"})
-      {:ok, project2} = Prompts.create_project(%{name: "Project 2"})
+      {:ok, project1} = Projects.create_project(%{name: "Project 1", type: :prompt})
+      {:ok, project2} = Projects.create_project(%{name: "Project 2", type: :prompt})
 
       Prompts.create_prompt(%{name: "P1 Prompt", project_id: project1.id})
       Prompts.create_prompt(%{name: "P2 Prompt", project_id: project2.id})

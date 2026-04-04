@@ -5,6 +5,8 @@ defmodule Aludel.Web.SuiteLive.IndexTest do
   import Aludel.EvalsFixtures
   import Aludel.PromptsFixtures
 
+  alias Aludel.Projects
+
   describe "index page" do
     test "renders list of suites", %{conn: conn} do
       prompt = prompt_fixture(%{name: "Test Prompt"})
@@ -50,6 +52,22 @@ defmodule Aludel.Web.SuiteLive.IndexTest do
       assert html =~ "Suite 2"
       assert html =~ "Prompt 1"
       assert html =~ "Prompt 2"
+    end
+
+    test "creates suite projects with suite type", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/suites")
+
+      html =
+        render_submit(view, "create_project", %{
+          "project" => %{"name" => "Suite Workspace"}
+        })
+
+      assert html =~ "Project created successfully"
+
+      [project] = Projects.list_projects(type: :suite)
+      assert project.name == "Suite Workspace"
+      assert project.type == :suite
+      assert Projects.list_projects(type: :prompt) == []
     end
   end
 

@@ -3,15 +3,21 @@
     <%!-- Column 1: Prompt & Controls --%>
     <div style="padding: 24px; overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--border);">
       <%= if @editing_suite_metadata do %>
-        <form phx-submit="save_suite_metadata" style="margin-bottom: 24px;">
+        <.form
+          for={@suite_form}
+          phx-change="validate_suite_metadata"
+          phx-submit="save_suite_metadata"
+          style="margin-bottom: 24px;"
+        >
           <div style="margin-bottom: 12px;">
             <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
               Suite Name
             </label>
             <input
               type="text"
-              name="name"
-              value={@suite.name}
+              id={@suite_form[:name].id}
+              name={@suite_form[:name].name}
+              value={@suite_form[:name].value}
               required
               style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
             />
@@ -21,13 +27,31 @@
               Prompt
             </label>
             <select
-              name="prompt_id"
+              id={@suite_form[:prompt_id].id}
+              name={@suite_form[:prompt_id].name}
               required
               style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
             >
               <%= for prompt <- @all_prompts do %>
-                <option value={prompt.id} selected={prompt.id == @suite.prompt_id}>
+                <option value={prompt.id} selected={prompt.id == @suite_form[:prompt_id].value}>
                   {prompt.name}
+                </option>
+              <% end %>
+            </select>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
+              Project (optional)
+            </label>
+            <select
+              id={@suite_form[:project_id].id}
+              name={@suite_form[:project_id].name}
+              style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
+            >
+              <option value="">No Project</option>
+              <%= for project <- @projects do %>
+                <option value={project.id} selected={project.id == @suite_form[:project_id].value}>
+                  {project.name}
                 </option>
               <% end %>
             </select>
@@ -49,7 +73,7 @@
               Save
             </button>
           </div>
-        </form>
+        </.form>
       <% else %>
         <div style="margin-bottom: 24px;">
           <h1 style="font-size: 24px; margin: 0 0 8px 0;">{@suite.name}</h1>

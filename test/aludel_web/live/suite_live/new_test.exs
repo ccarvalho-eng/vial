@@ -4,6 +4,8 @@ defmodule Aludel.Web.SuiteLive.NewTest do
   import Phoenix.LiveViewTest
   import Aludel.PromptsFixtures
 
+  alias Aludel.Projects
+
   describe "new suite page" do
     test "mounts successfully", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/suites/new")
@@ -23,6 +25,16 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       {:ok, _view, html} = live(conn, "/suites/new")
 
       assert html =~ "Add Test Case"
+    end
+
+    test "shows only suite projects in the project select", %{conn: conn} do
+      {:ok, _prompt_project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+      {:ok, _suite_project} = Projects.create_project(%{name: "Suite Project", type: :suite})
+
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      assert has_element?(view, "#suite_project_id option", "Suite Project")
+      refute has_element?(view, "#suite_project_id option", "Prompt Project")
     end
   end
 

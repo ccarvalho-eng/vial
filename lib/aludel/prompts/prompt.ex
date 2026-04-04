@@ -8,7 +8,8 @@ defmodule Aludel.Prompts.Prompt do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Aludel.Prompts.{Project, PromptVersion}
+  alias Aludel.Projects.Project
+  alias Aludel.Prompts.PromptVersion
   alias Ecto.Changeset
 
   @type t :: %__MODULE__{}
