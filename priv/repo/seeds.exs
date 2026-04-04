@@ -13,6 +13,7 @@
 alias Aludel.Providers
 alias Aludel.Prompts
 alias Aludel.Evals
+alias Aludel.Projects
 
 # Create default providers if they don't exist
 case Providers.list_providers() do
@@ -80,12 +81,25 @@ end
 # Create sample prompts for testing LLMs
 case Prompts.list_prompts() do
   [] ->
+    {:ok, prompt_project} =
+      Projects.create_project(%{
+        name: "Prompt Experiments",
+        type: :prompt
+      })
+
+    {:ok, suite_project} =
+      Projects.create_project(%{
+        name: "Regression Suites",
+        type: :suite
+      })
+
     # 1. Instruction Following Test
     {:ok, instruction_prompt} =
       Prompts.create_prompt(%{
         name: "Instruction Following Test",
         description: "Tests if the model can follow specific formatting instructions",
-        tags: ["testing", "instruction-following"]
+        tags: ["testing", "instruction-following"],
+        project_id: prompt_project.id
       })
 
     # Create v1 - basic prompt
@@ -174,7 +188,8 @@ case Prompts.list_prompts() do
       Prompts.create_prompt(%{
         name: "Context Retention Test",
         description: "Tests how well the model retains and uses context from the prompt",
-        tags: ["testing", "context"]
+        tags: ["testing", "context"],
+        project_id: prompt_project.id
       })
 
     {:ok, _context_version} =
@@ -215,6 +230,7 @@ case Prompts.list_prompts() do
       )
 
     IO.puts("✓ Created 3 sample prompts for testing")
+    IO.puts("  → Added prompt project: Prompt Experiments")
 
     # Create sample evaluation suites
     case Evals.list_suites() do
@@ -224,7 +240,8 @@ case Prompts.list_prompts() do
           Evals.create_suite(%{
             name: "Instruction Following Suite",
             description: "Tests the model's ability to follow specific formatting rules",
-            prompt_id: instruction_prompt.id
+            prompt_id: instruction_prompt.id,
+            project_id: suite_project.id
           })
 
         Evals.create_test_case(%{
@@ -407,7 +424,8 @@ case Prompts.list_prompts() do
           Evals.create_suite(%{
             name: "Context Retention Suite",
             description: "Tests if the model can answer questions using only provided context",
-            prompt_id: context_prompt.id
+            prompt_id: context_prompt.id,
+            project_id: suite_project.id
           })
 
         Evals.create_test_case(%{
@@ -501,7 +519,8 @@ case Prompts.list_prompts() do
           Prompts.create_prompt(%{
             name: "Invoice Data Extraction",
             description: "Extracts structured data from invoice documents",
-            tags: ["document-processing", "invoice", "extraction"]
+            tags: ["document-processing", "invoice", "extraction"],
+            project_id: prompt_project.id
           })
 
         {:ok, _invoice_version} =
@@ -532,7 +551,8 @@ case Prompts.list_prompts() do
           Evals.create_suite(%{
             name: "Invoice Processing Suite",
             description: "Tests LLM's ability to extract structured data from invoice documents",
-            prompt_id: invoice_prompt.id
+            prompt_id: invoice_prompt.id,
+            project_id: suite_project.id
           })
 
         # Test case: Extract invoice fields as JSON
@@ -581,6 +601,7 @@ case Prompts.list_prompts() do
           })
 
         IO.puts("✓ Created 4 sample evaluation suites with test cases")
+        IO.puts("  → Added suite project: Regression Suites")
         IO.puts("  → Invoice Processing Suite requires document upload to run")
 
       _ ->
