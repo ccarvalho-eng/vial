@@ -388,7 +388,7 @@ defmodule Aludel.Web.SuiteLive.New do
          _current_test_cases,
          selected_prompt
        )
-       when map_size(test_cases_params) > 0 do
+       when is_map(test_cases_params) and map_size(test_cases_params) > 0 do
     variables = prompt_variables(selected_prompt)
 
     Enum.map(test_cases_params, fn {id, test_case_params} ->
@@ -412,6 +412,14 @@ defmodule Aludel.Web.SuiteLive.New do
         assertions: assertions
       }
     end)
+  end
+
+  defp merge_test_cases_from_params(
+         %{"test_cases" => _test_cases_params},
+         current_test_cases,
+         selected_prompt
+       ) do
+    sync_test_case_variables(current_test_cases, selected_prompt)
   end
 
   defp merge_test_cases_from_params(_suite_params, current_test_cases, selected_prompt) do

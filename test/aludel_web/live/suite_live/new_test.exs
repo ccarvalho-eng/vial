@@ -8,10 +8,9 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
   describe "new suite page" do
     test "mounts successfully", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/suites/new")
+      {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert html =~ "New Suite"
-      assert html =~ "suite-form"
+      assert has_element?(view, "#suite-form")
     end
 
     test "displays prompt selector", %{conn: conn} do
@@ -279,13 +278,13 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       |> element("#suite_prompt_id")
       |> render_change(%{"suite" => %{"prompt_id" => prompt.id}})
 
-      html =
-        view
-        |> element("[phx-click='add_test_case']")
-        |> render_click()
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
 
-      assert html =~ "suite[test_cases]"
-      assert html =~ "[variable_values][name]"
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      assert has_element?(view, "#test_case_#{test_case_id}_var_name")
     end
   end
 end
