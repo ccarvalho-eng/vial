@@ -32,9 +32,9 @@ Other Ecto adapters (SQLite, MySQL) are not supported. If you attempt to use a d
 ## Features
 
 - **Multi-provider comparison** — Run the same prompt across providers side-by-side. Track latency, token usage, and cost per run.
-- **Prompt management** — Version-controlled templates with `{{variable}}` interpolation. Every edit creates an immutable new version. Supports tags and descriptions.
+- **Prompt management** — Version-controlled templates with `{{variable}}` interpolation. Every edit creates an immutable new version. Supports tags, descriptions, and project organization.
 - **Evolution tracking** — Visualize prompt version performance over time. Track pass rates, cost, and latency trends across versions and providers.
-- **Evaluation suites** — Visual test case editor with document attachments (PDF, images, CSV, JSON, TXT). Automated assertions including `contains`, `regex`, `exact_match`, and `json_field`. Track pass rates and catch regressions over time.
+- **Evaluation suites** — Visual test case editor with document attachments (PDF, images, CSV, JSON, TXT). Automated assertions including `contains`, `regex`, `exact_match`, and `json_field`. Organize suites into projects, track pass rates, and catch regressions over time.
 - **Dashboard** — Live metrics as runs execute: cost trends, latency, and per-provider performance.
 
 ---

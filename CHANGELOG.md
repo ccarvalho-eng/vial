@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.13] - 2026-04-03
+
+### Added
+- Project organization for prompts and evaluation suites, including typed projects and suite assignment flows
+- Docker Compose workflow and standalone container setup documentation
+
+### Changed
+- Refined suite pages and shared page widths/button layouts for more consistent UI spacing
+- Corrected README guidance for provider PDF support
+- CI now enforces coverage thresholds and skips Codecov uploads on forked pull requests
+
+### Fixed
+- Failed async run executions now log structured errors with configured metadata
+- Evolution provider breakdown no longer incurs an N+1 query
+
 ## [0.1.12] - 2026-04-01
 
 ### Added
