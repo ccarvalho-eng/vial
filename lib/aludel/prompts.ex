@@ -130,7 +130,7 @@ defmodule Aludel.Prompts do
   @doc """
   Creates a prompt and its initial version in a single transaction.
 
-  If no non-empty template is provided, only the prompt is created.
+  Blank templates do not create an initial prompt version.
   """
   @spec create_prompt_with_initial_version(map()) ::
           {:ok, Prompt.t()} | {:error, Changeset.t()}
