@@ -36,7 +36,7 @@ defmodule Aludel.Prompts do
   def list_prompts(params) when is_map(params) do
     page = Map.get(params, :page, 1)
     page_size = Map.get(params, :page_size, 20)
-    project_id = Map.get(params, :project_id)
+    project_id = normalize_project_id(Map.get(params, :project_id))
 
     query = from(p in Prompt, order_by: [desc: p.inserted_at])
     query = if project_id, do: where(query, [p], p.project_id == ^project_id), else: query
@@ -205,6 +205,9 @@ defmodule Aludel.Prompts do
       max_version -> max_version + 1
     end
   end
+
+  defp normalize_project_id(""), do: nil
+  defp normalize_project_id(project_id), do: project_id
 
   defp repo, do: Aludel.Repo.get()
 end

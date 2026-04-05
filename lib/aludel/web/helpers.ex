@@ -69,11 +69,17 @@ defmodule Aludel.Web.Helpers do
 
   defp encode_params(params) do
     for {key, value} <- params do
-      if is_list(value) do
-        {key, Enum.join(value, ",")}
-      else
-        {key, value}
+      cond do
+        value in [nil, ""] ->
+          nil
+
+        is_list(value) ->
+          {key, Enum.join(value, ",")}
+
+        true ->
+          {key, value}
       end
     end
+    |> Enum.reject(&is_nil/1)
   end
 end

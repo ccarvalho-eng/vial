@@ -2,6 +2,7 @@ defmodule Aludel.Web.HelpersTest do
   use ExUnit.Case, async: true
 
   alias Aludel.Web.Helpers
+  alias Phoenix.LiveView.Socket
 
   describe "aludel_path/2" do
     test "returns / when routing is :nowhere" do
@@ -19,6 +20,22 @@ defmodule Aludel.Web.HelpersTest do
       assert_raise RuntimeError, "nothing stored in the :routing key", fn ->
         Helpers.aludel_path("prompts")
       end
+    end
+
+    test "drops nil and blank query params" do
+      socket = %Socket{router: Aludel.Web.Router, endpoint: Aludel.Web.Endpoint}
+      Process.put(:routing, {socket, "/aludel"})
+
+      on_exit(fn -> Process.delete(:routing) end)
+
+      path =
+        Helpers.aludel_path("prompts", %{
+          "page" => "2",
+          "project_id" => "",
+          "search" => nil
+        })
+
+      assert path == "/aludel/prompts?page=2"
     end
   end
 

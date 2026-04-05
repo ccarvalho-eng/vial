@@ -192,5 +192,18 @@ defmodule Aludel.PromptsTest do
       assert length(results.entries) == 1
       assert hd(results.entries).name == "P1 Prompt"
     end
+
+    test "list_prompts/1 ignores blank project_id" do
+      {:ok, project} = Projects.create_project(%{name: "Project", type: :prompt})
+
+      Prompts.create_prompt(%{name: "Grouped Prompt", project_id: project.id})
+      Prompts.create_prompt(%{name: "Ungrouped Prompt"})
+
+      results = Prompts.list_prompts(%{project_id: ""})
+
+      assert length(results.entries) == 2
+      assert Enum.any?(results.entries, &(&1.name == "Grouped Prompt"))
+      assert Enum.any?(results.entries, &(&1.name == "Ungrouped Prompt"))
+    end
   end
 end
