@@ -151,6 +151,22 @@ defmodule Aludel.PromptsTest do
       assert Enum.map(prompt.versions, & &1.version) == [2, 1]
       assert hd(prompt.versions).template == "Version 2 {{topic}}"
     end
+
+    test "update_prompt_with_optional_version/2 creates first version when prompt has none" do
+      prompt = prompt_fixture(%{name: "No Versions Yet"})
+
+      assert {:ok, updated_prompt} =
+               Prompts.update_prompt_with_optional_version(prompt, %{
+                 "name" => "Now Versioned",
+                 "template" => "First template {{name}}"
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(updated_prompt.id)
+      assert prompt.name == "Now Versioned"
+      assert Enum.map(prompt.versions, & &1.version) == [1]
+      assert hd(prompt.versions).template == "First template {{name}}"
+      assert hd(prompt.versions).variables == ["name"]
+    end
   end
 
   describe "prompt_versions" do

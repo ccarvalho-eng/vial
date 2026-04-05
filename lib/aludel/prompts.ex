@@ -138,9 +138,7 @@ defmodule Aludel.Prompts do
     attrs = normalize_attrs(attrs)
     template = Map.get(attrs, "template", "")
 
-    Multi.new()
-    |> Multi.insert(:prompt, Prompt.changeset(%Prompt{}, attrs))
-    |> maybe_insert_version(:prompt_version, template)
+    create_prompt_multi(attrs, template)
     |> repo().transaction()
     |> case do
       {:ok, %{prompt: prompt}} ->
@@ -178,10 +176,9 @@ defmodule Aludel.Prompts do
     new_template = Map.get(attrs, "template", "")
     latest_template = latest_template(prompt)
 
-    Multi.new()
-    |> Multi.update(:prompt, Prompt.changeset(prompt, attrs))
-    |> maybe_insert_version(
-      :prompt_version,
+    update_prompt_multi(
+      prompt,
+      attrs,
       if(new_template != "" and new_template != latest_template, do: new_template, else: "")
     )
     |> repo().transaction()
@@ -253,6 +250,21 @@ defmodule Aludel.Prompts do
   end
 
   # Private functions
+
+  @dialyzer {:nowarn_function, create_prompt_multi: 2, update_prompt_multi: 3}
+  @spec create_prompt_multi(map(), String.t()) :: Multi.t()
+  defp create_prompt_multi(attrs, template) do
+    Multi.new()
+    |> Multi.insert(:prompt, Prompt.changeset(%Prompt{}, attrs))
+    |> maybe_insert_version(:prompt_version, template)
+  end
+
+  @spec update_prompt_multi(Prompt.t(), map(), String.t()) :: Multi.t()
+  defp update_prompt_multi(%Prompt{} = prompt, attrs, template) do
+    Multi.new()
+    |> Multi.update(:prompt, Prompt.changeset(prompt, attrs))
+    |> maybe_insert_version(:prompt_version, template)
+  end
 
   defp maybe_insert_version(multi, _operation_name, ""), do: multi
 
