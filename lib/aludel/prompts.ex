@@ -264,7 +264,8 @@ defmodule Aludel.Prompts do
     |> maybe_insert_version(:prompt_version, template)
   end
 
-  defp maybe_insert_version(multi, _operation_name, template) when template in [nil, ""], do: multi
+  defp maybe_insert_version(multi, _operation_name, template) when template in [nil, ""],
+    do: multi
 
   defp maybe_insert_version(multi, operation_name, template) do
     Multi.run(multi, operation_name, fn repo, %{prompt: prompt} ->

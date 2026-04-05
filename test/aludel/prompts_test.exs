@@ -4,7 +4,6 @@ defmodule Aludel.PromptsTest do
   alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Prompts.PromptVersion
-  alias Aludel.Repo
 
   describe "prompts" do
     test "create_prompt/1 creates a prompt with valid attributes" do
@@ -240,6 +239,7 @@ defmodule Aludel.PromptsTest do
 
     test "create_prompt_version/2 converts unique constraint violations into changeset errors" do
       prompt = prompt_fixture()
+      repo = Aludel.Repo.get()
 
       assert {:ok, _version} =
                %PromptVersion{}
@@ -249,7 +249,7 @@ defmodule Aludel.PromptsTest do
                  template: "Original {{name}}",
                  variables: ["name"]
                })
-               |> Repo.insert()
+               |> repo.insert()
 
       assert {:error, changeset} =
                %PromptVersion{}
@@ -259,9 +259,9 @@ defmodule Aludel.PromptsTest do
                  template: "Duplicate {{name}}",
                  variables: ["name"]
                })
-               |> Repo.insert()
+               |> repo.insert()
 
-      assert "has already been taken" in errors_on(changeset).version
+      assert "has already been taken" in errors_on(changeset).prompt_id
     end
 
     test "extract_variables/1 parses template variables" do
