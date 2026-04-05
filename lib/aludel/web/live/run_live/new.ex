@@ -43,7 +43,8 @@ defmodule Aludel.Web.RunLive.New do
     changeset =
       Runs.change_run(%Run{}, %{
         prompt_version_id: version_id,
-        variable_values: variable_values
+        variable_values: variable_values,
+        provider_ids: []
       })
 
     {:noreply,
@@ -54,8 +55,7 @@ defmodule Aludel.Web.RunLive.New do
      |> assign(:variables, prompt_version.variables)
      |> assign(:providers, providers)
      |> assign(:form, to_form(changeset))
-     |> assign(:variable_values, variable_values)
-     |> assign(:selected_provider_ids, [])}
+     |> assign(:variable_values, variable_values)}
   end
 
   @impl Phoenix.LiveView
@@ -68,15 +68,15 @@ defmodule Aludel.Web.RunLive.New do
       |> Runs.change_run(%{
         "name" => Map.get(run_params, "name", ""),
         "prompt_version_id" => socket.assigns.prompt_version.id,
-        "variable_values" => variable_values
+        "variable_values" => variable_values,
+        "provider_ids" => provider_ids
       })
       |> Map.put(:action, :validate)
 
     {:noreply,
      socket
      |> assign(:form, to_form(changeset))
-     |> assign(:variable_values, variable_values)
-     |> assign(:selected_provider_ids, provider_ids)}
+     |> assign(:variable_values, variable_values)}
   end
 
   @impl Phoenix.LiveView
@@ -148,9 +148,11 @@ defmodule Aludel.Web.RunLive.New do
       {:error, changeset} ->
         {:noreply,
          socket
-         |> assign(:form, to_form(changeset))
+         |> assign(
+           :form,
+           to_form(Ecto.Changeset.put_change(changeset, :provider_ids, provider_ids))
+         )
          |> assign(:variable_values, variables_map)
-         |> assign(:selected_provider_ids, provider_ids)
          |> put_flash(:error, "Failed to create run")}
     end
   end

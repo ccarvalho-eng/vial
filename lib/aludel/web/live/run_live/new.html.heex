@@ -62,6 +62,7 @@
                 </.link>
               </div>
             <% else %>
+              <% selected_provider_ids = @form[:provider_ids].value || [] %>
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <%= for provider <- @providers do %>
                   <label
@@ -72,10 +73,10 @@
                   >
                     <input
                       type="checkbox"
-                      name="run[provider_ids][]"
+                      name={@form[:provider_ids].name <> "[]"}
                       value={provider.id}
                       id={"provider-#{provider.id}"}
-                      checked={provider.id in @selected_provider_ids}
+                      checked={provider.id in selected_provider_ids}
                       style="margin-right: 12px; width: 16px; height: 16px;"
                     />
                     <div>
