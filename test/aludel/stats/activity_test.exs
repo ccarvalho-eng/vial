@@ -110,6 +110,19 @@ defmodule Aludel.Stats.ActivityTest do
       assert %{date: ^one_day_ago, run_count: 0, suite_count: 1, total: 1} =
                Enum.find(activity, &(&1.date == one_day_ago))
     end
+
+    test "returns exactly the requested number of buckets including today" do
+      activity = Activity.daily_activity(3)
+
+      assert length(activity) == 3
+      assert List.first(activity).date == Date.add(Date.utc_today(), -2)
+      assert List.last(activity).date == Date.utc_today()
+    end
+
+    test "returns an empty list for non-positive day windows" do
+      assert Activity.daily_activity(0) == []
+      assert Activity.daily_activity(-1) == []
+    end
   end
 
   describe "list_recent_activity/1" do

@@ -10,12 +10,18 @@ defmodule Aludel.Stats.Activity do
   alias Aludel.Stats.Shared
 
   @spec daily_activity(integer()) :: [map()]
-  def daily_activity(days \\ 30) do
-    start_date = DateTime.utc_now() |> DateTime.add(-days, :day) |> DateTime.to_date()
+  def daily_activity(days \\ 30)
+  def daily_activity(days) when days <= 0, do: []
+
+  def daily_activity(days) do
+    today = Date.utc_today()
+    start_date = Date.add(today, -(days - 1))
+    start_datetime = DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC")
+    end_datetime = DateTime.new!(Date.add(today, 1), ~T[00:00:00], "Etc/UTC")
 
     run_counts =
       from(r in Run,
-        where: fragment("DATE(?)", r.inserted_at) >= ^start_date,
+        where: r.inserted_at >= ^start_datetime and r.inserted_at < ^end_datetime,
         group_by: fragment("DATE(?)", r.inserted_at),
         select: %{
           date: fragment("DATE(?)", r.inserted_at),
@@ -26,7 +32,7 @@ defmodule Aludel.Stats.Activity do
 
     suite_counts =
       from(sr in SuiteRun,
-        where: fragment("DATE(?)", sr.inserted_at) >= ^start_date,
+        where: sr.inserted_at >= ^start_datetime and sr.inserted_at < ^end_datetime,
         group_by: fragment("DATE(?)", sr.inserted_at),
         select: %{
           date: fragment("DATE(?)", sr.inserted_at),
