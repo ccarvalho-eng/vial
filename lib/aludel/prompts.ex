@@ -136,7 +136,7 @@ defmodule Aludel.Prompts do
           {:ok, Prompt.t()} | {:error, Changeset.t()}
   def create_prompt_with_initial_version(attrs \\ %{}) do
     attrs = normalize_attrs(attrs)
-    template = Map.get(attrs, "template", "")
+    template = normalized_template(attrs)
 
     create_prompt_multi(attrs, template)
     |> repo().transaction()
@@ -147,8 +147,8 @@ defmodule Aludel.Prompts do
       {:error, :prompt, %Changeset{} = changeset, _changes_so_far} ->
         {:error, changeset}
 
-      {:error, :prompt_version, %Changeset{} = changeset, _changes_so_far} ->
-        {:error, changeset}
+      {:error, :prompt_version, %Changeset{} = changeset, changes_so_far} ->
+        {:error, prompt_version_error(changes_so_far[:prompt], attrs, changeset)}
     end
   end
 
@@ -173,13 +173,13 @@ defmodule Aludel.Prompts do
   def update_prompt_with_optional_version(%Prompt{} = prompt, attrs) do
     attrs = normalize_attrs(attrs)
     prompt = ensure_versions_loaded(prompt)
-    new_template = Map.get(attrs, "template", "")
+    new_template = normalized_template(attrs)
     latest_template = latest_template(prompt)
 
     update_prompt_multi(
       prompt,
       attrs,
-      if(new_template != "" and new_template != latest_template, do: new_template, else: "")
+      if(new_template == "" or new_template == latest_template, do: "", else: new_template)
     )
     |> repo().transaction()
     |> case do
@@ -189,8 +189,8 @@ defmodule Aludel.Prompts do
       {:error, :prompt, %Changeset{} = changeset, _changes_so_far} ->
         {:error, changeset}
 
-      {:error, :prompt_version, %Changeset{} = changeset, _changes_so_far} ->
-        {:error, changeset}
+      {:error, :prompt_version, %Changeset{} = changeset, changes_so_far} ->
+        {:error, prompt_version_error(changes_so_far[:prompt] || prompt, attrs, changeset)}
     end
   end
 
@@ -264,7 +264,7 @@ defmodule Aludel.Prompts do
     |> maybe_insert_version(:prompt_version, template)
   end
 
-  defp maybe_insert_version(multi, _operation_name, ""), do: multi
+  defp maybe_insert_version(multi, _operation_name, template) when template in [nil, ""], do: multi
 
   defp maybe_insert_version(multi, operation_name, template) do
     Multi.run(multi, operation_name, fn repo, %{prompt: prompt} ->
@@ -293,17 +293,51 @@ defmodule Aludel.Prompts do
 
   defp ensure_versions_loaded(%Prompt{} = prompt), do: prompt
 
-  defp latest_template(%Prompt{versions: [latest_version | _]}), do: latest_version.template
-  defp latest_template(%Prompt{}), do: ""
-
-  defp normalize_attrs(attrs) when is_map(attrs) do
-    case Map.has_key?(attrs, :template) do
-      true -> Map.put(attrs, "template", Map.get(attrs, :template))
-      false -> attrs
+  defp latest_template(%Prompt{versions: versions}) when is_list(versions) do
+    case Enum.max_by(versions, & &1.version, fn -> nil end) do
+      nil -> ""
+      latest_version -> latest_version.template
     end
   end
 
+  defp latest_template(%Prompt{}), do: ""
+
+  defp normalize_attrs(attrs) when is_map(attrs) do
+    attrs =
+      case Map.has_key?(attrs, :template) do
+        true -> Map.put(attrs, "template", Map.get(attrs, :template))
+        false -> attrs
+      end
+
+    Map.update(attrs, "template", "", &normalize_template/1)
+  end
+
   defp normalize_attrs(attrs), do: attrs
+
+  defp normalized_template(attrs), do: Map.get(attrs, "template", "") |> normalize_template()
+
+  defp normalize_template(template) when is_binary(template) do
+    if String.trim(template) == "", do: "", else: template
+  end
+
+  defp normalize_template(_), do: ""
+
+  defp prompt_version_error(prompt, attrs, %Changeset{} = version_changeset) do
+    prompt_changeset =
+      prompt
+      |> case do
+        %Prompt{} = prompt -> Prompt.changeset(prompt, attrs)
+        _ -> Prompt.changeset(%Prompt{}, attrs)
+      end
+
+    Enum.reduce(version_changeset.errors, prompt_changeset, fn
+      {:template, {message, opts}}, acc ->
+        Changeset.add_error(acc, :template, message, opts)
+
+      {_field, {message, opts}}, acc ->
+        Changeset.add_error(acc, :template, message, opts)
+    end)
+  end
 
   defp get_next_version_number(prompt_id), do: get_next_version_number(repo(), prompt_id)
 

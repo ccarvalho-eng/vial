@@ -40,5 +40,8 @@ defmodule Aludel.Prompts.PromptVersion do
     prompt_version
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:prompt_id, :version],
+      name: :prompt_versions_prompt_id_version_index
+    )
   end
 end
