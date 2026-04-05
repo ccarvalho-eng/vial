@@ -93,12 +93,7 @@ defmodule Aludel.Stats.Activity do
         suite_run.prompt_version && suite_run.prompt_version.prompt &&
           suite_run.prompt_version.prompt.name,
       providers_count: 1,
-      cost:
-        if suite_run.avg_cost_usd do
-          Decimal.to_float(suite_run.avg_cost_usd)
-        else
-          0.0
-        end,
+      cost: Shared.suite_run_total_cost(suite_run),
       passed: suite_run.passed,
       failed: suite_run.failed,
       inserted_at: suite_run.inserted_at,

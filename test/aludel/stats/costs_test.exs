@@ -36,12 +36,16 @@ defmodule Aludel.Stats.CostsTest do
         suite_id: suite.id,
         prompt_version_id: version.id,
         provider_id: provider.id,
-        avg_cost_usd: Decimal.new("0.009")
+        avg_cost_usd: Decimal.new("0.009"),
+        results: [
+          %{"cost_usd" => 0.006, "latency_ms" => 100, "passed" => true},
+          %{"cost_usd" => 0.012, "latency_ms" => 120, "passed" => true}
+        ]
       })
 
       cost_per_run = Costs.cost_per_run()
 
-      assert_in_delta cost_per_run, 0.006, 0.0001
+      assert_in_delta cost_per_run, 0.009, 0.0001
     end
 
     test "returns zero when no runs exist" do
@@ -69,7 +73,11 @@ defmodule Aludel.Stats.CostsTest do
         suite_id: suite.id,
         prompt_version_id: version.id,
         provider_id: provider1.id,
-        avg_cost_usd: Decimal.new("0.010")
+        avg_cost_usd: Decimal.new("0.010"),
+        results: [
+          %{"cost_usd" => 0.008, "latency_ms" => 100, "passed" => true},
+          %{"cost_usd" => 0.012, "latency_ms" => 130, "passed" => false}
+        ]
       })
 
       breakdown = Costs.cost_by_provider()
@@ -89,8 +97,8 @@ defmodule Aludel.Stats.CostsTest do
                }
              ] = breakdown
 
-      assert_in_delta provider1_total, 0.020, 0.0001
-      assert_in_delta provider1_avg, 0.020 / 3, 0.0001
+      assert_in_delta provider1_total, 0.030, 0.0001
+      assert_in_delta provider1_avg, 0.030 / 3, 0.0001
       assert_in_delta provider2_total, 0.002, 0.0001
       assert_in_delta provider2_avg, 0.002, 0.0001
     end
@@ -114,7 +122,11 @@ defmodule Aludel.Stats.CostsTest do
         suite_id: suite.id,
         prompt_version_id: version1.id,
         provider_id: provider.id,
-        avg_cost_usd: Decimal.new("0.009")
+        avg_cost_usd: Decimal.new("0.009"),
+        results: [
+          %{"cost_usd" => 0.005, "latency_ms" => 100, "passed" => true},
+          %{"cost_usd" => 0.013, "latency_ms" => 120, "passed" => true}
+        ]
       })
 
       breakdown = Costs.cost_by_prompt()
@@ -134,8 +146,8 @@ defmodule Aludel.Stats.CostsTest do
                }
              ] = breakdown
 
-      assert_in_delta prompt1_total, 0.012, 0.0001
-      assert_in_delta prompt1_avg, 0.006, 0.0001
+      assert_in_delta prompt1_total, 0.021, 0.0001
+      assert_in_delta prompt1_avg, 0.0105, 0.0001
       assert_in_delta prompt2_total, 0.002, 0.0001
       assert_in_delta prompt2_avg, 0.002, 0.0001
     end

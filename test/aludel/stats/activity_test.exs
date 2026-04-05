@@ -11,7 +11,7 @@ defmodule Aludel.Stats.ActivityTest do
   alias Aludel.Stats.Activity
 
   describe "normalize_suite_run/1" do
-    test "includes avg_cost_usd" do
+    test "uses total suite execution cost from results" do
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Template")
@@ -23,7 +23,11 @@ defmodule Aludel.Stats.ActivityTest do
           prompt_version_id: version.id,
           provider_id: provider.id,
           avg_cost_usd: Decimal.new("0.0042"),
-          avg_latency_ms: 350
+          avg_latency_ms: 350,
+          results: [
+            %{"cost_usd" => 0.0042, "latency_ms" => 350, "passed" => true},
+            %{"cost_usd" => 0.0068, "latency_ms" => 410, "passed" => false}
+          ]
         })
 
       suite_run =
@@ -35,7 +39,7 @@ defmodule Aludel.Stats.ActivityTest do
 
       normalized = Activity.normalize_suite_run(suite_run)
 
-      assert normalized.cost == Decimal.to_float(Decimal.new("0.0042"))
+      assert_in_delta normalized.cost, 0.011, 0.0001
     end
 
     test "handles nil cost" do
@@ -50,7 +54,8 @@ defmodule Aludel.Stats.ActivityTest do
           prompt_version_id: version.id,
           provider_id: provider.id,
           avg_cost_usd: nil,
-          avg_latency_ms: nil
+          avg_latency_ms: nil,
+          results: [%{"cost_usd" => nil, "latency_ms" => nil, "passed" => false}]
         })
 
       suite_run =
@@ -150,6 +155,10 @@ defmodule Aludel.Stats.ActivityTest do
           prompt_version_id: version.id,
           provider_id: provider.id,
           avg_cost_usd: Decimal.new("0.006"),
+          results: [
+            %{"cost_usd" => 0.004, "latency_ms" => 100, "passed" => true},
+            %{"cost_usd" => 0.008, "latency_ms" => 120, "passed" => false}
+          ],
           passed: 2,
           failed: 1
         })
@@ -182,7 +191,7 @@ defmodule Aludel.Stats.ActivityTest do
                  name: "Suite Name",
                  prompt_name: "Prompt Name",
                  providers_count: 1,
-                 cost: 0.006,
+                 cost: 0.012,
                  passed: 2,
                  failed: 1,
                  path: suite_path

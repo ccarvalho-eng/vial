@@ -37,17 +37,19 @@ defmodule Aludel.Stats.Costs do
     suite_costs =
       from(sr in SuiteRun,
         join: p in assoc(sr, :provider),
-        where: not is_nil(sr.avg_cost_usd),
-        group_by: [p.id, p.name, p.provider],
-        select: %{
-          provider_id: p.id,
-          provider_name: p.name,
-          provider: p.provider,
-          total_cost: sum(sr.avg_cost_usd),
-          run_count: count(sr.id)
-        }
+        preload: [provider: p]
       )
       |> Shared.repo().all()
+      |> Enum.filter(&(Shared.suite_run_cost_entries(&1) > 0))
+      |> Enum.map(fn suite_run ->
+        %{
+          provider_id: suite_run.provider.id,
+          provider_name: suite_run.provider.name,
+          provider: suite_run.provider.provider,
+          total_cost: Shared.suite_run_total_cost(suite_run),
+          run_count: 1
+        }
+      end)
 
     (run_costs ++ suite_costs)
     |> Enum.group_by(& &1.provider_id)
@@ -89,16 +91,18 @@ defmodule Aludel.Stats.Costs do
       from(sr in SuiteRun,
         join: pv in assoc(sr, :prompt_version),
         join: p in assoc(pv, :prompt),
-        where: not is_nil(sr.avg_cost_usd),
-        group_by: [p.id, p.name],
-        select: %{
-          prompt_id: p.id,
-          prompt_name: p.name,
-          total_cost: sum(sr.avg_cost_usd),
-          run_count: count(sr.id)
-        }
+        preload: [prompt_version: {pv, prompt: p}]
       )
       |> Shared.repo().all()
+      |> Enum.filter(&(Shared.suite_run_cost_entries(&1) > 0))
+      |> Enum.map(fn suite_run ->
+        %{
+          prompt_id: suite_run.prompt_version.prompt.id,
+          prompt_name: suite_run.prompt_version.prompt.name,
+          total_cost: Shared.suite_run_total_cost(suite_run),
+          run_count: 1
+        }
+      end)
 
     (run_costs ++ suite_costs)
     |> Enum.group_by(& &1.prompt_id)

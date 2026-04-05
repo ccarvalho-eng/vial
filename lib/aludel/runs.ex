@@ -12,6 +12,7 @@ defmodule Aludel.Runs do
   alias Aludel.Providers.Provider
   alias Aludel.PubSub
   alias Aludel.Runs.{Run, RunResult}
+  alias Aludel.Stats.Shared
   alias Aludel.TaskSupervisor
   alias Ecto.Changeset
 
@@ -41,34 +42,25 @@ defmodule Aludel.Runs do
   @doc """
   Calculates the total cost across all run results and suite runs.
 
-  Returns the sum of cost_usd from all run_results plus avg_cost_usd
-  from all suite_runs.
+  Returns the sum of cost_usd from all run_results plus the summed
+  per-test costs stored in suite_run results.
   """
   @spec total_cost() :: float()
   def total_cost do
-    # Individual runs cost
     run_cost =
       from(rr in RunResult,
         select: sum(rr.cost_usd)
       )
       |> repo().one() || 0.0
 
-    # Suite runs cost
     suite_cost =
-      from(sr in SuiteRun,
-        where: not is_nil(sr.avg_cost_usd),
-        select: sum(sr.avg_cost_usd)
-      )
-      |> repo().one()
+      from(sr in SuiteRun, select: %{results: sr.results})
+      |> repo().all()
+      |> Enum.reduce(0.0, fn suite_run, acc ->
+        acc + Shared.suite_run_total_cost(suite_run)
+      end)
 
-    suite_cost_float =
-      if suite_cost do
-        Decimal.to_float(suite_cost)
-      else
-        0.0
-      end
-
-    run_cost + suite_cost_float
+    run_cost + suite_cost
   end
 
   @doc """
