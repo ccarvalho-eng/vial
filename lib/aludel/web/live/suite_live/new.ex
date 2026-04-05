@@ -22,17 +22,6 @@ defmodule Aludel.Web.SuiteLive.New do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("prompt_selected", %{"suite" => %{"prompt_id" => prompt_id}}, socket) do
-    selected_prompt = find_selected_prompt(socket.assigns.prompts, prompt_id)
-
-    {:noreply,
-     socket
-     |> assign(:suite, Map.put(socket.assigns.suite, :prompt_id, prompt_id))
-     |> assign(:selected_prompt, selected_prompt)
-     |> assign(:test_cases, sync_test_case_variables(socket.assigns.test_cases, selected_prompt))}
-  end
-
-  @impl Phoenix.LiveView
   def handle_event("validate", %{"suite" => suite_params}, socket) do
     selected_prompt = find_selected_prompt(socket.assigns.prompts, suite_params["prompt_id"])
 
@@ -43,6 +32,7 @@ defmodule Aludel.Web.SuiteLive.New do
 
     {:noreply,
      socket
+     |> assign(:suite, Ecto.Changeset.apply_changes(changeset))
      |> assign(:form, to_form(changeset))
      |> assign(:selected_prompt, selected_prompt)
      |> assign(

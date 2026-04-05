@@ -16,7 +16,6 @@
           required
           prompt="Select a prompt"
           options={Enum.map(@prompts, &{&1.name, &1.id})}
-          phx-change="prompt_selected"
         />
 
         <.input
