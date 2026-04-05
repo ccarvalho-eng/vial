@@ -25,8 +25,8 @@ defmodule Aludel.LLM do
           cost_usd: float()
         }
 
+  alias Aludel.Interfaces.LLM.Providers.{Anthropic, Ollama, OpenAI}
   alias Aludel.Providers.Provider
-  alias Aludel.Interfaces.LLM.Providers.{Anthropic, OpenAI, Ollama}
 
   @providers %{
     openai: OpenAI,

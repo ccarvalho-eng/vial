@@ -138,8 +138,12 @@ defmodule Aludel.LlmStubs do
   def stub_conditional_responses(mock_module, conditions) do
     Mox.stub(mock_module, :request, fn _model, prompt, _opts ->
       Enum.find_value(conditions, success_response(), fn {pattern, response} ->
-        if String.contains?(prompt, pattern), do: response
+        match_conditional_response(prompt, pattern, response)
       end)
     end)
+  end
+
+  defp match_conditional_response(prompt, pattern, response) do
+    if String.contains?(prompt, pattern), do: response
   end
 end

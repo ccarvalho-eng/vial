@@ -16,8 +16,8 @@ defmodule Aludel.DataCase do
 
   use ExUnit.CaseTemplate
 
-  alias Ecto.Adapters.SQL.Sandbox
   alias Aludel.Interfaces.HttpClientMock
+  alias Ecto.Adapters.SQL.Sandbox
 
   using do
     quote do

@@ -378,84 +378,87 @@ defmodule Aludel.Evals do
   defp execute_test_case(test_case, version, provider) do
     test_case = ensure_documents_loaded(test_case)
     rendered_prompt = render_template(version.template, test_case.variable_values)
-
-    documents =
-      Enum.map(test_case.documents, fn doc ->
-        %{data: doc.data, content_type: doc.content_type}
-      end)
-
-    opts = if documents != [], do: [documents: documents], else: []
+    opts = llm_call_opts(test_case.documents)
 
     case LLM.call(provider, rendered_prompt, opts) do
       {:ok, result} ->
-        assertion_results =
-          Enum.map(test_case.assertions, fn assertion ->
-            {passed, actual_value} = evaluate_assertion(result.output, assertion)
-
-            base_result = %{
-              "type" => assertion["type"],
-              "passed" => passed
-            }
-
-            # For json_field, store field and expected separately, plus actual value
-            base_result =
-              if assertion["type"] == "json_field" do
-                base_result
-                |> Map.put("value", %{
-                  "field" => assertion["field"],
-                  "expected" => assertion["expected"]
-                })
-                |> Map.put("actual_value", actual_value)
-              else
-                Map.put(base_result, "value", assertion["value"])
-              end
-
-            base_result
-          end)
-
+        assertion_results = build_assertion_results(test_case.assertions, result.output)
         passed = Enum.all?(assertion_results, & &1["passed"])
-
-        %{
-          "test_case_id" => test_case.id,
-          "passed" => passed,
-          "output" => result.output,
-          "assertion_results" => assertion_results,
-          "cost_usd" => result.cost_usd,
-          "latency_ms" => result.latency_ms
-        }
+        successful_test_case_result(test_case.id, result, passed, assertion_results)
 
       {:error, reason} ->
-        error_message =
-          case reason do
-            :missing_api_key ->
-              "Missing API key"
-
-            {:auth_error, msg} ->
-              "Authentication error: #{msg}"
-
-            {:rate_limit, retry_after} ->
-              "Rate limit exceeded#{if retry_after, do: ", retry after #{retry_after}s", else: ""}"
-
-            {:invalid_request, msg} ->
-              "Invalid request: #{msg}"
-
-            {:api_error, status, msg} ->
-              "API error (#{status}): #{msg}"
-
-            {:network_error, err} ->
-              "Network error: #{inspect(err)}"
-          end
-
-        %{
-          "test_case_id" => test_case.id,
-          "passed" => false,
-          "output" => error_message,
-          "assertion_results" => [],
-          "cost_usd" => nil,
-          "latency_ms" => nil
-        }
+        failed_test_case_result(test_case.id, reason)
     end
   end
+
+  defp llm_call_opts(documents) do
+    documents =
+      Enum.map(documents, fn doc ->
+        %{data: doc.data, content_type: doc.content_type}
+      end)
+
+    if documents != [], do: [documents: documents], else: []
+  end
+
+  defp build_assertion_results(assertions, output) do
+    Enum.map(assertions, fn assertion ->
+      {passed, actual_value} = evaluate_assertion(output, assertion)
+      format_assertion_result(assertion, passed, actual_value)
+    end)
+  end
+
+  defp format_assertion_result(%{"type" => "json_field"} = assertion, passed, actual_value) do
+    %{
+      "type" => assertion["type"],
+      "passed" => passed,
+      "value" => %{
+        "field" => assertion["field"],
+        "expected" => assertion["expected"]
+      },
+      "actual_value" => actual_value
+    }
+  end
+
+  defp format_assertion_result(assertion, passed, _actual_value) do
+    %{
+      "type" => assertion["type"],
+      "passed" => passed,
+      "value" => assertion["value"]
+    }
+  end
+
+  defp successful_test_case_result(test_case_id, result, passed, assertion_results) do
+    %{
+      "test_case_id" => test_case_id,
+      "passed" => passed,
+      "output" => result.output,
+      "assertion_results" => assertion_results,
+      "cost_usd" => result.cost_usd,
+      "latency_ms" => result.latency_ms
+    }
+  end
+
+  defp failed_test_case_result(test_case_id, reason) do
+    %{
+      "test_case_id" => test_case_id,
+      "passed" => false,
+      "output" => error_message(reason),
+      "assertion_results" => [],
+      "cost_usd" => nil,
+      "latency_ms" => nil
+    }
+  end
+
+  defp error_message(:missing_api_key), do: "Missing API key"
+  defp error_message({:auth_error, msg}), do: "Authentication error: #{msg}"
+
+  defp error_message({:rate_limit, retry_after}) do
+    "Rate limit exceeded#{if retry_after, do: ", retry after #{retry_after}s", else: ""}"
+  end
+
+  defp error_message({:invalid_request, msg}), do: "Invalid request: #{msg}"
+  defp error_message({:api_error, status, msg}), do: "API error (#{status}): #{msg}"
+  defp error_message({:network_error, err}), do: "Network error: #{inspect(err)}"
 
   defp ensure_documents_loaded(%TestCase{documents: %NotLoaded{}} = test_case) do
     repo().preload(test_case, :documents)

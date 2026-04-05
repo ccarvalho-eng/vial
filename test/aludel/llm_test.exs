@@ -3,8 +3,8 @@ defmodule Aludel.LLMTest do
 
   import Mox
 
-  alias Aludel.LLM
   alias Aludel.Interfaces.HttpClientMock
+  alias Aludel.LLM
 
   setup :verify_on_exit!
 

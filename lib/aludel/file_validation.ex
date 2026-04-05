@@ -26,42 +26,49 @@ defmodule Aludel.FileValidation do
   """
   @spec validate(binary(), String.t()) :: validation_result()
   def validate(data, content_type) do
-    # Check magic bytes (file signatures) for common types
     magic_bytes = :binary.part(data, 0, min(byte_size(data), 8))
 
-    case {content_type, magic_bytes} do
-      # PDF files start with %PDF
-      {"application/pdf", <<"%PDF", _::binary>>} ->
-        :ok
+    validate_content_type(content_type, magic_bytes, data)
+  end
 
-      # PNG files
-      {"image/png", <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, _::binary>>} ->
-        :ok
+  defp validate_content_type("application/pdf", <<"%PDF", _::binary>>, _data), do: :ok
 
-      # JPEG files (accept common MIME variants)
-      {ct, <<0xFF, 0xD8, 0xFF, _::binary>>} when ct in ["image/jpeg", "image/jpg"] ->
-        :ok
+  defp validate_content_type(
+         "image/png",
+         <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, _::binary>>,
+         _data
+       ),
+       do: :ok
 
-      # JSON (starts with { or [)
-      {"application/json", <<char, _::binary>>} when char in [?{, ?[, 32, 9, 10, 13] ->
-        # Validate it's actually valid JSON
-        case Jason.decode(data) do
-          {:ok, _} -> :ok
-          {:error, _} -> {:error, "Invalid JSON file"}
-        end
+  defp validate_content_type(ct, <<0xFF, 0xD8, 0xFF, _::binary>>, _data)
+       when ct in ["image/jpeg", "image/jpg"],
+       do: :ok
 
-      # CSV and TXT - allow any text content (no reliable magic bytes)
-      {ct, _} when ct in ["text/csv", "text/plain"] ->
-        # Just verify it's valid UTF-8
-        if String.valid?(data) do
-          :ok
-        else
-          {:error, "File is not valid UTF-8 text"}
-        end
+  defp validate_content_type("application/json", <<char, _::binary>>, data)
+       when char in [?{, ?[, 32, 9, 10, 13] do
+    validate_json(data)
+  end
 
-      # Mismatch between claimed type and actual content
-      {claimed, _} ->
-        {:error, "File content does not match type #{claimed}"}
+  defp validate_content_type(ct, _magic_bytes, data) when ct in ["text/csv", "text/plain"] do
+    validate_utf8_text(data)
+  end
+
+  defp validate_content_type(claimed, _magic_bytes, _data) do
+    {:error, "File content does not match type #{claimed}"}
+  end
+
+  defp validate_json(data) do
+    case Jason.decode(data) do
+      {:ok, _} -> :ok
+      {:error, _} -> {:error, "Invalid JSON file"}
+    end
+  end
+
+  defp validate_utf8_text(data) do
+    if String.valid?(data) do
+      :ok
+    else
+      {:error, "File is not valid UTF-8 text"}
     end
   end
 end

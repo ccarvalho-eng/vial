@@ -3,9 +3,10 @@ defmodule Aludel.EvalsTest do
 
   import Mox
 
-  alias Aludel.Interfaces.HttpClientMock
   alias Aludel.Evals
   alias Aludel.Evals.SuiteRun
+  alias Aludel.Evals.TestCaseDocument
+  alias Aludel.Interfaces.HttpClientMock
 
   setup :set_mox_from_context
   setup :verify_on_exit!
@@ -722,11 +723,11 @@ defmodule Aludel.EvalsTest do
     end
 
     test "max_size_bytes/0 returns correct limit" do
-      assert Aludel.Evals.TestCaseDocument.max_size_bytes() == 10 * 1024 * 1024
+      assert TestCaseDocument.max_size_bytes() == 10 * 1024 * 1024
     end
 
     test "supported_types/0 returns list of MIME types" do
-      types = Aludel.Evals.TestCaseDocument.supported_types()
+      types = TestCaseDocument.supported_types()
       assert is_list(types)
       assert "application/pdf" in types
       assert "image/png" in types
