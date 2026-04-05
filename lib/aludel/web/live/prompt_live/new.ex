@@ -101,15 +101,8 @@ defmodule Aludel.Web.PromptLive.New do
   end
 
   defp save_prompt(socket, :new, prompt_params) do
-    case Prompts.create_prompt(prompt_params) do
+    case Prompts.create_prompt_with_initial_version(prompt_params) do
       {:ok, prompt} ->
-        # Create initial version if template provided
-        template = Map.get(prompt_params, "template", "")
-
-        if template != "" do
-          Prompts.create_prompt_version(prompt, template)
-        end
-
         {:noreply,
          socket
          |> put_flash(:info, "Prompt created successfully")
@@ -121,20 +114,8 @@ defmodule Aludel.Web.PromptLive.New do
   end
 
   defp save_prompt(socket, :edit, prompt_params) do
-    prompt = socket.assigns.prompt
-    new_template = Map.get(prompt_params, "template", "")
-
-    # Get the latest version's template to compare
-    latest_version = List.first(prompt.versions)
-    latest_template = if latest_version, do: latest_version.template, else: ""
-
-    case Prompts.update_prompt(prompt, prompt_params) do
+    case Prompts.update_prompt_with_optional_version(socket.assigns.prompt, prompt_params) do
       {:ok, updated_prompt} ->
-        # Only create new version if template changed and is not empty
-        if new_template != "" and new_template != latest_template do
-          Prompts.create_prompt_version(updated_prompt, new_template)
-        end
-
         {:noreply,
          socket
          |> put_flash(:info, "Prompt updated successfully")

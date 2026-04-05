@@ -5,6 +5,7 @@ defmodule Aludel.Web.PromptLive.NewTest do
   import Aludel.PromptsFixtures
 
   alias Aludel.Projects
+  alias Aludel.Prompts
 
   describe "new prompt" do
     test "renders new prompt form", %{conn: conn} do
@@ -40,6 +41,10 @@ defmodule Aludel.Web.PromptLive.NewTest do
       prompt_id = path |> String.split("/") |> List.last()
       created_prompt = Aludel.Prompts.get_prompt!(prompt_id)
       assert created_prompt.tags == ["elixir", "test"]
+
+      prompt_with_versions = Prompts.get_prompt_with_versions!(prompt_id)
+      assert length(prompt_with_versions.versions) == 1
+      assert hd(prompt_with_versions.versions).template == "Hello {{name}}, welcome to {{topic}}"
     end
 
     test "shows validation errors", %{conn: conn} do
@@ -95,7 +100,12 @@ defmodule Aludel.Web.PromptLive.NewTest do
     end
 
     test "updates prompt and creates new version", %{conn: conn} do
-      prompt = prompt_fixture(%{name: "Original", tags: ["old"]})
+      prompt =
+        prompt_fixture_with_version(%{
+          name: "Original",
+          tags: ["old"],
+          template: "Original template {{name}}"
+        })
 
       {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}/edit")
 
@@ -116,6 +126,10 @@ defmodule Aludel.Web.PromptLive.NewTest do
       # Verify tags were updated
       updated_prompt = Aludel.Prompts.get_prompt!(prompt.id)
       assert updated_prompt.tags == ["new", "updated"]
+
+      prompt_with_versions = Prompts.get_prompt_with_versions!(prompt.id)
+      assert Enum.map(prompt_with_versions.versions, & &1.version) == [2, 1]
+      assert hd(prompt_with_versions.versions).template == "New template with {{var}}"
     end
 
     test "shows validation errors on edit", %{conn: conn} do

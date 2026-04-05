@@ -7,6 +7,7 @@ defmodule Aludel.Prompts do
 
   alias Aludel.Prompts.{Evolution, Prompt, PromptVersion}
   alias Ecto.Changeset
+  alias Ecto.Multi
 
   @doc """
   Lists all prompts in the system.
@@ -127,6 +128,33 @@ defmodule Aludel.Prompts do
   end
 
   @doc """
+  Creates a prompt and its initial version in a single transaction.
+
+  If no non-empty template is provided, only the prompt is created.
+  """
+  @spec create_prompt_with_initial_version(map()) ::
+          {:ok, Prompt.t()} | {:error, Changeset.t()}
+  def create_prompt_with_initial_version(attrs \\ %{}) do
+    attrs = normalize_attrs(attrs)
+    template = Map.get(attrs, "template", "")
+
+    Multi.new()
+    |> Multi.insert(:prompt, Prompt.changeset(%Prompt{}, attrs))
+    |> maybe_insert_version(:prompt_version, template)
+    |> repo().transaction()
+    |> case do
+      {:ok, %{prompt: prompt}} ->
+        {:ok, prompt}
+
+      {:error, :prompt, %Changeset{} = changeset, _changes_so_far} ->
+        {:error, changeset}
+
+      {:error, :prompt_version, %Changeset{} = changeset, _changes_so_far} ->
+        {:error, changeset}
+    end
+  end
+
+  @doc """
   Updates an existing prompt.
   """
   @spec update_prompt(Prompt.t(), map()) ::
@@ -135,6 +163,38 @@ defmodule Aludel.Prompts do
     prompt
     |> Prompt.changeset(attrs)
     |> repo().update()
+  end
+
+  @doc """
+  Updates a prompt and creates a new version if the template changed.
+
+  The prompt update and optional version creation run in a single transaction.
+  """
+  @spec update_prompt_with_optional_version(Prompt.t(), map()) ::
+          {:ok, Prompt.t()} | {:error, Changeset.t()}
+  def update_prompt_with_optional_version(%Prompt{} = prompt, attrs) do
+    attrs = normalize_attrs(attrs)
+    prompt = ensure_versions_loaded(prompt)
+    new_template = Map.get(attrs, "template", "")
+    latest_template = latest_template(prompt)
+
+    Multi.new()
+    |> Multi.update(:prompt, Prompt.changeset(prompt, attrs))
+    |> maybe_insert_version(
+      :prompt_version,
+      if(new_template != "" and new_template != latest_template, do: new_template, else: "")
+    )
+    |> repo().transaction()
+    |> case do
+      {:ok, %{prompt: updated_prompt}} ->
+        {:ok, updated_prompt}
+
+      {:error, :prompt, %Changeset{} = changeset, _changes_so_far} ->
+        {:error, changeset}
+
+      {:error, :prompt_version, %Changeset{} = changeset, _changes_so_far} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -194,13 +254,56 @@ defmodule Aludel.Prompts do
 
   # Private functions
 
-  defp get_next_version_number(prompt_id) do
+  defp maybe_insert_version(multi, _operation_name, ""), do: multi
+
+  defp maybe_insert_version(multi, operation_name, template) do
+    Multi.run(multi, operation_name, fn repo, %{prompt: prompt} ->
+      insert_prompt_version(repo, prompt, template)
+    end)
+  end
+
+  defp insert_prompt_version(repo, %Prompt{} = prompt, template) do
+    variables = extract_variables(template)
+    version_number = get_next_version_number(repo, prompt.id)
+
+    %PromptVersion{}
+    |> PromptVersion.changeset(%{
+      prompt_id: prompt.id,
+      version: version_number,
+      template: template,
+      variables: variables
+    })
+    |> repo.insert()
+  end
+
+  defp ensure_versions_loaded(%Prompt{versions: %Ecto.Association.NotLoaded{}} = prompt) do
+    ordered_versions = from(v in PromptVersion, order_by: [desc: v.version])
+    repo().preload(prompt, versions: ordered_versions)
+  end
+
+  defp ensure_versions_loaded(%Prompt{} = prompt), do: prompt
+
+  defp latest_template(%Prompt{versions: [latest_version | _]}), do: latest_version.template
+  defp latest_template(%Prompt{}), do: ""
+
+  defp normalize_attrs(attrs) when is_map(attrs) do
+    case Map.has_key?(attrs, :template) do
+      true -> Map.put(attrs, "template", Map.get(attrs, :template))
+      false -> attrs
+    end
+  end
+
+  defp normalize_attrs(attrs), do: attrs
+
+  defp get_next_version_number(prompt_id), do: get_next_version_number(repo(), prompt_id)
+
+  defp get_next_version_number(repo, prompt_id) do
     query =
       from v in PromptVersion,
         where: v.prompt_id == ^prompt_id,
         select: max(v.version)
 
-    case repo().one(query) do
+    case repo.one(query) do
       nil -> 1
       max_version -> max_version + 1
     end
