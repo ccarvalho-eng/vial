@@ -79,7 +79,7 @@ defmodule Aludel.Web.RunLive.NewTest do
         |> form("#run-form",
           run: %{
             name: "Test Run",
-            variables: %{
+            variable_values: %{
               "user" => "Alice",
               "topic" => "Elixir"
             },
@@ -104,7 +104,7 @@ defmodule Aludel.Web.RunLive.NewTest do
         view
         |> form("#run-form",
           run: %{
-            variables: %{"user" => ""},
+            variable_values: %{"user" => ""},
             provider_ids: [provider1.id]
           }
         )
@@ -124,7 +124,7 @@ defmodule Aludel.Web.RunLive.NewTest do
         view
         |> form("#run-form",
           run: %{
-            variables: %{"user" => "Alice", "topic" => "Elixir"},
+            variable_values: %{"user" => "Alice", "topic" => "Elixir"},
             provider_ids: []
           }
         )

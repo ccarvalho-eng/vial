@@ -47,7 +47,10 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:running, false)
       |> assign(:selected_version_id, default_version_id)
       |> assign(:selected_provider_id, default_provider_id)
+      |> assign(:run_suite_form, build_run_suite_form(default_version_id, default_provider_id))
       |> assign(:editing_test_case_id, nil)
+      |> assign(:test_case_form, nil)
+      |> assign(:editing_test_case_params, nil)
       |> assign(:editing_suite_metadata, false)
       |> assign(:assertion_edit_mode, %{})
 
@@ -107,12 +110,36 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_event("select_version", %{"version_id" => version_id}, socket) do
-    {:noreply, assign(socket, :selected_version_id, version_id)}
+    {:noreply,
+     socket
+     |> assign(:selected_version_id, version_id)
+     |> assign(
+       :run_suite_form,
+       build_run_suite_form(version_id, socket.assigns.selected_provider_id)
+     )}
   end
 
   @impl Phoenix.LiveView
   def handle_event("select_provider", %{"provider_id" => provider_id}, socket) do
-    {:noreply, assign(socket, :selected_provider_id, provider_id)}
+    {:noreply,
+     socket
+     |> assign(:selected_provider_id, provider_id)
+     |> assign(
+       :run_suite_form,
+       build_run_suite_form(socket.assigns.selected_version_id, provider_id)
+     )}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("validate_run_suite", %{"run_suite" => run_suite_params}, socket) do
+    version_id = Map.get(run_suite_params, "version_id")
+    provider_id = Map.get(run_suite_params, "provider_id")
+
+    {:noreply,
+     socket
+     |> assign(:selected_version_id, version_id)
+     |> assign(:selected_provider_id, provider_id)
+     |> assign(:run_suite_form, to_form(run_suite_params, as: :run_suite))}
   end
 
   @impl Phoenix.LiveView
@@ -172,6 +199,8 @@ defmodule Aludel.Web.SuiteLive.Show do
       socket
       |> assign(:editing_test_case_id, id)
       |> assign(:editing_assertions, test_case.assertions)
+      |> assign(:editing_test_case_params, build_test_case_form_params(test_case))
+      |> assign(:test_case_form, to_form(build_test_case_form_params(test_case), as: :test_case))
       |> allow_upload(:documents,
         accept: ~w(.pdf .png .jpg .jpeg .csv .json .txt),
         max_entries: 5,
@@ -187,42 +216,56 @@ defmodule Aludel.Web.SuiteLive.Show do
       socket
       |> assign(:editing_test_case_id, nil)
       |> assign(:editing_assertions, nil)
+      |> assign(:test_case_form, nil)
+      |> assign(:editing_test_case_params, nil)
 
     {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
-  def handle_event("validate_test_case", _params, socket) do
-    # This event is needed for LiveView uploads to work
+  def handle_event("validate_test_case", %{"test_case" => test_case_params}, socket) do
+    edit_mode = Map.get(socket.assigns.assertion_edit_mode, test_case_params["id"], :visual)
+
+    socket =
+      socket
+      |> assign(:test_case_form, to_form(test_case_params, as: :test_case))
+      |> assign(:editing_test_case_params, test_case_params)
+
+    socket =
+      if edit_mode == :visual do
+        {:ok, assertions} = parse_assertions(:visual, test_case_params)
+        assign(socket, :editing_assertions, assertions)
+      else
+        socket
+      end
+
     {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
-  def handle_event("save_test_case", params, socket) do
-    id = params["id"]
+  def handle_event("save_test_case", %{"test_case" => test_case_params}, socket) do
+    id = test_case_params["id"]
     test_case = Evals.get_test_case!(id)
-
-    # Parse variables from params
-    variables =
-      params
-      |> Enum.filter(fn {k, _v} -> String.starts_with?(k, "var_value_") end)
-      |> Enum.map(fn {"var_value_" <> key, value} -> {key, value} end)
-      |> Map.new()
+    variables = Map.get(test_case_params, "variable_values", %{})
 
     # Parse assertions based on edit mode
     edit_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
 
-    case parse_assertions(edit_mode, params) do
+    case parse_assertions(edit_mode, test_case_params) do
       {:ok, assertions} ->
         attrs = %{
           variable_values: variables,
           assertions: assertions
         }
 
-        update_test_case_with_attrs(socket, test_case, attrs, params)
+        update_test_case_with_attrs(socket, test_case, attrs, test_case_params)
 
       {:error, message} ->
-        {:noreply, put_flash(socket, :error, message)}
+        {:noreply,
+         socket
+         |> assign(:test_case_form, to_form(test_case_params, as: :test_case))
+         |> assign(:editing_test_case_params, test_case_params)
+         |> put_flash(:error, message)}
     end
   end
 
@@ -263,14 +306,13 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("run_suite", _params, socket) do
+  def handle_event("run_suite", %{"run_suite" => run_suite_params}, socket) do
     # Prevent concurrent runs
     if socket.assigns.running do
       {:noreply, put_flash(socket, :error, "Suite is already running")}
     else
-      # Use the stored selections instead of params
-      version_id = socket.assigns.selected_version_id
-      provider_id = socket.assigns.selected_provider_id
+      version_id = Map.get(run_suite_params, "version_id", socket.assigns.selected_version_id)
+      provider_id = Map.get(run_suite_params, "provider_id", socket.assigns.selected_provider_id)
 
       # Start async execution
       pid = self()
@@ -306,8 +348,10 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   defp parse_assertions(:visual, params) do
+    assertion_params = normalize_assertion_params(params["assertions"] || %{})
+
     assertion_indices =
-      params
+      assertion_params
       |> Map.keys()
       |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
       |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
@@ -315,18 +359,18 @@ defmodule Aludel.Web.SuiteLive.Show do
 
     assertions =
       Enum.map(assertion_indices, fn idx ->
-        type = params["assertion_type_#{idx}"]
+        type = Map.get(assertion_params, "assertion_type_#{idx}")
 
         if type == "json_field" do
           %{
             "type" => type,
-            "field" => params["assertion_field_#{idx}"],
-            "expected" => params["assertion_expected_#{idx}"]
+            "field" => Map.get(assertion_params, "assertion_field_#{idx}"),
+            "expected" => Map.get(assertion_params, "assertion_expected_#{idx}")
           }
         else
           %{
             "type" => type,
-            "value" => params["assertion_value_#{idx}"]
+            "value" => Map.get(assertion_params, "assertion_value_#{idx}")
           }
         end
       end)
@@ -375,6 +419,8 @@ defmodule Aludel.Web.SuiteLive.Show do
           |> assign(:suite, suite)
           |> assign(:editing_test_case_id, nil)
           |> assign(:editing_assertions, nil)
+          |> assign(:test_case_form, nil)
+          |> assign(:editing_test_case_params, nil)
 
         # Build appropriate flash message based on results
         socket =
@@ -504,4 +550,47 @@ defmodule Aludel.Web.SuiteLive.Show do
       end
     end)
   end
+
+  defp build_run_suite_form(version_id, provider_id) do
+    to_form(
+      %{
+        "version_id" => version_id,
+        "provider_id" => provider_id
+      },
+      as: :run_suite
+    )
+  end
+
+  defp build_test_case_form_params(test_case) do
+    %{
+      "id" => test_case.id,
+      "variable_values" => test_case.variable_values || %{},
+      "assertions_json" => Jason.encode!(test_case.assertions || [], pretty: true),
+      "assertions" => build_assertion_params(test_case.assertions || [])
+    }
+  end
+
+  defp build_assertion_params(assertions) do
+    assertions
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {assertion, idx}, acc ->
+      acc
+      |> Map.put("assertion_type_#{idx}", assertion["type"])
+      |> maybe_put_assertion_value(idx, assertion)
+    end)
+  end
+
+  defp maybe_put_assertion_value(params, idx, %{"type" => "json_field"} = assertion) do
+    params
+    |> Map.put("assertion_field_#{idx}", assertion["field"] || "")
+    |> Map.put("assertion_expected_#{idx}", assertion["expected"] || "")
+  end
+
+  defp maybe_put_assertion_value(params, idx, assertion) do
+    Map.put(params, "assertion_value_#{idx}", assertion["value"] || "")
+  end
+
+  defp normalize_assertion_params(params) when is_map(params), do: params
+  defp normalize_assertion_params(params) when is_list(params), do: Map.new(params)
+  defp normalize_assertion_params(_params), do: %{}
 end

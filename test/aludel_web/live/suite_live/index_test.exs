@@ -69,6 +69,38 @@ defmodule Aludel.Web.SuiteLive.IndexTest do
       assert project.type == :suite
       assert Projects.list_projects(type: :prompt) == []
     end
+
+    test "updates suite project from edit form", %{conn: conn} do
+      {:ok, project} = Projects.create_project(%{name: "Original Suite Project", type: :suite})
+
+      {:ok, view, _html} = live(conn, "/suites")
+
+      html =
+        view
+        |> form("#edit-project-form-#{project.id}",
+          project: %{id: project.id, name: "Renamed Suite Project"}
+        )
+        |> render_submit()
+
+      assert html =~ "Project updated successfully"
+      assert Projects.get_project!(project.id).name == "Renamed Suite Project"
+    end
+
+    test "shows error when suite project update is invalid", %{conn: conn} do
+      {:ok, project} = Projects.create_project(%{name: "Original Suite Project", type: :suite})
+
+      {:ok, view, _html} = live(conn, "/suites")
+
+      html =
+        view
+        |> form("#edit-project-form-#{project.id}",
+          project: %{id: project.id, name: "   "}
+        )
+        |> render_submit()
+
+      assert html =~ "Failed to update project"
+      assert Projects.get_project!(project.id).name == "Original Suite Project"
+    end
   end
 
   describe "delete functionality" do

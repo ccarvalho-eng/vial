@@ -9,6 +9,7 @@ defmodule Aludel.Web.SuiteLive.Index do
 
   alias Aludel.Evals
   alias Aludel.Projects
+  alias Aludel.Projects.Project
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -25,6 +26,8 @@ defmodule Aludel.Web.SuiteLive.Index do
       |> assign(:page_title, "Suites")
       |> assign(:suites, suites)
       |> assign(:projects, projects)
+      |> assign(:create_project_form, project_form(%Project{}))
+      |> assign(:edit_project_forms, build_edit_project_forms(projects))
       |> assign(:expanded_projects, Map.get(socket.assigns, :expanded_projects, []))
 
     {:noreply, socket}
@@ -63,15 +66,33 @@ defmodule Aludel.Web.SuiteLive.Index do
   def handle_event("create_project", %{"project" => project_params}, socket) do
     case Projects.create_project(Map.put(project_params, "type", "suite")) do
       {:ok, _project} ->
+        projects = Projects.list_projects(type: :suite)
+        suites = Evals.list_suites_with_prompt()
+
         {:noreply,
          socket
-         |> assign(:projects, Projects.list_projects(type: :suite))
-         |> assign(:suites, Evals.list_suites_with_prompt())
+         |> assign(:projects, projects)
+         |> assign(:suites, suites)
+         |> assign(:create_project_form, project_form(%Project{}))
+         |> assign(:edit_project_forms, build_edit_project_forms(projects))
          |> put_flash(:info, "Project created successfully")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to create project")}
+      {:error, changeset} ->
+        {:noreply,
+         socket
+         |> assign(:create_project_form, to_form(changeset, as: :project))
+         |> put_flash(:error, "Failed to create project")}
     end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("validate_create_project", %{"project" => project_params}, socket) do
+    changeset =
+      %Project{}
+      |> Projects.change_project(Map.put(project_params, "type", "suite"))
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :create_project_form, to_form(changeset, as: :project))}
   end
 
   @impl Phoenix.LiveView
@@ -80,15 +101,46 @@ defmodule Aludel.Web.SuiteLive.Index do
 
     case Projects.update_project(project, project_params) do
       {:ok, _project} ->
+        projects = Projects.list_projects(type: :suite)
+        suites = Evals.list_suites_with_prompt()
+
         {:noreply,
          socket
-         |> assign(:projects, Projects.list_projects(type: :suite))
-         |> assign(:suites, Evals.list_suites_with_prompt())
+         |> assign(:projects, projects)
+         |> assign(:suites, suites)
+         |> assign(:edit_project_forms, build_edit_project_forms(projects))
          |> put_flash(:info, "Project updated successfully")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update project")}
+      {:error, changeset} ->
+        {:noreply,
+         socket
+         |> assign(
+           :edit_project_forms,
+           Map.put(
+             socket.assigns.edit_project_forms,
+             project.id,
+             to_form(changeset, as: :project)
+           )
+         )
+         |> put_flash(:error, "Failed to update project")}
     end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("validate_update_project", %{"project" => project_params}, socket) do
+    project = Projects.get_project!(project_params["id"])
+
+    changeset =
+      project
+      |> Projects.change_project(project_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     assign(
+       socket,
+       :edit_project_forms,
+       Map.put(socket.assigns.edit_project_forms, project.id, to_form(changeset, as: :project))
+     )}
   end
 
   @impl Phoenix.LiveView
@@ -111,5 +163,17 @@ defmodule Aludel.Web.SuiteLive.Index do
   @impl Phoenix.LiveView
   def handle_event("phx-noop", _params, socket) do
     {:noreply, socket}
+  end
+
+  defp project_form(project) do
+    project
+    |> Projects.change_project(%{})
+    |> to_form(as: :project)
+  end
+
+  defp build_edit_project_forms(projects) do
+    Map.new(projects, fn project ->
+      {project.id, project |> Projects.change_project(%{}) |> to_form(as: :project)}
+    end)
   end
 end

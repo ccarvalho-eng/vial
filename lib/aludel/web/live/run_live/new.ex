@@ -54,13 +54,35 @@ defmodule Aludel.Web.RunLive.New do
      |> assign(:variables, prompt_version.variables)
      |> assign(:providers, providers)
      |> assign(:form, to_form(changeset))
+     |> assign(:variable_values, variable_values)
      |> assign(:selected_provider_ids, [])}
   end
 
   @impl Phoenix.LiveView
+  def handle_event("validate", %{"run" => run_params}, socket) do
+    variable_values = Map.get(run_params, "variable_values", %{})
+    provider_ids = normalize_provider_ids(Map.get(run_params, "provider_ids", []))
+
+    changeset =
+      %Run{}
+      |> Runs.change_run(%{
+        "name" => Map.get(run_params, "name", ""),
+        "prompt_version_id" => socket.assigns.prompt_version.id,
+        "variable_values" => variable_values
+      })
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     socket
+     |> assign(:form, to_form(changeset))
+     |> assign(:variable_values, variable_values)
+     |> assign(:selected_provider_ids, provider_ids)}
+  end
+
+  @impl Phoenix.LiveView
   def handle_event("save", %{"run" => run_params}, socket) do
-    provider_ids = Map.get(run_params, "provider_ids", [])
-    variables_map = Map.get(run_params, "variables", %{})
+    provider_ids = normalize_provider_ids(Map.get(run_params, "provider_ids", []))
+    variables_map = Map.get(run_params, "variable_values", %{})
 
     errors = validate_run_params(socket.assigns.variables, variables_map, provider_ids)
 
@@ -96,7 +118,7 @@ defmodule Aludel.Web.RunLive.New do
   end
 
   defp create_and_execute_run(socket, run_params, provider_ids) do
-    variables_map = Map.get(run_params, "variables", %{})
+    variables_map = Map.get(run_params, "variable_values", %{})
     name = Map.get(run_params, "name", "")
 
     run_attrs = %{
@@ -127,7 +149,13 @@ defmodule Aludel.Web.RunLive.New do
         {:noreply,
          socket
          |> assign(:form, to_form(changeset))
+         |> assign(:variable_values, variables_map)
+         |> assign(:selected_provider_ids, provider_ids)
          |> put_flash(:error, "Failed to create run")}
     end
   end
+
+  defp normalize_provider_ids(provider_ids) when is_list(provider_ids), do: provider_ids
+  defp normalize_provider_ids(provider_id) when is_binary(provider_id), do: [provider_id]
+  defp normalize_provider_ids(_), do: []
 end

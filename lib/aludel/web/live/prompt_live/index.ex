@@ -6,6 +6,7 @@ defmodule Aludel.Web.PromptLive.Index do
   use Aludel.Web, :live_view
 
   alias Aludel.Projects
+  alias Aludel.Projects.Project
   alias Aludel.Prompts
 
   @impl Phoenix.LiveView
@@ -47,6 +48,9 @@ defmodule Aludel.Web.PromptLive.Index do
       |> assign(:search_query, search_query)
       |> assign(:selected_tags, selected_tags)
       |> assign(:selected_project_id, selected_project_id)
+      |> assign(:search_form, to_form(%{"query" => search_query}, as: :search))
+      |> assign(:create_project_form, project_form(%Project{}))
+      |> assign(:edit_project_forms, build_edit_project_forms(projects))
       |> assign(:expanded_projects, Map.get(socket.assigns, :expanded_projects, []))
 
     {:noreply, socket}
@@ -57,6 +61,7 @@ defmodule Aludel.Web.PromptLive.Index do
     prompt = Prompts.get_prompt!(id)
     {:ok, _} = Prompts.delete_prompt(prompt)
 
+    projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
 
     filtered =
@@ -64,7 +69,9 @@ defmodule Aludel.Web.PromptLive.Index do
 
     {:noreply,
      socket
+     |> assign(:projects, projects)
      |> assign(:prompts, filtered)
+     |> assign(:edit_project_forms, build_edit_project_forms(projects))
      |> assign(:all_tags, extract_all_tags(all_prompts))
      |> put_flash(:info, "Prompt deleted successfully")}
   end
@@ -145,11 +152,26 @@ defmodule Aludel.Web.PromptLive.Index do
         {:noreply,
          socket
          |> assign(:projects, projects)
+         |> assign(:create_project_form, project_form(%Project{}))
+         |> assign(:edit_project_forms, build_edit_project_forms(projects))
          |> put_flash(:info, "Project created successfully")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to create project")}
+      {:error, changeset} ->
+        {:noreply,
+         socket
+         |> assign(:create_project_form, to_form(changeset, as: :project))
+         |> put_flash(:error, "Failed to create project")}
     end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("validate_create_project", %{"project" => project_params}, socket) do
+    changeset =
+      %Project{}
+      |> Projects.change_project(Map.put(project_params, "type", "prompt"))
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :create_project_form, to_form(changeset, as: :project))}
   end
 
   @impl Phoenix.LiveView
@@ -158,14 +180,45 @@ defmodule Aludel.Web.PromptLive.Index do
 
     case Projects.update_project(project, project_params) do
       {:ok, _project} ->
+        projects = Projects.list_projects(type: :prompt)
+
         {:noreply,
          socket
+         |> assign(:projects, projects)
+         |> assign(:edit_project_forms, build_edit_project_forms(projects))
          |> put_flash(:info, "Project updated successfully")
          |> push_patch(to: aludel_path("prompts"))}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update project")}
+      {:error, changeset} ->
+        {:noreply,
+         socket
+         |> assign(
+           :edit_project_forms,
+           Map.put(
+             socket.assigns.edit_project_forms,
+             project.id,
+             to_form(changeset, as: :project)
+           )
+         )
+         |> put_flash(:error, "Failed to update project")}
     end
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("validate_update_project", %{"project" => project_params}, socket) do
+    project = Projects.get_project!(project_params["id"])
+
+    changeset =
+      project
+      |> Projects.change_project(project_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     assign(
+       socket,
+       :edit_project_forms,
+       Map.put(socket.assigns.edit_project_forms, project.id, to_form(changeset, as: :project))
+     )}
   end
 
   @impl Phoenix.LiveView
@@ -224,4 +277,16 @@ defmodule Aludel.Web.PromptLive.Index do
   defp build_query_params(query, []), do: %{"search" => query}
   defp build_query_params("", tags), do: %{"tags" => Enum.join(tags, ",")}
   defp build_query_params(query, tags), do: %{"search" => query, "tags" => Enum.join(tags, ",")}
+
+  defp project_form(project) do
+    project
+    |> Projects.change_project(%{})
+    |> to_form(as: :project)
+  end
+
+  defp build_edit_project_forms(projects) do
+    Map.new(projects, fn project ->
+      {project.id, project |> Projects.change_project(%{}) |> to_form(as: :project)}
+    end)
+  end
 end

@@ -36,7 +36,10 @@ defmodule Aludel.Projects.Project do
   def changeset(project, attrs) do
     project
     |> cast(attrs, @required_fields ++ @optional_fields)
-    |> update_change(:name, &String.trim/1)
+    |> update_change(:name, fn
+      name when is_binary(name) -> String.trim(name)
+      name -> name
+    end)
     |> validate_required(@required_fields)
     |> validate_length(:name, min: 1, max: 255)
   end
