@@ -25,13 +25,13 @@ defmodule Aludel.Web.PromptLive.IndexTest do
   end
 
   test "filters prompts by tag", %{conn: conn} do
-    _p1 = prompt_fixture(%{name: "P1", tags: ["elixir"]})
-    _p2 = prompt_fixture(%{name: "P2", tags: ["python"]})
+    p1 = prompt_fixture(%{name: "P1", tags: ["elixir"]})
+    p2 = prompt_fixture(%{name: "P2", tags: ["python"]})
 
     {:ok, view, _html} = live(conn, "/prompts?tag=elixir")
 
-    assert render(view) =~ "P1"
-    refute render(view) =~ "P2"
+    assert has_element?(view, "a[href='/prompts/#{p1.id}']", "P1")
+    refute has_element?(view, "a[href='/prompts/#{p2.id}']", "P2")
   end
 
   test "creates prompt projects with prompt type", %{conn: conn} do

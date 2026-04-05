@@ -8,23 +8,23 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
   describe "new suite page" do
     test "mounts successfully", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/suites/new")
+      {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert html =~ "New Suite"
+      assert has_element?(view, "#suite-form")
     end
 
     test "displays prompt selector", %{conn: conn} do
       _prompt = prompt_fixture(%{name: "Test Prompt"})
 
-      {:ok, _view, html} = live(conn, "/suites/new")
+      {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert html =~ "Test Prompt"
+      assert has_element?(view, "#suite_prompt_id option", "Test Prompt")
     end
 
     test "shows add test case button", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/suites/new")
+      {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert html =~ "Add Test Case"
+      assert has_element?(view, "button[phx-click='add_test_case']", "Add Test Case")
     end
 
     test "shows only suite projects in the project select", %{conn: conn} do
@@ -44,30 +44,29 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
       {:ok, view, _html} = live(conn, "/suites/new")
 
-      html =
-        view
-        |> element("#suite_prompt_id")
-        |> render_change(%{"suite" => %{"prompt_id" => prompt.id}})
+      view
+      |> form("#suite-form", suite: %{name: "", prompt_id: prompt.id})
+      |> render_change()
 
-      # After selecting, page updates - verify through HTML
-      assert html =~ prompt.name
+      assert has_element?(view, "#suite_prompt_id option[selected][value='#{prompt.id}']")
+      assert has_element?(view, "pre", "Hello {{name}}")
     end
 
     test "shows prompt selector on mount", %{conn: conn} do
       _prompt = prompt_fixture_with_version(%{name: "Test Prompt"})
 
-      {:ok, _view, html} = live(conn, "/suites/new")
+      {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert html =~ "Select a prompt"
-      assert html =~ "Test Prompt"
+      assert has_element?(view, "#suite_prompt_id option[value='']", "Select a prompt")
+      assert has_element?(view, "#suite_prompt_id option", "Test Prompt")
     end
   end
 
   describe "test case management" do
     test "shows add test case button", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/suites/new")
+      {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert html =~ "Add Test Case"
+      assert has_element?(view, "button[phx-click='add_test_case']", "Add Test Case")
     end
 
     test "handles test case interactions", %{conn: conn} do
@@ -77,17 +76,17 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
       # Select prompt first
       view
-      |> element("#suite_prompt_id")
-      |> render_change(%{"suite" => %{"prompt_id" => prompt.id}})
+      |> form("#suite-form", suite: %{name: "", prompt_id: prompt.id})
+      |> render_change()
 
       # Add test case
-      html =
-        view
-        |> element("[phx-click='add_test_case']")
-        |> render_click()
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
 
-      # Verify test case was added by checking for variable field
-      assert html =~ "name" or html =~ "var_value"
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      assert has_element?(view, "#test_case_#{test_case_id}_var_name")
     end
   end
 
@@ -100,8 +99,9 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       |> element("[phx-click='add_test_case']")
       |> render_click()
 
-      # Test renders successfully after adding test case
-      assert render(view) =~ "Add Assertion" or render(view) =~ "Assertions"
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      assert has_element?(view, "[phx-click='add_assertion'][phx-value-id='#{test_case_id}']")
     end
   end
 
@@ -112,16 +112,49 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       {:ok, view, _html} = live(conn, "/suites/new")
 
       view
-      |> element("form")
+      |> form("#suite-form", suite: %{name: "New Suite", prompt_id: prompt.id})
+      |> render_change()
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("add_assertion", %{"id" => test_case_id})
+
+      view
+      |> form("#suite-form",
+        suite: %{
+          name: "New Suite",
+          prompt_id: prompt.id,
+          test_cases: %{
+            test_case_id => %{
+              variable_values: %{
+                name: "Alice"
+              },
+              assertions: %{
+                assertion_type_0: "contains",
+                assertion_value_0: "hello"
+              }
+            }
+          }
+        }
+      )
       |> render_submit(%{
         "suite" => %{
           "name" => "New Suite",
           "prompt_id" => prompt.id,
           "test_cases" => %{
-            "0" => %{
-              "var_value_name" => "Alice",
-              "assertion_type_0" => "contains",
-              "assertion_value_0" => "hello"
+            test_case_id => %{
+              "variable_values" => %{
+                "name" => "Alice"
+              },
+              "assertions" => %{
+                "assertion_type_0" => "contains",
+                "assertion_value_0" => "hello"
+              }
             }
           }
         }
@@ -135,7 +168,7 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       {:ok, view, _html} = live(conn, "/suites/new")
 
       view
-      |> element("form")
+      |> form("#suite-form", suite: %{name: "", prompt_id: ""})
       |> render_submit(%{
         "suite" => %{
           "name" => "",
@@ -143,7 +176,7 @@ defmodule Aludel.Web.SuiteLive.NewTest do
         }
       })
 
-      assert render(view) =~ "can&#39;t be blank"
+      assert has_element?(view, "p.text-error", "can't be blank")
     end
 
     test "validates JSON assertions", %{conn: conn} do
@@ -152,20 +185,43 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       {:ok, view, _html} = live(conn, "/suites/new")
 
       view
-      |> element("form")
+      |> form("#suite-form", suite: %{name: "", prompt_id: prompt.id})
+      |> render_change()
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("toggle_assertion_mode", %{"id" => test_case_id})
+
+      view
+      |> form("#suite-form",
+        suite: %{
+          name: "Test Suite",
+          prompt_id: prompt.id,
+          test_cases: %{
+            test_case_id => %{
+              assertions_json: "{invalid json}"
+            }
+          }
+        }
+      )
       |> render_submit(%{
         "suite" => %{
           "name" => "Test Suite",
           "prompt_id" => prompt.id,
           "test_cases" => %{
-            "0" => %{
+            test_case_id => %{
               "assertions_json" => "{invalid json}"
             }
           }
         }
       })
 
-      assert render(view) =~ "Invalid JSON"
+      assert has_element?(view, "#flash-error", "Invalid JSON")
     end
 
     test "rejects invalid assertion types in JSON", %{conn: conn} do
@@ -174,20 +230,74 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       {:ok, view, _html} = live(conn, "/suites/new")
 
       view
-      |> element("form")
+      |> form("#suite-form", suite: %{name: "", prompt_id: prompt.id})
+      |> render_change()
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("toggle_assertion_mode", %{"id" => test_case_id})
+
+      view
+      |> form("#suite-form",
+        suite: %{
+          name: "Test Suite",
+          prompt_id: prompt.id,
+          test_cases: %{
+            test_case_id => %{
+              assertions_json: ~s([{"type": "invalid_type", "value": "test"}])
+            }
+          }
+        }
+      )
       |> render_submit(%{
         "suite" => %{
           "name" => "Test Suite",
           "prompt_id" => prompt.id,
           "test_cases" => %{
-            "0" => %{
+            test_case_id => %{
               "assertions_json" => ~s([{"type": "invalid_type", "value": "test"}])
             }
           }
         }
       })
 
-      assert render(view) =~ "Invalid assertion type"
+      assert has_element?(view, "#flash-error", "Invalid assertion type")
+    end
+
+    test "uses nested variable inputs after prompt selection", %{conn: conn} do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      view
+      |> form("#suite-form", suite: %{name: "", prompt_id: prompt.id})
+      |> render_change()
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      assert has_element?(view, "#test_case_#{test_case_id}_var_name")
+    end
+
+    test "changing prompt preserves other form fields", %{conn: conn} do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      view
+      |> form("#suite-form", suite: %{name: "Suite Draft", prompt_id: prompt.id})
+      |> render_change()
+
+      assert has_element?(view, "#suite_name[value='Suite Draft']")
+      assert has_element?(view, "#suite_prompt_id option[selected][value='#{prompt.id}']")
     end
   end
 end

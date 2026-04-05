@@ -22,49 +22,23 @@ defmodule Aludel.Web.SuiteLive.New do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("prompt_selected", %{"suite" => %{"prompt_id" => prompt_id}}, socket) do
-    selected_prompt =
-      if prompt_id != "" do
-        Enum.find(socket.assigns.prompts, fn p -> p.id == prompt_id end)
-      else
-        nil
-      end
+  def handle_event("validate", %{"suite" => suite_params}, socket) do
+    selected_prompt = find_selected_prompt(socket.assigns.prompts, suite_params["prompt_id"])
 
-    # Extract variables from the selected prompt and update existing test cases
-    variables =
-      case selected_prompt do
-        %{versions: [%{template: template} | _]} ->
-          extract_variables(template)
+    changeset =
+      socket.assigns.suite
+      |> Evals.change_suite(Map.drop(suite_params, ["test_cases"]))
+      |> Map.put(:action, :validate)
 
-        _ ->
-          []
-      end
-
-    # Update all test cases with new variable structure
-    updated_test_cases =
-      Enum.map(socket.assigns.test_cases, fn tc ->
-        # Create a map with all variables initialized to empty strings
-        variable_values =
-          variables
-          |> Enum.map(fn var ->
-            # Keep existing value if it exists, otherwise empty string
-            {var, Map.get(tc[:variable_values] || %{}, var, "")}
-          end)
-          |> Map.new()
-
-        Map.put(tc, :variable_values, variable_values)
-      end)
-
-    # Update suite with selected prompt_id
-    suite = Map.put(socket.assigns.suite, :prompt_id, prompt_id)
-
-    socket =
-      socket
-      |> assign(:suite, suite)
-      |> assign(:selected_prompt, selected_prompt)
-      |> assign(:test_cases, updated_test_cases)
-
-    {:noreply, socket}
+    {:noreply,
+     socket
+     |> assign(:suite, Ecto.Changeset.apply_changes(changeset))
+     |> assign(:form, to_form(changeset))
+     |> assign(:selected_prompt, selected_prompt)
+     |> assign(
+       :test_cases,
+       merge_test_cases_from_params(suite_params, socket.assigns.test_cases, selected_prompt)
+     )}
   end
 
   @impl Phoenix.LiveView
@@ -206,7 +180,17 @@ defmodule Aludel.Web.SuiteLive.New do
              |> push_navigate(to: aludel_path("suites/#{suite.id}"))}
 
           {:error, changeset} ->
-            {:noreply, assign(socket, :form, to_form(changeset))}
+            {:noreply,
+             socket
+             |> assign(:form, to_form(changeset))
+             |> assign(
+               :test_cases,
+               merge_test_cases_from_params(
+                 suite_params,
+                 socket.assigns.test_cases,
+                 socket.assigns.selected_prompt
+               )
+             )}
         end
 
       {:error, message} ->
@@ -225,7 +209,17 @@ defmodule Aludel.Web.SuiteLive.New do
              |> push_navigate(to: aludel_path("suites/#{suite.id}"))}
 
           {:error, changeset} ->
-            {:noreply, assign(socket, :form, to_form(changeset))}
+            {:noreply,
+             socket
+             |> assign(:form, to_form(changeset))
+             |> assign(
+               :test_cases,
+               merge_test_cases_from_params(
+                 suite_params,
+                 socket.assigns.test_cases,
+                 socket.assigns.selected_prompt
+               )
+             )}
         end
 
       {:error, message} ->
@@ -276,20 +270,13 @@ defmodule Aludel.Web.SuiteLive.New do
 
     test_cases
     |> Enum.map(fn {_id, test_case_params} ->
-      # Parse variables from visual form fields (var_value_*)
-      variable_values =
-        test_case_params
-        |> Enum.filter(fn {k, _v} -> String.starts_with?(k, "var_value_") end)
-        |> Enum.map(fn {"var_value_" <> key, value} -> {key, value} end)
-        |> Map.new()
+      variable_values = Map.get(test_case_params, "variable_values", %{})
 
-      # Check if assertions_json exists (JSON mode) or parse visual fields
       assertions =
         if test_case_params["assertions_json"] do
           parse_assertions(test_case_params["assertions_json"])
         else
-          # Parse from visual form fields
-          parse_visual_assertions(test_case_params)
+          parse_visual_assertions(Map.get(test_case_params, "assertions", %{}))
         end
 
       %{
@@ -331,28 +318,29 @@ defmodule Aludel.Web.SuiteLive.New do
     end
   end
 
-  defp parse_visual_assertions(test_case_params) do
-    # Find all assertion_type_* keys
+  defp parse_visual_assertions(assertion_params) do
+    assertion_params = normalize_assertion_params(assertion_params)
+
     assertion_indices =
-      test_case_params
+      assertion_params
       |> Map.keys()
       |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
       |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
       |> Enum.sort()
 
     Enum.map(assertion_indices, fn idx ->
-      type = test_case_params["assertion_type_#{idx}"]
+      type = assertion_params["assertion_type_#{idx}"]
 
       if type == "json_field" do
         %{
           "type" => type,
-          "field" => test_case_params["assertion_field_#{idx}"] || "",
-          "expected" => test_case_params["assertion_expected_#{idx}"] || ""
+          "field" => assertion_params["assertion_field_#{idx}"] || "",
+          "expected" => assertion_params["assertion_expected_#{idx}"] || ""
         }
       else
         %{
           "type" => type,
-          "value" => test_case_params["assertion_value_#{idx}"] || ""
+          "value" => assertion_params["assertion_value_#{idx}"] || ""
         }
       end
     end)
@@ -368,6 +356,72 @@ defmodule Aludel.Web.SuiteLive.New do
   defp generate_id do
     :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
   end
+
+  defp find_selected_prompt(_prompts, prompt_id) when prompt_id in [nil, ""], do: nil
+  defp find_selected_prompt(prompts, prompt_id), do: Enum.find(prompts, &(&1.id == prompt_id))
+
+  defp sync_test_case_variables(test_cases, selected_prompt) do
+    variables = prompt_variables(selected_prompt)
+
+    Enum.map(test_cases, fn tc ->
+      variable_values =
+        variables
+        |> Enum.map(fn var -> {var, Map.get(tc[:variable_values] || %{}, var, "")} end)
+        |> Map.new()
+
+      Map.put(tc, :variable_values, variable_values)
+    end)
+  end
+
+  defp merge_test_cases_from_params(
+         %{"test_cases" => test_cases_params},
+         _current_test_cases,
+         selected_prompt
+       )
+       when is_map(test_cases_params) and map_size(test_cases_params) > 0 do
+    variables = prompt_variables(selected_prompt)
+
+    Enum.map(test_cases_params, fn {id, test_case_params} ->
+      variable_values =
+        variables
+        |> Enum.map(fn var ->
+          {var, get_in(test_case_params, ["variable_values", var]) || ""}
+        end)
+        |> Map.new()
+
+      assertions =
+        if test_case_params["assertions_json"] do
+          parse_assertions(test_case_params["assertions_json"])
+        else
+          parse_visual_assertions(Map.get(test_case_params, "assertions", %{}))
+        end
+
+      %{
+        id: id,
+        variable_values: variable_values,
+        assertions: assertions
+      }
+    end)
+  end
+
+  defp merge_test_cases_from_params(
+         %{"test_cases" => _test_cases_params},
+         current_test_cases,
+         selected_prompt
+       ) do
+    sync_test_case_variables(current_test_cases, selected_prompt)
+  end
+
+  defp merge_test_cases_from_params(_suite_params, current_test_cases, selected_prompt) do
+    sync_test_case_variables(current_test_cases, selected_prompt)
+  end
+
+  defp prompt_variables(%{versions: [%{template: template} | _]}), do: extract_variables(template)
+  defp prompt_variables(_selected_prompt), do: []
+
+  defp normalize_assertion_params(params) when is_map(params), do: params
+  defp normalize_assertion_params(params) when is_list(params), do: Map.new(params)
+  defp normalize_assertion_params(_params), do: %{}
 
   defp validate_assertion_structure(assertions) do
     valid_types = ["contains", "not_contains", "regex", "exact_match", "json_field"]
