@@ -8,7 +8,10 @@ defmodule Aludel.Web.DashboardLive do
 
   alias Aludel.Evals
   alias Aludel.Runs
-  alias Aludel.Stats
+  alias Aludel.Stats.Activity
+  alias Aludel.Stats.Costs
+  alias Aludel.Stats.Latency
+  alias Aludel.Stats.Overview
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -25,25 +28,25 @@ defmodule Aludel.Web.DashboardLive do
 
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
-    recent_activity = Stats.list_recent_activity(10)
+    recent_activity = Activity.list_recent_activity(10)
     pass_rates = Evals.pass_rates_by_prompt() |> sort_by_pass_rate()
 
     # Calculate key metrics
-    total_runs = Stats.total_runs()
-    {total_passed, total_failed} = Stats.test_totals()
-    success_rate = Stats.success_rate(total_passed, total_failed)
-    avg_latency = Stats.avg_latency()
-    latency_percentiles = Stats.latency_percentiles()
+    total_runs = Overview.total_runs()
+    {total_passed, total_failed} = Overview.test_totals()
+    success_rate = Overview.success_rate(total_passed, total_failed)
+    avg_latency = Overview.avg_latency()
+    latency_percentiles = Latency.latency_percentiles()
     total_cost = Runs.total_cost()
     # Calculate cost_per_run here to avoid redundant DB queries
     cost_per_run = if total_runs > 0, do: total_cost / total_runs, else: 0.0
-    trends = Stats.comparison_stats(7)
+    trends = Overview.comparison_stats(7)
 
     # Breakdown stats
-    cost_by_provider = Stats.cost_by_provider()
-    cost_by_prompt = Stats.cost_by_prompt()
-    latency_by_provider = Stats.latency_by_provider()
-    daily_activity = Stats.daily_activity(30)
+    cost_by_provider = Costs.cost_by_provider()
+    cost_by_prompt = Costs.cost_by_prompt()
+    latency_by_provider = Latency.latency_by_provider()
+    daily_activity = Activity.daily_activity(30)
 
     # Get last run time
     last_run_at = if recent_activity != [], do: List.first(recent_activity).inserted_at, else: nil

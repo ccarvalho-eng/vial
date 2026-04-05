@@ -2,6 +2,7 @@ defmodule Aludel.Evals.TestCaseTest do
   use Aludel.DataCase, async: true
 
   alias Aludel.Evals.TestCase
+  alias Aludel.Evals.TestCaseDocument
 
   describe "changeset/2" do
     test "valid changeset with all fields" do
@@ -65,8 +66,8 @@ defmodule Aludel.Evals.TestCaseTest do
       test_case = test_case_fixture()
 
       {:ok, doc} =
-        %Aludel.Evals.TestCaseDocument{}
-        |> Aludel.Evals.TestCaseDocument.changeset(%{
+        %TestCaseDocument{}
+        |> TestCaseDocument.changeset(%{
           test_case_id: test_case.id,
           filename: "test.pdf",
           content_type: "application/pdf",
@@ -76,7 +77,7 @@ defmodule Aludel.Evals.TestCaseTest do
         |> Repo.insert()
 
       loaded = Repo.preload(test_case, :documents)
-      assert [%Aludel.Evals.TestCaseDocument{id: doc_id}] = loaded.documents
+      assert [%TestCaseDocument{id: doc_id}] = loaded.documents
       assert doc_id == doc.id
     end
   end

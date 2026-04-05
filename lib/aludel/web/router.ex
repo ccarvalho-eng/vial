@@ -3,6 +3,8 @@ defmodule Aludel.Web.Router do
   Provides the aludel_dashboard macro for mounting Aludel in host apps.
   """
 
+  alias Aludel.Web.Resolver
+
   @default_opts [
     resolver: Aludel.Web.Resolver,
     socket_path: "/live",
@@ -119,7 +121,7 @@ defmodule Aludel.Web.Router do
         csp_key,
         logo_path
       ) do
-    user = Aludel.Web.Resolver.call_with_fallback(resolver, :resolve_user, [conn])
+    user = Resolver.call_with_fallback(resolver, :resolve_user, [conn])
     csp_keys = expand_csp_nonce_keys(csp_key)
 
     %{
@@ -127,8 +129,8 @@ defmodule Aludel.Web.Router do
       "aludel_name" => aludel_name,
       "user" => user,
       "resolver" => resolver,
-      "access" => Aludel.Web.Resolver.call_with_fallback(resolver, :resolve_access, [user]),
-      "refresh" => Aludel.Web.Resolver.call_with_fallback(resolver, :resolve_refresh, [user]),
+      "access" => Resolver.call_with_fallback(resolver, :resolve_access, [user]),
+      "refresh" => Resolver.call_with_fallback(resolver, :resolve_refresh, [user]),
       "live_path" => live_path,
       "live_transport" => live_transport,
       "logo_path" => logo_path,

@@ -130,7 +130,7 @@
           <div class="stat-info-tooltip">
             <.icon name="hero-information-circle" class="size-4 stat-info-icon" />
             <div class="stat-info-tooltip-content">
-              Combined costs across all prompt runs and suite runs, with average cost per run
+              Combined costs across all prompt runs and suite executions, with average cost per execution
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@
         </div>
         <div class="stat-label" style="font-size: 13px; font-weight: 500;">Total Cost</div>
         <div class="stat-description" style="margin-top: 2px;">
-          ${:erlang.float_to_binary(@cost_per_run, decimals: 4)} per run
+          ${:erlang.float_to_binary(@cost_per_run, decimals: 4)} per execution
         </div>
         <%= if @cost_by_provider != [] || @cost_by_prompt != [] do %>
           <div style="display: flex; justify-content: flex-end; margin-top: 10px;">

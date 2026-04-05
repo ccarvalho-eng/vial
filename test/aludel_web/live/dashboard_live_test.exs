@@ -120,6 +120,6 @@ defmodule Aludel.Web.DashboardLiveTest do
     assert html =~ "P50 = 50th percentile"
 
     # Total Cost tooltip
-    assert html =~ "Combined costs across all prompt runs and suite runs"
+    assert html =~ "Combined costs across all prompt runs and suite executions"
   end
 end

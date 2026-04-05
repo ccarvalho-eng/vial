@@ -381,37 +381,7 @@ defmodule Aludel.Web.SuiteLive.Show do
   defp update_test_case_with_attrs(socket, test_case, attrs, _params) do
     case Evals.update_test_case(test_case, attrs) do
       {:ok, _test_case} ->
-        # Handle uploaded documents and collect results
-        {successful_uploads, failed_uploads} =
-          consume_uploaded_entries(socket, :documents, fn %{path: path}, entry ->
-            {:ok, data} = File.read(path)
-
-            # Validate file content matches claimed type
-            case FileValidation.validate(data, entry.client_type) do
-              :ok ->
-                case Evals.create_test_case_document(%{
-                       test_case_id: test_case.id,
-                       filename: entry.client_name,
-                       content_type: entry.client_type,
-                       data: data,
-                       size_bytes: entry.client_size
-                     }) do
-                  {:ok, _doc} ->
-                    {:ok, {:success, entry.client_name}}
-
-                  {:error, _changeset} ->
-                    {:ok, {:failed, entry.client_name, "Database error"}}
-                end
-
-              {:error, reason} ->
-                {:ok, {:failed, entry.client_name, reason}}
-            end
-          end)
-          |> Enum.split_with(fn
-            {:success, _} -> true
-            _ -> false
-          end)
-
+        {successful_uploads, failed_uploads} = handle_test_case_uploads(socket, test_case)
         suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
 
         socket =
@@ -422,51 +392,85 @@ defmodule Aludel.Web.SuiteLive.Show do
           |> assign(:test_case_form, nil)
           |> assign(:editing_test_case_params, nil)
 
-        # Build appropriate flash message based on results
-        socket =
-          cond do
-            # All uploads failed
-            failed_uploads != [] and successful_uploads == [] ->
-              failed_files =
-                Enum.map_join(failed_uploads, ", ", fn {:failed, name, reason} ->
-                  "#{name} (#{reason})"
-                end)
-
-              put_flash(
-                socket,
-                :error,
-                "Test case updated but document uploads failed: #{failed_files}"
-              )
-
-            # Some uploads failed
-            failed_uploads != [] ->
-              failed_count = length(failed_uploads)
-              success_count = length(successful_uploads)
-
-              put_flash(
-                socket,
-                :warning,
-                "Test case updated with #{success_count} document(s), but #{failed_count} failed validation"
-              )
-
-            # All uploads succeeded
-            successful_uploads != [] ->
-              put_flash(
-                socket,
-                :info,
-                "Test case updated with #{length(successful_uploads)} document(s)"
-              )
-
-            # No uploads
-            true ->
-              put_flash(socket, :info, "Test case updated successfully")
-          end
-
-        {:noreply, socket}
+        {:noreply, put_upload_flash(socket, successful_uploads, failed_uploads)}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to update test case")}
     end
+  end
+
+  defp handle_test_case_uploads(socket, test_case) do
+    socket
+    |> consume_uploaded_entries(:documents, fn %{path: path}, entry ->
+      process_test_case_upload(path, entry, test_case.id)
+    end)
+    |> Enum.split_with(&successful_upload?/1)
+  end
+
+  defp process_test_case_upload(path, entry, test_case_id) do
+    {:ok, data} = File.read(path)
+
+    case FileValidation.validate(data, entry.client_type) do
+      :ok -> persist_test_case_document(entry, data, test_case_id)
+      {:error, reason} -> {:ok, {:failed, entry.client_name, reason}}
+    end
+  end
+
+  defp persist_test_case_document(entry, data, test_case_id) do
+    case Evals.create_test_case_document(%{
+           test_case_id: test_case_id,
+           filename: entry.client_name,
+           content_type: entry.client_type,
+           data: data,
+           size_bytes: entry.client_size
+         }) do
+      {:ok, _doc} ->
+        {:ok, {:success, entry.client_name}}
+
+      {:error, _changeset} ->
+        {:ok, {:failed, entry.client_name, "Database error"}}
+    end
+  end
+
+  defp successful_upload?({:success, _}), do: true
+  defp successful_upload?(_), do: false
+
+  defp put_upload_flash(socket, successful_uploads, failed_uploads)
+       when failed_uploads != [] and successful_uploads == [] do
+    failed_files =
+      Enum.map_join(failed_uploads, ", ", fn {:failed, name, reason} ->
+        "#{name} (#{reason})"
+      end)
+
+    put_flash(
+      socket,
+      :error,
+      "Test case updated but document uploads failed: #{failed_files}"
+    )
+  end
+
+  defp put_upload_flash(socket, successful_uploads, failed_uploads) when failed_uploads != [] do
+    failed_count = length(failed_uploads)
+    success_count = length(successful_uploads)
+
+    put_flash(
+      socket,
+      :warning,
+      "Test case updated with #{success_count} document(s), but #{failed_count} failed validation"
+    )
+  end
+
+  defp put_upload_flash(socket, successful_uploads, _failed_uploads)
+       when successful_uploads != [] do
+    put_flash(
+      socket,
+      :info,
+      "Test case updated with #{length(successful_uploads)} document(s)"
+    )
+  end
+
+  defp put_upload_flash(socket, _successful_uploads, _failed_uploads) do
+    put_flash(socket, :info, "Test case updated successfully")
   end
 
   @impl Phoenix.LiveView

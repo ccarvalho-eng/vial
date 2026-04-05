@@ -232,24 +232,26 @@ defmodule Aludel.Web.SuiteLive.New do
 
     test_cases
     |> Enum.reduce_while(:ok, fn {_id, test_case_params}, _acc ->
-      if test_case_params["assertions_json"] do
-        case Jason.decode(test_case_params["assertions_json"]) do
-          {:ok, json_assertions} when is_list(json_assertions) ->
-            case validate_assertion_structure(json_assertions) do
-              :ok -> {:cont, :ok}
-              {:error, _} = error -> {:halt, error}
-            end
-
-          {:ok, _} ->
-            {:halt, {:error, "Invalid JSON: assertions must be a list"}}
-
-          {:error, %Jason.DecodeError{}} ->
-            {:halt, {:error, "Invalid JSON syntax in assertions"}}
-        end
-      else
-        {:cont, :ok}
+      case validate_assertions_json(test_case_params["assertions_json"]) do
+        :ok -> {:cont, :ok}
+        {:error, _} = error -> {:halt, error}
       end
     end)
+  end
+
+  defp validate_assertions_json(nil), do: :ok
+
+  defp validate_assertions_json(assertions_json) do
+    case Jason.decode(assertions_json) do
+      {:ok, json_assertions} when is_list(json_assertions) ->
+        validate_assertion_structure(json_assertions)
+
+      {:ok, _} ->
+        {:error, "Invalid JSON: assertions must be a list"}
+
+      {:error, %Jason.DecodeError{}} ->
+        {:error, "Invalid JSON syntax in assertions"}
+    end
   end
 
   defp create_suite_with_test_cases(params) do

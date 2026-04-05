@@ -32,7 +32,7 @@ defmodule Aludel.RunsTest do
       {:ok, prompt_version: version}
     end
 
-    test "total_cost/0 includes suite run costs" do
+    test "total_cost/0 sums suite test case costs from suite run results" do
       import Aludel.EvalsFixtures
 
       # Create a run result with cost
@@ -58,13 +58,18 @@ defmodule Aludel.RunsTest do
       # Create a suite run with cost
       _suite_run =
         suite_run_fixture(%{
-          avg_cost_usd: Decimal.new("0.005")
+          avg_cost_usd: Decimal.new("0.005"),
+          results: [
+            %{"cost_usd" => 0.004, "latency_ms" => 100, "passed" => true},
+            %{"cost_usd" => 0.006, "latency_ms" => 120, "passed" => false},
+            %{"cost_usd" => nil, "latency_ms" => nil, "passed" => false}
+          ]
         })
 
       total = Runs.total_cost()
 
-      # Should include both run result cost (0.001) and suite run cost (0.005)
-      assert_in_delta total, 0.006, 0.0001
+      # Should include both run result cost (0.001) and suite execution cost (0.010)
+      assert_in_delta total, 0.011, 0.0001
     end
 
     test "list_runs/0 returns all runs", %{prompt_version: version} do
