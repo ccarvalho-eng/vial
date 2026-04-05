@@ -252,14 +252,12 @@ defmodule Aludel.Prompts do
   # Private functions
 
   @dialyzer {:nowarn_function, create_prompt_multi: 2, update_prompt_multi: 3}
-  @spec create_prompt_multi(map(), String.t()) :: Multi.t()
   defp create_prompt_multi(attrs, template) do
     Multi.new()
     |> Multi.insert(:prompt, Prompt.changeset(%Prompt{}, attrs))
     |> maybe_insert_version(:prompt_version, template)
   end
 
-  @spec update_prompt_multi(Prompt.t(), map(), String.t()) :: Multi.t()
   defp update_prompt_multi(%Prompt{} = prompt, attrs, template) do
     Multi.new()
     |> Multi.update(:prompt, Prompt.changeset(prompt, attrs))
