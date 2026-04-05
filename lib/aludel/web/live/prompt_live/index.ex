@@ -20,7 +20,7 @@ defmodule Aludel.Web.PromptLive.Index do
     page_size = 20
     search_query = params["search"] || ""
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
-    selected_project_id = params["project_id"]
+    selected_project_id = normalize_project_id(params["project_id"])
 
     projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
@@ -294,6 +294,9 @@ defmodule Aludel.Web.PromptLive.Index do
       Enum.any?(selected_tags, fn tag -> tag in (prompt.tags || []) end)
     end)
   end
+
+  defp normalize_project_id(""), do: nil
+  defp normalize_project_id(project_id), do: project_id
 
   defp extract_all_tags(prompts) do
     prompts
