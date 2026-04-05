@@ -34,6 +34,31 @@ defmodule Aludel.Web.PromptLive.IndexTest do
     refute has_element?(view, "a[href='/prompts/#{p2.id}']", "P2")
   end
 
+  test "search filters prompts inside expanded projects", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    matching_prompt =
+      prompt_fixture(%{
+        name: "Alpha Prompt",
+        description: "Matches search",
+        project_id: project.id
+      })
+
+    hidden_prompt =
+      prompt_fixture(%{
+        name: "Beta Prompt",
+        description: "Does not match",
+        project_id: project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts?search=alpha")
+
+    render_click(view, "toggle_project", %{"project_id" => project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{matching_prompt.id}']", "Alpha Prompt")
+    refute has_element?(view, "a[href='/prompts/#{hidden_prompt.id}']", "Beta Prompt")
+  end
+
   test "creates prompt projects with prompt type", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/prompts")
 

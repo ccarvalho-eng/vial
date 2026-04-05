@@ -38,10 +38,13 @@ defmodule Aludel.Web.PromptLive.Index do
     filtered_prompts =
       filter_prompts(paginated.entries, search_query, selected_tags)
 
+    filtered_projects =
+      filter_projects(projects, search_query, selected_tags, selected_project_id)
+
     socket =
       socket
       |> assign(:page_title, "Prompts")
-      |> assign(:projects, projects)
+      |> assign(:projects, filtered_projects)
       |> assign(:prompts, filtered_prompts)
       |> assign(:pagination, paginated)
       |> assign(:all_tags, all_tags)
@@ -50,7 +53,7 @@ defmodule Aludel.Web.PromptLive.Index do
       |> assign(:selected_project_id, selected_project_id)
       |> assign(:search_form, to_form(%{"query" => search_query}, as: :search))
       |> assign(:create_project_form, project_form(%Project{}))
-      |> assign(:edit_project_forms, build_edit_project_forms(projects))
+      |> assign(:edit_project_forms, build_edit_project_forms(filtered_projects))
       |> assign(:expanded_projects, Map.get(socket.assigns, :expanded_projects, []))
 
     {:noreply, socket}
@@ -67,11 +70,19 @@ defmodule Aludel.Web.PromptLive.Index do
     filtered =
       filter_prompts(all_prompts, socket.assigns.search_query, socket.assigns.selected_tags)
 
+    filtered_projects =
+      filter_projects(
+        projects,
+        socket.assigns.search_query,
+        socket.assigns.selected_tags,
+        socket.assigns.selected_project_id
+      )
+
     {:noreply,
      socket
-     |> assign(:projects, projects)
+     |> assign(:projects, filtered_projects)
      |> assign(:prompts, filtered)
-     |> assign(:edit_project_forms, build_edit_project_forms(projects))
+     |> assign(:edit_project_forms, build_edit_project_forms(filtered_projects))
      |> assign(:all_tags, extract_all_tags(all_prompts))
      |> put_flash(:info, "Prompt deleted successfully")}
   end
@@ -241,6 +252,28 @@ defmodule Aludel.Web.PromptLive.Index do
     prompts
     |> filter_by_search(search_query)
     |> filter_by_tags(selected_tags)
+  end
+
+  defp filter_projects(projects, search_query, selected_tags, selected_project_id) do
+    projects
+    |> maybe_filter_projects_by_selected_project(selected_project_id)
+    |> Enum.map(fn project ->
+      %{project | prompts: filter_prompts(project.prompts, search_query, selected_tags)}
+    end)
+    |> maybe_reject_empty_projects(search_query, selected_tags)
+  end
+
+  defp maybe_filter_projects_by_selected_project(projects, nil), do: projects
+  defp maybe_filter_projects_by_selected_project(projects, ""), do: projects
+
+  defp maybe_filter_projects_by_selected_project(projects, selected_project_id) do
+    Enum.filter(projects, &(&1.id == selected_project_id))
+  end
+
+  defp maybe_reject_empty_projects(projects, "", []), do: projects
+
+  defp maybe_reject_empty_projects(projects, _search_query, _selected_tags) do
+    Enum.reject(projects, &Enum.empty?(&1.prompts))
   end
 
   defp filter_by_search(prompts, ""), do: prompts
