@@ -2,7 +2,7 @@
   <br/>
   <br/>
   <br/>
-  <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="280"/>
+  <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="270"/>
   <br/>
   <br/>
   <br/>
