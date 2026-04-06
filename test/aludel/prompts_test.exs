@@ -3,6 +3,7 @@ defmodule Aludel.PromptsTest do
 
   alias Aludel.Projects
   alias Aludel.Prompts
+  alias Aludel.Prompts.PromptVersion
 
   describe "prompts" do
     test "create_prompt/1 creates a prompt with valid attributes" do
@@ -67,6 +68,152 @@ defmodule Aludel.PromptsTest do
       prompt = prompt_fixture()
       assert Prompts.list_prompts() == [prompt]
     end
+
+    test "create_prompt_with_initial_version/1 creates prompt and initial version" do
+      attrs = %{
+        "name" => "Versioned Prompt",
+        "description" => "With initial template",
+        "tags" => "elixir, test",
+        "template" => "Hello {{name}}"
+      }
+
+      assert {:ok, prompt} = Prompts.create_prompt_with_initial_version(attrs)
+
+      prompt = Prompts.get_prompt_with_versions!(prompt.id)
+      assert prompt.name == "Versioned Prompt"
+      assert prompt.tags == ["elixir", "test"]
+      assert length(prompt.versions) == 1
+
+      version = List.first(prompt.versions)
+      assert version.version == 1
+      assert version.template == "Hello {{name}}"
+      assert version.variables == ["name"]
+    end
+
+    test "create_prompt_with_initial_version/1 creates only prompt when template is blank" do
+      assert {:ok, prompt} =
+               Prompts.create_prompt_with_initial_version(%{
+                 "name" => "Prompt Without Version",
+                 "template" => ""
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(prompt.id)
+      assert prompt.versions == []
+    end
+
+    test "create_prompt_with_initial_version/1 treats nil template as blank" do
+      assert {:ok, prompt} =
+               Prompts.create_prompt_with_initial_version(%{
+                 "name" => "Nil Template Prompt",
+                 "template" => nil
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(prompt.id)
+      assert prompt.versions == []
+    end
+
+    test "update_prompt_with_optional_version/2 updates prompt and creates new version" do
+      prompt = prompt_fixture_with_version(%{template: "Original {{name}}", tags: ["old"]})
+
+      assert {:ok, updated_prompt} =
+               Prompts.update_prompt_with_optional_version(prompt, %{
+                 "name" => "Updated Prompt",
+                 "tags" => "new, updated",
+                 "template" => "Updated {{topic}}"
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(updated_prompt.id)
+      assert prompt.name == "Updated Prompt"
+      assert prompt.tags == ["new", "updated"]
+      assert Enum.map(prompt.versions, & &1.version) == [2, 1]
+      assert hd(prompt.versions).template == "Updated {{topic}}"
+      assert hd(prompt.versions).variables == ["topic"]
+    end
+
+    test "update_prompt_with_optional_version/2 does not create version when template is unchanged" do
+      prompt = prompt_fixture_with_version(%{template: "Original {{name}}"})
+
+      assert {:ok, updated_prompt} =
+               Prompts.update_prompt_with_optional_version(prompt, %{
+                 "name" => "Renamed",
+                 "template" => "Original {{name}}"
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(updated_prompt.id)
+      assert prompt.name == "Renamed"
+      assert length(prompt.versions) == 1
+      assert hd(prompt.versions).version == 1
+    end
+
+    test "update_prompt_with_optional_version/2 uses latest persisted version when versions are not preloaded" do
+      prompt = prompt_fixture()
+      {:ok, _v1} = Prompts.create_prompt_version(prompt, "Version 1 {{name}}")
+      {:ok, _v2} = Prompts.create_prompt_version(prompt, "Version 2 {{topic}}")
+
+      prompt_without_versions = Prompts.get_prompt!(prompt.id)
+
+      assert {:ok, updated_prompt} =
+               Prompts.update_prompt_with_optional_version(prompt_without_versions, %{
+                 "name" => "Renamed",
+                 "template" => "Version 2 {{topic}}"
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(updated_prompt.id)
+      assert prompt.name == "Renamed"
+      assert Enum.map(prompt.versions, & &1.version) == [2, 1]
+      assert hd(prompt.versions).template == "Version 2 {{topic}}"
+    end
+
+    test "update_prompt_with_optional_version/2 uses highest version when preloaded versions are unordered" do
+      prompt = prompt_fixture()
+      {:ok, version1} = Prompts.create_prompt_version(prompt, "Version 1 {{name}}")
+      {:ok, version2} = Prompts.create_prompt_version(prompt, "Version 2 {{topic}}")
+
+      prompt_with_unordered_versions = %{
+        prompt
+        | versions: [version1, version2]
+      }
+
+      assert {:ok, updated_prompt} =
+               Prompts.update_prompt_with_optional_version(prompt_with_unordered_versions, %{
+                 "name" => "Still Renamed",
+                 "template" => "Version 2 {{topic}}"
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(updated_prompt.id)
+      assert prompt.name == "Still Renamed"
+      assert Enum.map(prompt.versions, & &1.version) == [2, 1]
+    end
+
+    test "update_prompt_with_optional_version/2 creates first version when prompt has none" do
+      prompt = prompt_fixture(%{name: "No Versions Yet"})
+
+      assert {:ok, updated_prompt} =
+               Prompts.update_prompt_with_optional_version(prompt, %{
+                 "name" => "Now Versioned",
+                 "template" => "First template {{name}}"
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(updated_prompt.id)
+      assert prompt.name == "Now Versioned"
+      assert Enum.map(prompt.versions, & &1.version) == [1]
+      assert hd(prompt.versions).template == "First template {{name}}"
+      assert hd(prompt.versions).variables == ["name"]
+    end
+
+    test "update_prompt_with_optional_version/2 treats nil template as blank" do
+      prompt = prompt_fixture_with_version(%{template: "Original {{name}}"})
+
+      assert {:ok, updated_prompt} =
+               Prompts.update_prompt_with_optional_version(prompt, %{
+                 "name" => "Renamed",
+                 "template" => nil
+               })
+
+      prompt = Prompts.get_prompt_with_versions!(updated_prompt.id)
+      assert prompt.name == "Renamed"
+      assert Enum.map(prompt.versions, & &1.version) == [1]
+    end
   end
 
   describe "prompt_versions" do
@@ -88,6 +235,33 @@ defmodule Aludel.PromptsTest do
 
       assert v1.version == 1
       assert v2.version == 2
+    end
+
+    test "create_prompt_version/2 converts unique constraint violations into changeset errors" do
+      prompt = prompt_fixture()
+      repo = Aludel.Repo.get()
+
+      assert {:ok, _version} =
+               %PromptVersion{}
+               |> PromptVersion.changeset(%{
+                 prompt_id: prompt.id,
+                 version: 1,
+                 template: "Original {{name}}",
+                 variables: ["name"]
+               })
+               |> repo.insert()
+
+      assert {:error, changeset} =
+               %PromptVersion{}
+               |> PromptVersion.changeset(%{
+                 prompt_id: prompt.id,
+                 version: 1,
+                 template: "Duplicate {{name}}",
+                 variables: ["name"]
+               })
+               |> repo.insert()
+
+      assert "has already been taken" in errors_on(changeset).prompt_id
     end
 
     test "extract_variables/1 parses template variables" do
