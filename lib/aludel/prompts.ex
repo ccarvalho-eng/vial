@@ -254,6 +254,7 @@ defmodule Aludel.Prompts do
 
   # Private functions
 
+  @dialyzer {:nowarn_function, create_prompt_multi: 2, update_prompt_multi: 3}
   defp create_prompt_multi(attrs, template) do
     Multi.new()
     |> Multi.insert(:prompt, Prompt.changeset(%Prompt{}, attrs))
