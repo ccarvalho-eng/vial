@@ -68,8 +68,9 @@ defmodule Aludel.Prompts do
   @spec list_prompts_with_versions() :: [Prompt.t()]
   def list_prompts_with_versions do
     query =
-      from p in Prompt,
+      from(p in Prompt,
         preload: [versions: ^from(v in PromptVersion, order_by: [desc: v.version])]
+      )
 
     repo().all(query)
   end
@@ -89,9 +90,10 @@ defmodule Aludel.Prompts do
   @spec get_prompt_with_versions!(binary()) :: Prompt.t()
   def get_prompt_with_versions!(id) do
     query =
-      from p in Prompt,
+      from(p in Prompt,
         where: p.id == ^id,
         preload: [versions: ^from(v in PromptVersion, order_by: [desc: v.version])]
+      )
 
     repo().one!(query)
   end
@@ -138,7 +140,8 @@ defmodule Aludel.Prompts do
     attrs = normalize_attrs(attrs)
     template = normalized_template(attrs)
 
-    create_prompt_multi(attrs, template)
+    attrs
+    |> create_prompt_multi(template)
     |> repo().transaction()
     |> case do
       {:ok, %{prompt: prompt}} ->
@@ -176,8 +179,8 @@ defmodule Aludel.Prompts do
     new_template = normalized_template(attrs)
     latest_template = latest_template(prompt)
 
-    update_prompt_multi(
-      prompt,
+    prompt
+    |> update_prompt_multi(
       attrs,
       if(new_template == "" or new_template == latest_template, do: "", else: new_template)
     )
@@ -251,7 +254,6 @@ defmodule Aludel.Prompts do
 
   # Private functions
 
-  @dialyzer {:nowarn_function, create_prompt_multi: 2, update_prompt_multi: 3}
   defp create_prompt_multi(attrs, template) do
     Multi.new()
     |> Multi.insert(:prompt, Prompt.changeset(%Prompt{}, attrs))
@@ -325,8 +327,7 @@ defmodule Aludel.Prompts do
 
   defp prompt_version_error(prompt, attrs, %Changeset{} = version_changeset) do
     prompt_changeset =
-      prompt
-      |> case do
+      case prompt do
         %Prompt{} = prompt -> Prompt.changeset(prompt, attrs)
         _ -> Prompt.changeset(%Prompt{}, attrs)
       end
@@ -344,9 +345,10 @@ defmodule Aludel.Prompts do
 
   defp get_next_version_number(repo, prompt_id) do
     query =
-      from v in PromptVersion,
+      from(v in PromptVersion,
         where: v.prompt_id == ^prompt_id,
         select: max(v.version)
+      )
 
     case repo.one(query) do
       nil -> 1
