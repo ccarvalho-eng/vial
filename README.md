@@ -3,7 +3,7 @@
   <br/>
   <br/>
   <br/>
-  <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="250"/>
+  <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="220"/>
   <br/>
   <br/>
   <br/>
