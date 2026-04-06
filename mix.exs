@@ -29,7 +29,7 @@ defmodule Aludel.MixProject do
       homepage_url: "https://github.com/ccarvalho-eng/aludel",
       docs: [
         main: "readme",
-        extras: ["README.md"]
+        extras: ["README.md", "CONTRIBUTING.md", "LICENSE"]
       ]
     ]
   end
