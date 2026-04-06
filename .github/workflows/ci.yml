@@ -65,15 +65,15 @@ jobs:
       - name: Run tests with coverage
         run: mix coveralls.json
 
-      # Only upload coverage for pushes and PRs from the same repository
-      # Fork PRs don't have access to CODECOV_TOKEN and would fail
+      # Only upload coverage when the PR can access repository secrets.
+      # Dependabot and fork PRs should not fail CI on the upload step.
       - name: Upload coverage to Codecov
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
         uses: codecov/codecov-action@v6
         with:
           files: ./cover/excoveralls.json
           flags: elixir
-          fail_ci_if_error: true
+          fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
