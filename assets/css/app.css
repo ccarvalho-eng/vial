@@ -1478,8 +1478,26 @@ textarea.json-editor {
 }
 
 /* Remove assertion button */
+.assertion-action-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.assertion-action-row > .fieldset {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.assertion-action-row > .fieldset .select {
+  width: 100%;
+}
+
 .remove-assertion-btn {
-  padding: 6px 10px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   border: none;
   background: rgba(248, 81, 73, 0.1);
   cursor: pointer;
@@ -1488,6 +1506,9 @@ textarea.json-editor {
   border-radius: 4px;
   font-weight: 600;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .remove-assertion-btn:hover {

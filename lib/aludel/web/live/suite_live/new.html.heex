@@ -138,30 +138,33 @@
                   <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
                     <%= for {assertion, idx} <- Enum.with_index(test_case[:assertions] || []) do %>
                       <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);">
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                          <.input
-                            type="select"
-                            name={"suite[test_cases][#{test_case.id}][assertions][assertion_type_#{idx}]"}
-                            phx-hook="AssertionTypeToggle"
-                            id={"assertion-type-#{test_case.id}-#{idx}"}
-                            data-index={idx}
-                            data-test-case-id={test_case.id}
-                            value={assertion["type"]}
-                            options={[
-                              {"contains", "contains"},
-                              {"not contains", "not_contains"},
-                              {"regex", "regex"},
-                              {"exact", "exact_match"},
-                              {"json field", "json_field"}
-                            ]}
-                            class="select text-[13px] w-[110px] flex-shrink-0"
-                          />
+                        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 38px; gap: 8px;">
+                          <div style="min-width: 0;">
+                            <.input
+                              type="select"
+                              name={"suite[test_cases][#{test_case.id}][assertions][assertion_type_#{idx}]"}
+                              phx-hook="AssertionTypeToggle"
+                              id={"assertion-type-#{test_case.id}-#{idx}"}
+                              data-index={idx}
+                              data-test-case-id={test_case.id}
+                              value={assertion["type"]}
+                              options={[
+                                {"contains", "contains"},
+                                {"not contains", "not_contains"},
+                                {"regex", "regex"},
+                                {"exact", "exact_match"},
+                                {"json field", "json_field"}
+                              ]}
+                              class="w-full select text-[13px]"
+                            />
+                          </div>
                           <button
                             type="button"
                             phx-click="remove_assertion"
                             phx-value-id={test_case.id}
                             phx-value-index={idx}
-                            style="padding: 6px 10px; border: none; background: rgba(248, 81, 73, 0.1); cursor: pointer; color: #dc2626; flex-shrink: 0; border-radius: 4px; font-weight: 600;"
+                            class="remove-assertion-btn"
+                            style="width: 34px; height: 32px; position: relative; top: 4px;"
                           >
                             ✕
                           </button>
