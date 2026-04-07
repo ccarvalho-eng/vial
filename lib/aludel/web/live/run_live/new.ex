@@ -136,7 +136,9 @@ defmodule Aludel.Web.RunLive.New do
 
         run_with_version = %{run | prompt_version: socket.assigns.prompt_version}
 
-        Runs.execute_run(run_with_version, providers)
+        Task.start(fn ->
+          Runs.execute_run(run_with_version, providers)
+        end)
 
         {:noreply,
          socket
