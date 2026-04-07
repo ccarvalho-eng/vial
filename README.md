@@ -49,6 +49,8 @@ Other Ecto adapters (SQLite, MySQL) are not supported. If you attempt to use a d
 
 Aludel can be embedded into any Phoenix LiveView application as a self-contained dashboard.
 
+The embeddable dashboard approach borrows a few patterns from [Oban Web](https://github.com/oban-bg/oban_web), which helped shape how Aludel mounts cleanly inside an existing Phoenix app.
+
 ### 1. Add dependency
 
 Add Aludel to your `mix.exs`:
