@@ -118,7 +118,10 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_event("clear_filters", _params, socket) do
-    {:noreply, push_patch(socket, to: aludel_path("prompts"))}
+    {:noreply,
+     push_patch(socket,
+       to: aludel_path("prompts", build_query_params("", [], socket.assigns.selected_project_id))
+     )}
   end
 
   @impl Phoenix.LiveView
@@ -164,13 +167,10 @@ defmodule Aludel.Web.PromptLive.Index do
   def handle_event("create_project", %{"project" => project_params}, socket) do
     case Projects.create_project(Map.put(project_params, "type", "prompt")) do
       {:ok, _project} ->
-        projects = Projects.list_projects(type: :prompt)
-
         {:noreply,
          socket
-         |> assign(:projects, projects)
+         |> refresh_filtered_projects()
          |> assign(:create_project_form, project_form(%Project{}))
-         |> assign(:edit_project_forms, build_edit_project_forms(projects))
          |> put_flash(:info, "Project created successfully")}
 
       {:error, changeset} ->
@@ -197,14 +197,21 @@ defmodule Aludel.Web.PromptLive.Index do
 
     case Projects.update_project(project, project_params) do
       {:ok, _project} ->
-        projects = Projects.list_projects(type: :prompt)
-
         {:noreply,
          socket
-         |> assign(:projects, projects)
-         |> assign(:edit_project_forms, build_edit_project_forms(projects))
+         |> refresh_filtered_projects()
          |> put_flash(:info, "Project updated successfully")
-         |> push_patch(to: aludel_path("prompts"))}
+         |> push_patch(
+           to:
+             aludel_path(
+               "prompts",
+               build_query_params(
+                 socket.assigns.search_query,
+                 socket.assigns.selected_tags,
+                 socket.assigns.selected_project_id
+               )
+             )
+         )}
 
       {:error, changeset} ->
         {:noreply,
@@ -355,5 +362,19 @@ defmodule Aludel.Web.PromptLive.Index do
     Map.new(projects, fn project ->
       {project.id, project |> Projects.change_project(%{}) |> to_form(as: :project)}
     end)
+  end
+
+  defp refresh_filtered_projects(socket) do
+    projects =
+      Projects.list_projects(type: :prompt)
+      |> filter_projects(
+        socket.assigns.search_query,
+        socket.assigns.selected_tags,
+        socket.assigns.selected_project_id
+      )
+
+    socket
+    |> assign(:projects, projects)
+    |> assign(:edit_project_forms, build_edit_project_forms(projects))
   end
 end
