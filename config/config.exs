@@ -8,7 +8,8 @@
 import Config
 
 config :aludel,
-  generators: [timestamp_type: :utc_datetime, binary_id: true]
+  generators: [timestamp_type: :utc_datetime, binary_id: true],
+  run_execution_mode: :concurrent
 
 # Configures the endpoint
 config :aludel, Aludel.Web.Endpoint,

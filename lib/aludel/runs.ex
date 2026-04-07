@@ -167,8 +167,8 @@ defmodule Aludel.Runs do
       )
 
     _results =
-      case Mix.env() do
-        :test ->
+      case Application.get_env(:aludel, :run_execution_mode, :concurrent) do
+        :sequential ->
           Enum.map(providers, fn provider ->
             execute_provider(run, provider, rendered_prompt)
           end)
