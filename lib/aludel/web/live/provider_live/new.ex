@@ -10,7 +10,7 @@ defmodule Aludel.Web.ProviderLive.New do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    {:ok, assign(socket, :models, [])}
   end
 
   @impl Phoenix.LiveView
@@ -21,6 +21,22 @@ defmodule Aludel.Web.ProviderLive.New do
 
   @impl Phoenix.LiveView
   def handle_event("validate", %{"provider" => provider_params}, socket) do
+    provider_type = provider_params["provider"]
+    models = Providers.fetch_models(provider_type)
+
+    # Ensure current model is in the list if it's an edit and provider type matches
+    models =
+      if socket.assigns.live_action == :edit &&
+           to_string(socket.assigns.provider.provider) == to_string(provider_type) do
+        if Enum.find(models, &(&1.id == socket.assigns.provider.model)) do
+          models
+        else
+          [%{id: socket.assigns.provider.model, name: socket.assigns.provider.model} | models]
+        end
+      else
+        models
+      end
+
     changeset =
       socket.assigns.provider
       |> Providers.change_provider(provider_params)
@@ -50,6 +66,15 @@ defmodule Aludel.Web.ProviderLive.New do
   defp apply_action(socket, :edit, %{"id" => id}) do
     provider = Providers.get_provider!(id)
     changeset = Providers.change_provider(provider)
+    models = Providers.fetch_models(provider.provider)
+
+    # Ensure current model is in the list
+    models =
+      if Enum.find(models, &(&1.id == provider.model)) do
+        models
+      else
+        [%{id: provider.model, name: provider.model} | models]
+      end
 
     socket
     |> assign(:page_title, "Edit Provider")

@@ -94,6 +94,7 @@ defmodule Aludel.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
+      {:llm_db, "~> 2026.2", runtime: false},
 
       # Documentation
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},

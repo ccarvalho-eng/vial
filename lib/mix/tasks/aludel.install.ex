@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Aludel.Install do
 
   This task will:
   1. Copy all Aludel migrations to your app's priv/repo/migrations/ directory
-  2. Add timestamp prefixes to prevent conflicts
+  2. Preserve the original migration filenames so database versions stay stable across builds
   3. Show you what was copied
 
   ## Example
@@ -41,16 +41,13 @@ defmodule Mix.Tasks.Aludel.Install do
       """)
     end
 
-    base_timestamp = timestamp()
-
     aludel_migrations_dir
     |> File.ls!()
     |> Enum.filter(&String.ends_with?(&1, ".exs"))
     |> Enum.reject(&String.starts_with?(&1, "."))
     |> Enum.sort()
-    |> Enum.with_index()
-    |> Enum.each(fn {filename, index} ->
-      copy_migration(filename, aludel_migrations_dir, app_migrations_dir, base_timestamp, index)
+    |> Enum.each(fn filename ->
+      copy_migration(filename, aludel_migrations_dir, app_migrations_dir)
     end)
 
     Mix.shell().info("""
@@ -76,14 +73,12 @@ defmodule Mix.Tasks.Aludel.Install do
     """)
   end
 
-  defp copy_migration(filename, source_dir, dest_dir, base_timestamp, index) do
-    # Extract the original migration name (everything after the timestamp)
+  defp copy_migration(filename, source_dir, dest_dir) do
     migration_name =
       filename
       |> String.split("_", parts: 2)
       |> List.last()
 
-    # Check if a migration with this name already exists (with any timestamp)
     existing_migration =
       dest_dir
       |> File.ls!()
@@ -92,52 +87,13 @@ defmodule Mix.Tasks.Aludel.Install do
     if existing_migration do
       Mix.shell().info("* skipping #{migration_name} (already exists as #{existing_migration})")
     else
-      # Generate monotonically increasing timestamp: base + index seconds
-      migration_timestamp = add_seconds_to_timestamp(base_timestamp, index)
-      new_filename = "#{migration_timestamp}_#{migration_name}"
-
       source = Path.join(source_dir, filename)
-      dest = Path.join(dest_dir, new_filename)
+      dest = Path.join(dest_dir, filename)
 
       File.cp!(source, dest)
-      Mix.shell().info("* copying #{new_filename}")
+      Mix.shell().info("* copying #{filename}")
     end
   end
-
-  defp add_seconds_to_timestamp(timestamp, seconds) do
-    # Parse timestamp string to datetime
-    <<year::binary-4, month::binary-2, day::binary-2, hour::binary-2, minute::binary-2,
-      second::binary-2>> = timestamp
-
-    base_datetime =
-      NaiveDateTime.new!(
-        String.to_integer(year),
-        String.to_integer(month),
-        String.to_integer(day),
-        String.to_integer(hour),
-        String.to_integer(minute),
-        String.to_integer(second)
-      )
-
-    # Add seconds
-    new_datetime = NaiveDateTime.add(base_datetime, seconds, :second)
-
-    # Format back to timestamp string
-    year = new_datetime.year |> Integer.to_string() |> String.pad_leading(4, "0")
-    month = new_datetime.month |> Integer.to_string() |> String.pad_leading(2, "0")
-    day = new_datetime.day |> Integer.to_string() |> String.pad_leading(2, "0")
-    hour = new_datetime.hour |> Integer.to_string() |> String.pad_leading(2, "0")
-    minute = new_datetime.minute |> Integer.to_string() |> String.pad_leading(2, "0")
-    second = new_datetime.second |> Integer.to_string() |> String.pad_leading(2, "0")
-
-    "#{year}#{month}#{day}#{hour}#{minute}#{second}"
-  end
-
-  defp timestamp do
-    {{y, m, d}, {hh, mm, ss}} = :calendar.universal_time()
-    "#{y}#{pad(m)}#{pad(d)}#{pad(hh)}#{pad(mm)}#{pad(ss)}"
-  end
-
-  defp pad(i) when i < 10, do: "0#{i}"
-  defp pad(i), do: "#{i}"
 end
+
+
