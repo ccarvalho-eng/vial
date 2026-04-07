@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.14] - 2026-04-07
+
+### Changed
+- Standardized LiveView form handling across run, provider, and suite flows for more consistent state management and test coverage
+- Split dashboard statistics into focused activity, cost, latency, and overview modules to simplify maintenance
+- Refined Hex-facing package presentation with improved README/logo rendering and the missing docs files included in releases
+
+### Fixed
+- Prompt index filters now apply before pagination, preserve project selections, and keep filtered state stable across navigation
+- Prompt versioning now handles edge cases more safely within the prompts context workflow
+- Dashboard stats now use suite execution costs and correct activity window boundaries
+- Suite pages now refresh prompt projects more reliably and keep assertion remove controls aligned
+
 ## [0.1.13] - 2026-04-03
 
 ### Added
