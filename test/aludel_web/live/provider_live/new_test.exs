@@ -88,6 +88,21 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
     end
 
+    test "loads unknown saved model as custom during edit", %{conn: conn} do
+      provider =
+        provider_fixture(%{
+          name: "Custom Provider",
+          provider: :openai,
+          model: "my-custom-model"
+        })
+
+      {:ok, view, html} = live(conn, "/providers/#{provider.id}/edit")
+
+      assert html =~ "Custom model name"
+      assert has_element?(view, "#provider_model_custom[value='my-custom-model']")
+      assert has_element?(view, "#provider_model_selection option[value='custom'][selected]")
+    end
+
     test "updates provider with valid data", %{conn: conn} do
       provider = provider_fixture()
 

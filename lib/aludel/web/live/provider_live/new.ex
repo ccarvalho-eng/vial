@@ -181,6 +181,11 @@ defmodule Aludel.Web.ProviderLive.New do
         |> Ecto.Changeset.put_change(:model, model)
         |> Ecto.Changeset.delete_change(:model_custom)
 
+      is_binary(model) and model != "" ->
+        changeset
+        |> Ecto.Changeset.put_change(:model_selection, "custom")
+        |> Ecto.Changeset.put_change(:model_custom, model)
+
       true ->
         changeset
     end
