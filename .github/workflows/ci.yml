@@ -13,7 +13,7 @@ concurrency:
 env:
   MIX_ENV: test
   ELIXIR_VERSION: "1.19.5"
-  OTP_VERSION: "28.4"
+  OTP_VERSION: "28.4.1"
   NODE_VERSION: "20"
 
 jobs:
@@ -115,9 +115,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: priv/plts
-          key: ${{ runner.os }}-dialyzer-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-dialyzer-v2-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-dialyzer-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
+            ${{ runner.os }}-dialyzer-v2-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
 
       - name: Compile (dev)
         run: MIX_ENV=dev mix compile
