@@ -1,11 +1,9 @@
 defmodule Aludel.PromptsTest do
   use Aludel.DataCase, async: true
 
-  import Ecto.Query
-
   alias Aludel.Projects
   alias Aludel.Prompts
-  alias Aludel.Prompts.{Prompt, PromptVersion}
+  alias Aludel.Prompts.PromptVersion
 
   describe "prompts" do
     test "create_prompt/1 creates a prompt with valid attributes" do
@@ -71,7 +69,7 @@ defmodule Aludel.PromptsTest do
       assert Prompts.list_prompts() == [prompt]
     end
 
-    test "list_prompts/1 applies search and tag filters before pagination" do
+    test "list_prompts/1 applies search and tag filters" do
       match =
         prompt_fixture(%{
           name: "Alpha Prompt",
@@ -93,31 +91,15 @@ defmodule Aludel.PromptsTest do
           tags: ["gamma"]
         })
 
-      repo = Aludel.Repo.get()
-
-      repo.update_all(
-        from(p in Prompt, where: p.id == ^match.id),
-        set: [inserted_at: ~U[2026-04-01 00:00:00Z]]
-      )
-
-      repo.update_all(
-        from(p in Prompt, where: p.id == ^later_match.id),
-        set: [inserted_at: ~U[2026-04-03 00:00:00Z]]
-      )
-
-      paginated =
+      results =
         Prompts.list_prompts(%{
-          page: 1,
-          page_size: 1,
           search: "alpha",
           tags: ["alpha"]
         })
 
-      expected_id = later_match.id
-
-      assert paginated.total_entries == 2
-      assert paginated.total_pages == 2
-      assert [%Prompt{id: ^expected_id}] = paginated.entries
+      assert results
+             |> Enum.map(& &1.id)
+             |> Enum.sort() == Enum.sort([later_match.id, match.id])
     end
 
     test "create_prompt_with_initial_version/1 creates prompt and initial version" do
@@ -384,28 +366,7 @@ defmodule Aludel.PromptsTest do
     end
   end
 
-  describe "pagination" do
-    test "list_prompts/1 returns paginated results" do
-      {:ok, project} = Projects.create_project(%{name: "Test", type: :prompt})
-
-      for i <- 1..15 do
-        Prompts.create_prompt(%{
-          name: "Prompt #{i}",
-          project_id: project.id
-        })
-      end
-
-      page1 = Prompts.list_prompts(%{page: 1, page_size: 10})
-      assert length(page1.entries) == 10
-      assert page1.page_number == 1
-      assert page1.total_entries == 15
-      assert page1.total_pages == 2
-
-      page2 = Prompts.list_prompts(%{page: 2, page_size: 10})
-      assert length(page2.entries) == 5
-      assert page2.page_number == 2
-    end
-
+  describe "filtered prompt listing" do
     test "list_prompts/1 filters by project_id" do
       {:ok, project1} = Projects.create_project(%{name: "Project 1", type: :prompt})
       {:ok, project2} = Projects.create_project(%{name: "Project 2", type: :prompt})
@@ -414,8 +375,8 @@ defmodule Aludel.PromptsTest do
       Prompts.create_prompt(%{name: "P2 Prompt", project_id: project2.id})
 
       results = Prompts.list_prompts(%{project_id: project1.id})
-      assert length(results.entries) == 1
-      assert hd(results.entries).name == "P1 Prompt"
+      assert length(results) == 1
+      assert hd(results).name == "P1 Prompt"
     end
 
     test "list_prompts/1 ignores blank project_id" do
@@ -426,9 +387,9 @@ defmodule Aludel.PromptsTest do
 
       results = Prompts.list_prompts(%{project_id: ""})
 
-      assert length(results.entries) == 2
-      assert Enum.any?(results.entries, &(&1.name == "Grouped Prompt"))
-      assert Enum.any?(results.entries, &(&1.name == "Ungrouped Prompt"))
+      assert length(results) == 2
+      assert Enum.any?(results, &(&1.name == "Grouped Prompt"))
+      assert Enum.any?(results, &(&1.name == "Ungrouped Prompt"))
     end
   end
 end

@@ -230,49 +230,6 @@
       <% end %>
     </div>
 
-    <%!-- Pagination --%>
-    <%= if @pagination.total_pages > 1 do %>
-      <div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 20px;">
-        <.link
-          :if={@pagination.page_number > 1}
-          patch={
-            aludel_path(
-              "prompts",
-              Map.merge(build_query_params(@search_query, @selected_tags), %{
-                "page" => to_string(@pagination.page_number - 1),
-                "project_id" => @selected_project_id
-              })
-            )
-          }
-          class="button-secondary"
-          style="font-size: 13px; padding: 6px 12px;"
-        >
-          Previous
-        </.link>
-
-        <span style="font-size: 14px; color: var(--text-secondary);">
-          Page {@pagination.page_number} of {@pagination.total_pages}
-        </span>
-
-        <.link
-          :if={@pagination.page_number < @pagination.total_pages}
-          patch={
-            aludel_path(
-              "prompts",
-              Map.merge(build_query_params(@search_query, @selected_tags), %{
-                "page" => to_string(@pagination.page_number + 1),
-                "project_id" => @selected_project_id
-              })
-            )
-          }
-          class="button-secondary"
-          style="font-size: 13px; padding: 6px 12px;"
-        >
-          Next
-        </.link>
-      </div>
-    <% end %>
-
     <%!-- New Project Modal --%>
     <.modal id="new-project-modal" on_confirm={JS.dispatch("submit", to: "#new-project-form")}>
       <div style="margin-bottom: 16px;">

@@ -13,12 +13,10 @@ defmodule Aludel.Prompts do
   Lists all prompts in the system.
 
   When called without params, returns all prompts as a list.
-  When called with pagination params, returns a paginated result.
+  When called with filter params, returns the filtered prompt list.
 
   ## Options
 
-    * `:page` - Page number (default: 1)
-    * `:page_size` - Number of items per page (default: 20)
     * `:search` - Case-insensitive search applied to prompt name and description
     * `:tags` - Filter by any matching prompt tag
     * `:project_id` - Filter by project ID
@@ -29,43 +27,18 @@ defmodule Aludel.Prompts do
     repo().all(Prompt)
   end
 
-  @spec list_prompts(map()) :: %{
-          entries: [Prompt.t()],
-          page_number: integer(),
-          page_size: integer(),
-          total_entries: integer(),
-          total_pages: integer()
-        }
+  @spec list_prompts(map()) :: [Prompt.t()]
   def list_prompts(params) when is_map(params) do
-    page = Map.get(params, :page, 1)
-    page_size = Map.get(params, :page_size, 20)
     search = normalize_search(Map.get(params, :search))
     tags = normalize_tags(Map.get(params, :tags, []))
     project_id = normalize_project_id(Map.get(params, :project_id))
 
-    query =
-      Prompt
-      |> order_by([p], desc: p.inserted_at)
-      |> maybe_filter_by_search(search)
-      |> maybe_filter_by_tags(tags)
-      |> maybe_filter_by_project_id(project_id)
-
-    total = repo().aggregate(query, :count)
-    offset = (page - 1) * page_size
-
-    entries =
-      query
-      |> limit(^page_size)
-      |> offset(^offset)
-      |> repo().all()
-
-    %{
-      entries: entries,
-      page_number: page,
-      page_size: page_size,
-      total_entries: total,
-      total_pages: ceil(total / page_size)
-    }
+    Prompt
+    |> order_by([p], desc: p.inserted_at)
+    |> maybe_filter_by_search(search)
+    |> maybe_filter_by_tags(tags)
+    |> maybe_filter_by_project_id(project_id)
+    |> repo().all()
   end
 
   @doc """

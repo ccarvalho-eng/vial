@@ -16,7 +16,6 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(params, _uri, socket) do
-    page = String.to_integer(params["page"] || "1")
     search_query = params["search"] || ""
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
     selected_project_id = normalize_project_id(params["project_id"])
@@ -24,17 +23,18 @@ defmodule Aludel.Web.PromptLive.Index do
     projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
     all_tags = extract_all_tags(all_prompts)
-    paginated = list_paginated_prompts(page, search_query, selected_tags, selected_project_id)
+    prompts = list_filtered_prompts(search_query, selected_tags, selected_project_id)
 
     filtered_projects =
       filter_projects(projects, search_query, selected_tags, selected_project_id)
+
+    unassigned_prompts = Enum.filter(prompts, &is_nil(&1.project_id))
 
     socket =
       socket
       |> assign(:page_title, "Prompts")
       |> assign(:projects, filtered_projects)
-      |> assign(:prompts, paginated.entries)
-      |> assign(:pagination, paginated)
+      |> assign(:prompts, unassigned_prompts)
       |> assign(:all_tags, all_tags)
       |> assign(:search_query, search_query)
       |> assign(:selected_tags, selected_tags)
@@ -55,9 +55,8 @@ defmodule Aludel.Web.PromptLive.Index do
     projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
 
-    paginated =
-      list_paginated_prompts(
-        socket.assigns.pagination.page_number,
+    prompts =
+      list_filtered_prompts(
         socket.assigns.search_query,
         socket.assigns.selected_tags,
         socket.assigns.selected_project_id
@@ -71,11 +70,12 @@ defmodule Aludel.Web.PromptLive.Index do
         socket.assigns.selected_project_id
       )
 
+    unassigned_prompts = Enum.filter(prompts, &is_nil(&1.project_id))
+
     {:noreply,
      socket
      |> assign(:projects, filtered_projects)
-     |> assign(:prompts, paginated.entries)
-     |> assign(:pagination, paginated)
+     |> assign(:prompts, unassigned_prompts)
      |> assign(:edit_project_forms, build_edit_project_forms(filtered_projects))
      |> assign(:all_tags, extract_all_tags(all_prompts))
      |> put_flash(:info, "Prompt deleted successfully")}
@@ -254,7 +254,7 @@ defmodule Aludel.Web.PromptLive.Index do
     |> Enum.map(fn project ->
       %{project | prompts: filter_prompts(project.prompts, search_query, selected_tags)}
     end)
-    |> maybe_reject_empty_projects(search_query, selected_tags)
+    |> maybe_reject_empty_projects(search_query, selected_tags, selected_project_id)
   end
 
   defp maybe_filter_projects_by_selected_project(projects, nil), do: projects
@@ -264,9 +264,10 @@ defmodule Aludel.Web.PromptLive.Index do
     Enum.filter(projects, &(&1.id == selected_project_id))
   end
 
-  defp maybe_reject_empty_projects(projects, "", []), do: projects
+  defp maybe_reject_empty_projects(projects, "", [], nil), do: projects
+  defp maybe_reject_empty_projects(projects, "", [], ""), do: projects
 
-  defp maybe_reject_empty_projects(projects, _search_query, _selected_tags) do
+  defp maybe_reject_empty_projects(projects, _search_query, _selected_tags, _selected_project_id) do
     Enum.reject(projects, &Enum.empty?(&1.prompts))
   end
 
@@ -292,10 +293,8 @@ defmodule Aludel.Web.PromptLive.Index do
   defp normalize_project_id(""), do: nil
   defp normalize_project_id(project_id), do: project_id
 
-  defp list_paginated_prompts(page, search_query, selected_tags, selected_project_id) do
+  defp list_filtered_prompts(search_query, selected_tags, selected_project_id) do
     %{
-      page: page,
-      page_size: 20,
       search: search_query,
       tags: selected_tags,
       project_id: selected_project_id
