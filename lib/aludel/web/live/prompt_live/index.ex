@@ -16,27 +16,14 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(params, _uri, socket) do
-    page = String.to_integer(params["page"] || "1")
-    page_size = 20
-    search_query = params["search"] || ""
+    search_query = String.trim(params["search"] || "")
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
     selected_project_id = normalize_project_id(params["project_id"])
 
     projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
     all_tags = extract_all_tags(all_prompts)
-
-    prompts_params = %{page: page, page_size: page_size}
-
-    prompts_params =
-      if selected_project_id,
-        do: Map.put(prompts_params, :project_id, selected_project_id),
-        else: prompts_params
-
-    paginated = Prompts.list_prompts(prompts_params)
-
-    filtered_prompts =
-      filter_prompts(paginated.entries, search_query, selected_tags)
+    prompts = list_filtered_prompts(search_query, selected_tags, selected_project_id)
 
     filtered_projects =
       filter_projects(projects, search_query, selected_tags, selected_project_id)
@@ -45,8 +32,7 @@ defmodule Aludel.Web.PromptLive.Index do
       socket
       |> assign(:page_title, "Prompts")
       |> assign(:projects, filtered_projects)
-      |> assign(:prompts, filtered_prompts)
-      |> assign(:pagination, paginated)
+      |> assign(:prompts, prompts)
       |> assign(:all_tags, all_tags)
       |> assign(:search_query, search_query)
       |> assign(:selected_tags, selected_tags)
@@ -67,8 +53,12 @@ defmodule Aludel.Web.PromptLive.Index do
     projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
 
-    filtered =
-      filter_prompts(all_prompts, socket.assigns.search_query, socket.assigns.selected_tags)
+    prompts =
+      list_filtered_prompts(
+        socket.assigns.search_query,
+        socket.assigns.selected_tags,
+        socket.assigns.selected_project_id
+      )
 
     filtered_projects =
       filter_projects(
@@ -81,7 +71,7 @@ defmodule Aludel.Web.PromptLive.Index do
     {:noreply,
      socket
      |> assign(:projects, filtered_projects)
-     |> assign(:prompts, filtered)
+     |> assign(:prompts, prompts)
      |> assign(:edit_project_forms, build_edit_project_forms(filtered_projects))
      |> assign(:all_tags, extract_all_tags(all_prompts))
      |> put_flash(:info, "Prompt deleted successfully")}
@@ -91,7 +81,15 @@ defmodule Aludel.Web.PromptLive.Index do
   def handle_event("search", %{"search" => %{"query" => query}}, socket) do
     {:noreply,
      push_patch(socket,
-       to: aludel_path("prompts", build_query_params(query, socket.assigns.selected_tags))
+       to:
+         aludel_path(
+           "prompts",
+           build_query_params(
+             query,
+             socket.assigns.selected_tags,
+             socket.assigns.selected_project_id
+           )
+         )
      )}
   end
 
@@ -106,13 +104,24 @@ defmodule Aludel.Web.PromptLive.Index do
 
     {:noreply,
      push_patch(socket,
-       to: aludel_path("prompts", build_query_params(socket.assigns.search_query, selected_tags))
+       to:
+         aludel_path(
+           "prompts",
+           build_query_params(
+             socket.assigns.search_query,
+             selected_tags,
+             socket.assigns.selected_project_id
+           )
+         )
      )}
   end
 
   @impl Phoenix.LiveView
   def handle_event("clear_filters", _params, socket) do
-    {:noreply, push_patch(socket, to: aludel_path("prompts"))}
+    {:noreply,
+     push_patch(socket,
+       to: aludel_path("prompts", build_query_params("", [], socket.assigns.selected_project_id))
+     )}
   end
 
   @impl Phoenix.LiveView
@@ -136,7 +145,7 @@ defmodule Aludel.Web.PromptLive.Index do
            "prompts",
            Map.merge(
              build_query_params(socket.assigns.search_query, socket.assigns.selected_tags),
-             %{"project_id" => project_id, "page" => "1"}
+             %{"project_id" => project_id}
            )
          )
      )}
@@ -158,13 +167,10 @@ defmodule Aludel.Web.PromptLive.Index do
   def handle_event("create_project", %{"project" => project_params}, socket) do
     case Projects.create_project(Map.put(project_params, "type", "prompt")) do
       {:ok, _project} ->
-        projects = Projects.list_projects(type: :prompt)
-
         {:noreply,
          socket
-         |> assign(:projects, projects)
+         |> refresh_filtered_projects()
          |> assign(:create_project_form, project_form(%Project{}))
-         |> assign(:edit_project_forms, build_edit_project_forms(projects))
          |> put_flash(:info, "Project created successfully")}
 
       {:error, changeset} ->
@@ -191,14 +197,21 @@ defmodule Aludel.Web.PromptLive.Index do
 
     case Projects.update_project(project, project_params) do
       {:ok, _project} ->
-        projects = Projects.list_projects(type: :prompt)
-
         {:noreply,
          socket
-         |> assign(:projects, projects)
-         |> assign(:edit_project_forms, build_edit_project_forms(projects))
+         |> refresh_filtered_projects()
          |> put_flash(:info, "Project updated successfully")
-         |> push_patch(to: aludel_path("prompts"))}
+         |> push_patch(
+           to:
+             aludel_path(
+               "prompts",
+               build_query_params(
+                 socket.assigns.search_query,
+                 socket.assigns.selected_tags,
+                 socket.assigns.selected_project_id
+               )
+             )
+         )}
 
       {:error, changeset} ->
         {:noreply,
@@ -258,9 +271,13 @@ defmodule Aludel.Web.PromptLive.Index do
     projects
     |> maybe_filter_projects_by_selected_project(selected_project_id)
     |> Enum.map(fn project ->
-      %{project | prompts: filter_prompts(project.prompts, search_query, selected_tags)}
+      filtered_prompts = filter_prompts(project.prompts, search_query, selected_tags)
+
+      project
+      |> Map.put(:prompts, filtered_prompts)
+      |> Map.put(:total_prompt_count, length(project.prompts))
     end)
-    |> maybe_reject_empty_projects(search_query, selected_tags)
+    |> maybe_reject_empty_projects(search_query, selected_tags, selected_project_id)
   end
 
   defp maybe_filter_projects_by_selected_project(projects, nil), do: projects
@@ -270,9 +287,9 @@ defmodule Aludel.Web.PromptLive.Index do
     Enum.filter(projects, &(&1.id == selected_project_id))
   end
 
-  defp maybe_reject_empty_projects(projects, "", []), do: projects
+  defp maybe_reject_empty_projects(projects, "", [], _selected_project_id), do: projects
 
-  defp maybe_reject_empty_projects(projects, _search_query, _selected_tags) do
+  defp maybe_reject_empty_projects(projects, _search_query, _selected_tags, _selected_project_id) do
     Enum.reject(projects, &Enum.empty?(&1.prompts))
   end
 
@@ -298,6 +315,15 @@ defmodule Aludel.Web.PromptLive.Index do
   defp normalize_project_id(""), do: nil
   defp normalize_project_id(project_id), do: project_id
 
+  defp list_filtered_prompts(search_query, selected_tags, selected_project_id) do
+    %{
+      search: search_query,
+      tags: selected_tags,
+      project_id: selected_project_id
+    }
+    |> Prompts.list_prompts()
+  end
+
   defp extract_all_tags(prompts) do
     prompts
     |> Enum.flat_map(fn prompt -> prompt.tags || [] end)
@@ -309,10 +335,22 @@ defmodule Aludel.Web.PromptLive.Index do
   defp parse_tags_param(""), do: []
   defp parse_tags_param(tags_string), do: String.split(tags_string, ",")
 
-  defp build_query_params("", []), do: %{}
-  defp build_query_params(query, []), do: %{"search" => query}
-  defp build_query_params("", tags), do: %{"tags" => Enum.join(tags, ",")}
-  defp build_query_params(query, tags), do: %{"search" => query, "tags" => Enum.join(tags, ",")}
+  defp build_query_params(query, tags, project_id \\ nil) do
+    %{}
+    |> maybe_put_search_param(query)
+    |> maybe_put_tags_param(tags)
+    |> maybe_put_project_param(project_id)
+  end
+
+  defp maybe_put_search_param(params, ""), do: params
+  defp maybe_put_search_param(params, query), do: Map.put(params, "search", query)
+
+  defp maybe_put_tags_param(params, []), do: params
+  defp maybe_put_tags_param(params, tags), do: Map.put(params, "tags", Enum.join(tags, ","))
+
+  defp maybe_put_project_param(params, nil), do: params
+  defp maybe_put_project_param(params, ""), do: params
+  defp maybe_put_project_param(params, project_id), do: Map.put(params, "project_id", project_id)
 
   defp project_form(project) do
     project
@@ -324,5 +362,19 @@ defmodule Aludel.Web.PromptLive.Index do
     Map.new(projects, fn project ->
       {project.id, project |> Projects.change_project(%{}) |> to_form(as: :project)}
     end)
+  end
+
+  defp refresh_filtered_projects(socket) do
+    projects =
+      Projects.list_projects(type: :prompt)
+      |> filter_projects(
+        socket.assigns.search_query,
+        socket.assigns.selected_tags,
+        socket.assigns.selected_project_id
+      )
+
+    socket
+    |> assign(:projects, projects)
+    |> assign(:edit_project_forms, build_edit_project_forms(projects))
   end
 end

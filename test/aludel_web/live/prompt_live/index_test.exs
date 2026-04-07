@@ -59,6 +59,27 @@ defmodule Aludel.Web.PromptLive.IndexTest do
     refute has_element?(view, "a[href='/prompts/#{hidden_prompt.id}']", "Beta Prompt")
   end
 
+  test "project prompts render all filtered matches", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    prompts =
+      for index <- 1..21 do
+        prompt_fixture(%{
+          name: "Project Prompt #{index}",
+          description: "Project entry #{index}",
+          project_id: project.id
+        })
+      end
+
+    {:ok, view, _html} = live(conn, "/prompts")
+
+    render_click(view, "toggle_project", %{"project_id" => project.id})
+
+    assert Enum.all?(prompts, fn prompt ->
+             has_element?(view, "a[href='/prompts/#{prompt.id}']", prompt.name)
+           end)
+  end
+
   test "creates prompt projects with prompt type", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/prompts")
 
@@ -131,5 +152,241 @@ defmodule Aludel.Web.PromptLive.IndexTest do
            |> Map.get(:prompts) == []
 
     assert_raise Ecto.NoResultsError, fn -> Prompts.get_prompt!(prompt.id) end
+  end
+
+  test "project prompt delete modal is rendered", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    prompt =
+      prompt_fixture(%{
+        name: "Prompt In Project",
+        project_id: project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts")
+
+    render_click(view, "toggle_project", %{"project_id" => project.id})
+
+    assert has_element?(view, "#confirm-delete-prompt-#{prompt.id}")
+  end
+
+  test "selected empty project remains visible", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Empty Project", type: :prompt})
+
+    {:ok, view, _html} = live(conn, "/prompts?project_id=#{project.id}")
+
+    assert has_element?(view, "tr", "Empty Project")
+    refute render(view) =~ "No prompts yet. Create your first prompt or project to get started."
+  end
+
+  test "search trims whitespace consistently for project prompts", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    matching_prompt =
+      prompt_fixture(%{
+        name: "Alpha Prompt",
+        description: "Matches search",
+        project_id: project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts?search=%20alpha%20")
+
+    render_click(view, "toggle_project", %{"project_id" => project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{matching_prompt.id}']", "Alpha Prompt")
+  end
+
+  test "search preserves selected project", %{conn: conn} do
+    {:ok, selected_project} = Projects.create_project(%{name: "Selected Project", type: :prompt})
+    {:ok, other_project} = Projects.create_project(%{name: "Other Project", type: :prompt})
+
+    selected_prompt =
+      prompt_fixture(%{
+        name: "Alpha Prompt",
+        description: "Matches search",
+        project_id: selected_project.id
+      })
+
+    other_prompt =
+      prompt_fixture(%{
+        name: "Alpha Prompt Elsewhere",
+        description: "Also matches search",
+        project_id: other_project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts?project_id=#{selected_project.id}")
+
+    view
+    |> form("#prompt-search-form", search: %{query: "alpha"})
+    |> render_change()
+
+    assert_patch(view, "/prompts?project_id=#{selected_project.id}&search=alpha")
+
+    render_click(view, "toggle_project", %{"project_id" => selected_project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{selected_prompt.id}']", "Alpha Prompt")
+    refute has_element?(view, "a[href='/prompts/#{other_prompt.id}']", "Alpha Prompt Elsewhere")
+  end
+
+  test "tag toggles preserve selected project", %{conn: conn} do
+    {:ok, selected_project} = Projects.create_project(%{name: "Selected Project", type: :prompt})
+    {:ok, other_project} = Projects.create_project(%{name: "Other Project", type: :prompt})
+
+    selected_prompt =
+      prompt_fixture(%{
+        name: "Selected Prompt",
+        tags: ["alpha"],
+        project_id: selected_project.id
+      })
+
+    other_prompt =
+      prompt_fixture(%{
+        name: "Other Prompt",
+        tags: ["alpha"],
+        project_id: other_project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts?project_id=#{selected_project.id}")
+
+    render_click(view, "toggle_tag", %{"tag" => "alpha"})
+
+    assert_patch(view, "/prompts?project_id=#{selected_project.id}&tags=alpha")
+
+    render_click(view, "toggle_project", %{"project_id" => selected_project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{selected_prompt.id}']", "Selected Prompt")
+    refute has_element?(view, "a[href='/prompts/#{other_prompt.id}']", "Other Prompt")
+  end
+
+  test "delete project warning shows total project prompt count under filters", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    prompt_fixture(%{
+      name: "Alpha Prompt",
+      description: "Matches search",
+      project_id: project.id
+    })
+
+    prompt_fixture(%{
+      name: "Beta Prompt",
+      description: "Does not match",
+      project_id: project.id
+    })
+
+    {:ok, view, _html} = live(conn, "/prompts?search=alpha")
+
+    assert has_element?(
+             view,
+             "#delete-project-modal-#{project.id}",
+             "This project contains 2 prompt(s)."
+           )
+  end
+
+  test "clear filters preserves selected project", %{conn: conn} do
+    {:ok, selected_project} = Projects.create_project(%{name: "Selected Project", type: :prompt})
+    {:ok, other_project} = Projects.create_project(%{name: "Other Project", type: :prompt})
+
+    selected_prompt =
+      prompt_fixture(%{
+        name: "Selected Prompt",
+        tags: ["alpha"],
+        project_id: selected_project.id
+      })
+
+    other_prompt =
+      prompt_fixture(%{
+        name: "Other Prompt",
+        tags: ["alpha"],
+        project_id: other_project.id
+      })
+
+    {:ok, view, _html} =
+      live(conn, "/prompts?project_id=#{selected_project.id}&search=alpha&tags=alpha")
+
+    render_click(view, "clear_filters")
+
+    assert_patch(view, "/prompts?project_id=#{selected_project.id}")
+
+    render_click(view, "toggle_project", %{"project_id" => selected_project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{selected_prompt.id}']", "Selected Prompt")
+    refute has_element?(view, "a[href='/prompts/#{other_prompt.id}']", "Other Prompt")
+  end
+
+  test "creating a project preserves filtered view", %{conn: conn} do
+    {:ok, selected_project} = Projects.create_project(%{name: "Selected Project", type: :prompt})
+    {:ok, other_project} = Projects.create_project(%{name: "Other Project", type: :prompt})
+
+    selected_prompt =
+      prompt_fixture(%{
+        name: "Selected Prompt",
+        tags: ["alpha"],
+        project_id: selected_project.id
+      })
+
+    other_prompt =
+      prompt_fixture(%{
+        name: "Other Prompt",
+        tags: ["alpha"],
+        project_id: other_project.id
+      })
+
+    {:ok, view, _html} =
+      live(conn, "/prompts?project_id=#{selected_project.id}&search=selected&tags=alpha")
+
+    html =
+      render_submit(view, "create_project", %{
+        "project" => %{"name" => "Created Project"}
+      })
+
+    assert html =~ "Project created successfully"
+    assert has_element?(view, "tr", "Selected Project")
+    refute has_element?(view, "tr", "Other Project")
+
+    render_click(view, "toggle_project", %{"project_id" => selected_project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{selected_prompt.id}']", "Selected Prompt")
+    refute has_element?(view, "a[href='/prompts/#{other_prompt.id}']", "Other Prompt")
+  end
+
+  test "updating a project preserves filtered view", %{conn: conn} do
+    {:ok, selected_project} = Projects.create_project(%{name: "Selected Project", type: :prompt})
+    {:ok, other_project} = Projects.create_project(%{name: "Other Project", type: :prompt})
+
+    selected_prompt =
+      prompt_fixture(%{
+        name: "Selected Prompt",
+        tags: ["alpha"],
+        project_id: selected_project.id
+      })
+
+    other_prompt =
+      prompt_fixture(%{
+        name: "Other Prompt",
+        tags: ["alpha"],
+        project_id: other_project.id
+      })
+
+    {:ok, view, _html} =
+      live(conn, "/prompts?project_id=#{selected_project.id}&search=selected&tags=alpha")
+
+    view
+    |> form("#edit-project-form-#{selected_project.id}",
+      project: %{id: selected_project.id, name: "Renamed Selected Project"}
+    )
+    |> render_submit()
+
+    assert_patch(
+      view,
+      "/prompts?project_id=#{selected_project.id}&search=selected&tags=alpha"
+    )
+
+    assert has_element?(view, "tr", "Renamed Selected Project")
+    refute has_element?(view, "tr", "Other Project")
+
+    render_click(view, "toggle_project", %{"project_id" => selected_project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{selected_prompt.id}']", "Selected Prompt")
+    refute has_element?(view, "a[href='/prompts/#{other_prompt.id}']", "Other Prompt")
   end
 end
