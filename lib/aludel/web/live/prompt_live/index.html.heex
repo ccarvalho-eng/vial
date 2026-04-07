@@ -278,7 +278,7 @@
         >
           <input
             type="hidden"
-            id={@edit_project_forms[project.id][:id].id}
+            id={"edit-project-id-#{project.id}"}
             name={@edit_project_forms[project.id][:id].name}
             value={project.id}
           />
@@ -308,10 +308,14 @@
             </h3>
             <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
               Are you sure you want to delete "<strong style="color: var(--text-primary);">{project.name}</strong>"?
-              <%= if project.prompts != [] do %>
+              <%= if Map.get(project, :total_prompt_count, length(project.prompts)) > 0 do %>
                 <br /><br />
                 <strong>Warning:</strong>
-                This project contains {length(project.prompts)} prompt(s).
+                This project contains {Map.get(
+                  project,
+                  :total_prompt_count,
+                  length(project.prompts)
+                )} prompt(s).
                 They will not be deleted, but will be moved to "No Project".
               <% end %>
             </p>

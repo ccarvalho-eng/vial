@@ -81,7 +81,15 @@ defmodule Aludel.Web.PromptLive.Index do
   def handle_event("search", %{"search" => %{"query" => query}}, socket) do
     {:noreply,
      push_patch(socket,
-       to: aludel_path("prompts", build_query_params(query, socket.assigns.selected_tags))
+       to:
+         aludel_path(
+           "prompts",
+           build_query_params(
+             query,
+             socket.assigns.selected_tags,
+             socket.assigns.selected_project_id
+           )
+         )
      )}
   end
 
@@ -96,7 +104,15 @@ defmodule Aludel.Web.PromptLive.Index do
 
     {:noreply,
      push_patch(socket,
-       to: aludel_path("prompts", build_query_params(socket.assigns.search_query, selected_tags))
+       to:
+         aludel_path(
+           "prompts",
+           build_query_params(
+             socket.assigns.search_query,
+             selected_tags,
+             socket.assigns.selected_project_id
+           )
+         )
      )}
   end
 
@@ -126,7 +142,7 @@ defmodule Aludel.Web.PromptLive.Index do
            "prompts",
            Map.merge(
              build_query_params(socket.assigns.search_query, socket.assigns.selected_tags),
-             %{"project_id" => project_id, "page" => "1"}
+             %{"project_id" => project_id}
            )
          )
      )}
@@ -248,7 +264,11 @@ defmodule Aludel.Web.PromptLive.Index do
     projects
     |> maybe_filter_projects_by_selected_project(selected_project_id)
     |> Enum.map(fn project ->
-      %{project | prompts: filter_prompts(project.prompts, search_query, selected_tags)}
+      filtered_prompts = filter_prompts(project.prompts, search_query, selected_tags)
+
+      project
+      |> Map.put(:prompts, filtered_prompts)
+      |> Map.put(:total_prompt_count, length(project.prompts))
     end)
     |> maybe_reject_empty_projects(search_query, selected_tags, selected_project_id)
   end
@@ -308,10 +328,22 @@ defmodule Aludel.Web.PromptLive.Index do
   defp parse_tags_param(""), do: []
   defp parse_tags_param(tags_string), do: String.split(tags_string, ",")
 
-  defp build_query_params("", []), do: %{}
-  defp build_query_params(query, []), do: %{"search" => query}
-  defp build_query_params("", tags), do: %{"tags" => Enum.join(tags, ",")}
-  defp build_query_params(query, tags), do: %{"search" => query, "tags" => Enum.join(tags, ",")}
+  defp build_query_params(query, tags, project_id \\ nil) do
+    %{}
+    |> maybe_put_search_param(query)
+    |> maybe_put_tags_param(tags)
+    |> maybe_put_project_param(project_id)
+  end
+
+  defp maybe_put_search_param(params, ""), do: params
+  defp maybe_put_search_param(params, query), do: Map.put(params, "search", query)
+
+  defp maybe_put_tags_param(params, []), do: params
+  defp maybe_put_tags_param(params, tags), do: Map.put(params, "tags", Enum.join(tags, ","))
+
+  defp maybe_put_project_param(params, nil), do: params
+  defp maybe_put_project_param(params, ""), do: params
+  defp maybe_put_project_param(params, project_id), do: Map.put(params, "project_id", project_id)
 
   defp project_form(project) do
     project
