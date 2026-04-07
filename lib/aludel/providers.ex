@@ -64,6 +64,7 @@ defmodule Aludel.Providers do
   @doc """
   Fetches available models for a given provider type.
   """
+  @spec fetch_models(nil | binary() | atom()) :: [map()]
   def fetch_models(nil), do: []
   def fetch_models(""), do: []
 
@@ -78,6 +79,10 @@ defmodule Aludel.Providers do
   @doc """
   Fetches models grouped into active and deprecated sets.
   """
+  @spec fetch_model_groups(nil | binary() | atom()) :: %{
+          active: [map()],
+          deprecated: [map()]
+        }
   def fetch_model_groups(nil), do: %{active: [], deprecated: []}
   def fetch_model_groups(""), do: %{active: [], deprecated: []}
 
@@ -99,6 +104,7 @@ defmodule Aludel.Providers do
   end
 
   @doc false
+  @spec group_models([map()]) :: %{active: [map()], deprecated: [map()]}
   def group_models(models) when is_list(models) do
     models
     |> Enum.sort_by(fn %{name: name, id: id} ->
