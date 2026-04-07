@@ -10,7 +10,7 @@ defmodule Aludel.Web.ProviderLive.New do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :models, [])}
+    {:ok, assign(socket, model_groups: %{active: [], deprecated: []}, model_options: [])}
   end
 
   @impl Phoenix.LiveView
@@ -22,24 +22,12 @@ defmodule Aludel.Web.ProviderLive.New do
   @impl Phoenix.LiveView
   def handle_event("validate", %{"provider" => provider_params}, socket) do
     provider_type = provider_params["provider"]
-    models = Providers.fetch_models(provider_type)
-
-    # Ensure current model is in the list if it's an edit and provider type matches
-    models =
-      if socket.assigns.live_action == :edit &&
-           to_string(socket.assigns.provider.provider) == to_string(provider_type) do
-        if Enum.find(models, &(&1.id == socket.assigns.provider.model)) do
-          models
-        else
-          [%{id: socket.assigns.provider.model, name: socket.assigns.provider.model} | models]
-        end
-      else
-        models
-      end
+    model_groups = Providers.fetch_model_groups(provider_type)
 
     changeset =
       socket.assigns.provider
       |> Providers.change_provider(provider_params)
+      |> ensure_model_selection(model_groups)
       |> Map.put(:action, :validate)
 
     {:noreply,
@@ -55,6 +43,7 @@ defmodule Aludel.Web.ProviderLive.New do
 
   defp apply_action(socket, :new, _params) do
     changeset = Providers.change_provider(%Provider{})
+    model_groups = %{active: [], deprecated: []}
 
     socket
     |> assign(:page_title, "New Provider")
@@ -65,16 +54,12 @@ defmodule Aludel.Web.ProviderLive.New do
 
   defp apply_action(socket, :edit, %{"id" => id}) do
     provider = Providers.get_provider!(id)
-    changeset = Providers.change_provider(provider)
-    models = Providers.fetch_models(provider.provider)
+    model_groups = Providers.fetch_model_groups(provider.provider)
 
-    # Ensure current model is in the list
-    models =
-      if Enum.find(models, &(&1.id == provider.model)) do
-        models
-      else
-        [%{id: provider.model, name: provider.model} | models]
-      end
+    changeset =
+      provider
+      |> Providers.change_provider()
+      |> ensure_model_selection(model_groups)
 
     socket
     |> assign(:page_title, "Edit Provider")
@@ -87,7 +72,7 @@ defmodule Aludel.Web.ProviderLive.New do
     config_json = Map.get(provider_params, "config", "")
 
     # Parse config JSON if provided
-    provider_params = parse_config(provider_params)
+    provider_params = provider_params |> normalize_model_params() |> parse_config()
 
     case Providers.create_provider(provider_params) do
       {:ok, _provider} ->
@@ -108,7 +93,7 @@ defmodule Aludel.Web.ProviderLive.New do
     config_json = Map.get(provider_params, "config", "")
 
     # Parse config JSON if provided
-    provider_params = parse_config(provider_params)
+    provider_params = provider_params |> normalize_model_params() |> parse_config()
 
     case Providers.update_provider(socket.assigns.provider, provider_params) do
       {:ok, _provider} ->

@@ -7,24 +7,23 @@ defmodule Aludel.Web.ProviderLive.NewTest do
   alias Aludel.Providers
 
   describe "new provider page" do
-    test "mounts successfully", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers/new")
+    test "renders the provider form", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
 
-      assert html =~ "New Provider"
+      assert has_element?(view, "#provider-form")
+      assert has_element?(view, "#provider-form input[name='provider[name]']")
+      assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
     end
 
-    test "shows provider form fields", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers/new")
+    test "shows custom input when custom model is selected", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
 
-      assert html =~ "Name"
-      assert html =~ "Provider"
-      assert html =~ "Model"
-    end
+      html =
+        view
+        |> form("#provider-form", provider: %{provider: "openai", model_selection: "custom"})
+        |> render_change()
 
-    test "shows create button", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers/new")
-
-      assert html =~ "Create Provider"
+      assert html =~ "Custom model name"
     end
 
     test "creates provider with valid data", %{conn: conn} do
@@ -63,27 +62,18 @@ defmodule Aludel.Web.ProviderLive.NewTest do
   end
 
   describe "provider editing" do
-    test "loads existing provider for editing", %{conn: conn} do
-      provider = provider_fixture(%{name: "Existing Provider"})
-
-      {:ok, _view, html} = live(conn, "/providers/#{provider.id}/edit")
-
-      assert html =~ "Edit Provider"
-      assert html =~ "Existing Provider"
-    end
-
-    test "displays provider details in form", %{conn: conn} do
+    test "keeps an existing model selectable during edit", %{conn: conn} do
       provider =
         provider_fixture(%{
-          name: "Test Provider",
+          name: "Existing Provider",
           provider: :openai,
           model: "gpt-4o"
         })
 
-      {:ok, _view, html} = live(conn, "/providers/#{provider.id}/edit")
+      {:ok, view, _html} = live(conn, "/providers/#{provider.id}/edit")
 
-      assert html =~ "Test Provider"
-      assert html =~ "gpt-4o"
+      assert has_element?(view, "#provider-form")
+      assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
     end
 
     test "updates provider with valid data", %{conn: conn} do

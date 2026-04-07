@@ -110,6 +110,20 @@ defmodule Aludel.ProvidersTest do
       assert updated.config == %{"temperature" => 0.9}
     end
 
+    test "create_provider/1 accepts a custom model name" do
+      attrs = %{
+        name: "Custom Provider",
+        provider: :openai,
+        model: "my-custom-model",
+        model_selection: "custom",
+        model_custom: "my-custom-model",
+        config: %{}
+      }
+
+      assert {:ok, provider} = Providers.create_provider(attrs)
+      assert provider.model == "my-custom-model"
+    end
+
     test "update_provider/2 with invalid data returns error" do
       provider = provider_fixture()
       assert {:error, changeset} = Providers.update_provider(provider, %{name: nil})

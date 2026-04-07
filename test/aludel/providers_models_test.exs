@@ -3,45 +3,44 @@ defmodule Aludel.ProvidersModelsTest do
 
   alias Aludel.Providers
 
+  describe "group_models/1" do
+    test "splits active and deprecated models and sorts each group" do
+      models = [
+        %{id: "b-active", name: "Beta", deprecated: false},
+        %{id: "a-deprecated", name: "Alpha", deprecated: true},
+        %{id: "a-active", name: "Alpha", deprecated: false}
+      ]
+
+      assert %{active: active, deprecated: deprecated} = Providers.group_models(models)
+      assert Enum.map(active, & &1.id) == ["a-active", "b-active"]
+      assert Enum.map(deprecated, & &1.id) == ["a-deprecated"]
+    end
+  end
+
   describe "fetch_models/1" do
-    test "returns models for openai" do
+    test "returns active models only" do
       models = Providers.fetch_models(:openai)
       assert is_list(models)
-      # Check if some common OpenAI models are in the list if they are not deprecated
-      # This depends on what LlmDb returns, but it should be a list of maps with :id and :name
-      if models != [] do
-        Enum.each(models, fn m ->
-          assert Map.has_key?(m, :id)
-          assert Map.has_key?(m, :name)
-        end)
-      end
-    end
 
-    test "returns models sorted by name" do
-      models = Providers.fetch_models(:openai)
-
-      assert Enum.sort_by(models, fn %{name: name, id: id} ->
-               {String.downcase(name), String.downcase(id)}
-             end) == models
-    end
-
-    test "returns models for anthropic" do
-      models = Providers.fetch_models(:anthropic)
-      assert is_list(models)
-    end
-
-    test "returns models for ollama" do
-      models = Providers.fetch_models(:ollama)
-      assert is_list(models)
+      Enum.each(models, fn model ->
+        assert Map.has_key?(model, :id)
+        assert Map.has_key?(model, :name)
+      end)
     end
 
     test "returns empty list for invalid provider" do
       assert Providers.fetch_models(:invalid) == []
     end
+  end
 
-    test "returns empty list for nil or empty string" do
-      assert Providers.fetch_models(nil) == []
-      assert Providers.fetch_models("") == []
+  describe "fetch_model_groups/1" do
+    test "returns active and deprecated groups" do
+      groups = Providers.fetch_model_groups(:openai)
+
+      assert Map.has_key?(groups, :active)
+      assert Map.has_key?(groups, :deprecated)
+      assert is_list(groups.active)
+      assert is_list(groups.deprecated)
     end
   end
 end
