@@ -91,15 +91,9 @@ defmodule Aludel.Providers do
   end
 
   def fetch_model_groups(provider_type) when is_atom(provider_type) do
-    case LLMDB.models(provider_type) do
-      models when is_list(models) ->
-        models
-        |> Enum.map(&normalize_model/1)
-        |> group_models()
-
-      _ ->
-        %{active: [], deprecated: []}
-    end
+    apply(LLMDB.Store, :models, [provider_type])
+    |> Enum.map(&normalize_model/1)
+    |> group_models()
   rescue
     _ -> %{active: [], deprecated: []}
   end
