@@ -118,6 +118,35 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert updated_provider.config == %{"temperature" => 0.4}
     end
 
+    test "clears stale model selection when provider changes", %{conn: conn} do
+      provider = provider_fixture(%{provider: :openai, model: "gpt-4o"})
+
+      {:ok, view, _html} = live(conn, "/providers/#{provider.id}/edit")
+
+      render_change(
+        view,
+        :validate,
+        %{provider: %{provider: "anthropic", model_selection: "gpt-4o"}}
+      )
+
+      refute has_element?(view, "#provider_model_selection option[value='gpt-4o'][selected]")
+
+      view
+      |> form("#provider-form",
+        provider: %{
+          provider: "anthropic",
+          model_selection: "claude-3-haiku-20240307",
+          name: "OpenAI GPT-4o",
+          config: ~s({})
+        }
+      )
+      |> render_submit()
+
+      reloaded_provider = Providers.get_provider!(provider.id)
+      assert reloaded_provider.provider == :anthropic
+      assert reloaded_provider.model == "claude-3-haiku-20240307"
+    end
+
     test "keeps provider unchanged when invalid data is submitted", %{conn: conn} do
       provider = provider_fixture(%{name: "Existing Provider", model: "gpt-4o"})
 

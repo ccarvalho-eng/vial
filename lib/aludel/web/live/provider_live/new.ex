@@ -160,15 +160,25 @@ defmodule Aludel.Web.ProviderLive.New do
     cond do
       selection == "custom" ->
         changeset
-        |> Ecto.Changeset.put_change(:model_custom, custom_model || model)
-        |> Ecto.Changeset.put_change(:model, custom_model || model)
+        |> Ecto.Changeset.put_change(:model_custom, custom_model)
+        |> Ecto.Changeset.put_change(:model, custom_model)
+
+      is_binary(selection) and selection != "" and model_in_groups?(model_groups, selection) ->
+        changeset
+        |> Ecto.Changeset.put_change(:model_selection, selection)
+        |> Ecto.Changeset.put_change(:model, selection)
+        |> Ecto.Changeset.delete_change(:model_custom)
 
       is_binary(selection) and selection != "" ->
         changeset
+        |> Ecto.Changeset.put_change(:model_selection, nil)
+        |> Ecto.Changeset.put_change(:model, nil)
+        |> Ecto.Changeset.delete_change(:model_custom)
 
       model_in_groups?(model_groups, model) ->
         changeset
         |> Ecto.Changeset.put_change(:model_selection, model)
+        |> Ecto.Changeset.put_change(:model, model)
         |> Ecto.Changeset.delete_change(:model_custom)
 
       true ->
