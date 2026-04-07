@@ -61,5 +61,71 @@ defmodule Aludel.Providers do
     Provider.changeset(provider, attrs)
   end
 
+  @doc """
+  Fetches available models for a given provider type.
+  """
+  def fetch_models(nil), do: []
+  def fetch_models(""), do: []
+
+  def fetch_models(provider_type) when is_binary(provider_type) do
+    fetch_model_groups(provider_type).active
+  end
+
+  def fetch_models(provider_type) when is_atom(provider_type) do
+    fetch_model_groups(provider_type).active
+  end
+
+  @doc """
+  Fetches models grouped into active and deprecated sets.
+  """
+  def fetch_model_groups(nil), do: %{active: [], deprecated: []}
+  def fetch_model_groups(""), do: %{active: [], deprecated: []}
+
+  def fetch_model_groups(provider_type) when is_binary(provider_type) do
+    case provider_type do
+      "openai" -> fetch_model_groups(:openai)
+      "anthropic" -> fetch_model_groups(:anthropic)
+      "ollama" -> fetch_model_groups(:ollama)
+      _ -> %{active: [], deprecated: []}
+    end
+  end
+
+  def fetch_model_groups(provider_type) when is_atom(provider_type) do
+    case LLMDB.models(provider_type) do
+      models when is_list(models) ->
+        models
+        |> Enum.map(&normalize_model/1)
+        |> group_models()
+
+      _ ->
+        %{active: [], deprecated: []}
+    end
+  rescue
+    _ -> %{active: [], deprecated: []}
+  end
+
+  @doc false
+  def group_models(models) when is_list(models) do
+    models
+    |> Enum.sort_by(fn %{name: name, id: id} ->
+      {String.downcase(name), String.downcase(id)}
+    end)
+    |> Enum.group_by(& &1.deprecated)
+    |> then(fn grouped ->
+      %{active: Map.get(grouped, false, []), deprecated: Map.get(grouped, true, [])}
+    end)
+  end
+
+  defp normalize_model(%{id: id} = model) do
+    name =
+      case Map.get(model, :name) do
+        nil -> id
+        "" -> id
+        value -> value
+      end
+
+    %{id: id, name: name, deprecated: Map.get(model, :deprecated, false)}
+  end
+
   defp repo, do: Aludel.Repo.get()
 end

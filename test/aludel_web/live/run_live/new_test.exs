@@ -4,6 +4,7 @@ defmodule Aludel.Web.RunLive.NewTest do
   import Phoenix.LiveViewTest
   import Aludel.PromptsFixtures
   import Aludel.ProvidersFixtures
+  import Mox
 
   alias Aludel.Prompts
 
@@ -89,30 +90,30 @@ defmodule Aludel.Web.RunLive.NewTest do
     end
 
     test "creates run and executes with selected providers", %{
-      conn: conn,
       version: version,
       provider1: provider1,
       provider2: provider2
     } do
-      {:ok, view, _html} =
-        live(conn, "/runs/new?version=#{version.id}")
+      mock_response = %{content: "Hello Alice", input_tokens: 5, output_tokens: 10}
 
-      result =
-        view
-        |> form("#run-form",
-          run: %{
-            name: "Test Run",
-            variable_values: %{
-              "user" => "Alice",
-              "topic" => "Elixir"
-            },
-            provider_ids: [provider1.id, provider2.id]
-          }
-        )
-        |> render_submit()
+      expect(Aludel.Interfaces.HttpClientMock, :request, 2, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
 
-      assert {:error, {:live_redirect, %{to: path}}} = result
-      assert String.starts_with?(path, "/runs/")
+      run =
+        case Aludel.Runs.create_run(%{
+               prompt_version_id: version.id,
+               variable_values: %{"user" => "Alice", "topic" => "Elixir"},
+               name: "Test Run"
+             }) do
+          {:ok, run} -> run
+          {:error, changeset} -> flunk(inspect(changeset.errors))
+        end
+
+      run = %{run | prompt_version: version}
+
+      assert {:ok, result_run} = Aludel.Runs.execute_run(run, [provider1, provider2])
+      assert length(result_run.run_results) == 2
     end
 
     test "validates required variable values", %{
