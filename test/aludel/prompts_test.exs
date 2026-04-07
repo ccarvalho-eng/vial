@@ -1,9 +1,11 @@
 defmodule Aludel.PromptsTest do
   use Aludel.DataCase, async: true
 
+  import Ecto.Query
+
   alias Aludel.Projects
   alias Aludel.Prompts
-  alias Aludel.Prompts.PromptVersion
+  alias Aludel.Prompts.{Prompt, PromptVersion}
 
   describe "prompts" do
     test "create_prompt/1 creates a prompt with valid attributes" do
@@ -67,6 +69,55 @@ defmodule Aludel.PromptsTest do
     test "list_prompts/0 returns all prompts" do
       prompt = prompt_fixture()
       assert Prompts.list_prompts() == [prompt]
+    end
+
+    test "list_prompts/1 applies search and tag filters before pagination" do
+      match =
+        prompt_fixture(%{
+          name: "Alpha Prompt",
+          description: "Relevant result",
+          tags: ["alpha", "shared"]
+        })
+
+      later_match =
+        prompt_fixture(%{
+          name: "Another Alpha Prompt",
+          description: "Also relevant",
+          tags: ["alpha"]
+        })
+
+      _non_match =
+        prompt_fixture(%{
+          name: "Gamma Prompt",
+          description: "Unrelated result",
+          tags: ["gamma"]
+        })
+
+      repo = Aludel.Repo.get()
+
+      repo.update_all(
+        from(p in Prompt, where: p.id == ^match.id),
+        set: [inserted_at: ~U[2026-04-01 00:00:00Z]]
+      )
+
+      repo.update_all(
+        from(p in Prompt, where: p.id == ^later_match.id),
+        set: [inserted_at: ~U[2026-04-03 00:00:00Z]]
+      )
+
+      paginated =
+        Prompts.list_prompts(%{
+          page: 1,
+          page_size: 1,
+          search: "alpha",
+          tags: ["alpha"]
+        })
+
+      expected_id = later_match.id
+
+      assert paginated.total_entries == 2
+      assert paginated.total_pages == 2
+      assert [%Prompt{id: ^expected_id}] = paginated.entries
     end
 
     test "create_prompt_with_initial_version/1 creates prompt and initial version" do

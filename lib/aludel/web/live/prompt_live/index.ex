@@ -17,7 +17,6 @@ defmodule Aludel.Web.PromptLive.Index do
   @impl Phoenix.LiveView
   def handle_params(params, _uri, socket) do
     page = String.to_integer(params["page"] || "1")
-    page_size = 20
     search_query = params["search"] || ""
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
     selected_project_id = normalize_project_id(params["project_id"])
@@ -25,18 +24,7 @@ defmodule Aludel.Web.PromptLive.Index do
     projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
     all_tags = extract_all_tags(all_prompts)
-
-    prompts_params = %{page: page, page_size: page_size}
-
-    prompts_params =
-      if selected_project_id,
-        do: Map.put(prompts_params, :project_id, selected_project_id),
-        else: prompts_params
-
-    paginated = Prompts.list_prompts(prompts_params)
-
-    filtered_prompts =
-      filter_prompts(paginated.entries, search_query, selected_tags)
+    paginated = list_paginated_prompts(page, search_query, selected_tags, selected_project_id)
 
     filtered_projects =
       filter_projects(projects, search_query, selected_tags, selected_project_id)
@@ -45,7 +33,7 @@ defmodule Aludel.Web.PromptLive.Index do
       socket
       |> assign(:page_title, "Prompts")
       |> assign(:projects, filtered_projects)
-      |> assign(:prompts, filtered_prompts)
+      |> assign(:prompts, paginated.entries)
       |> assign(:pagination, paginated)
       |> assign(:all_tags, all_tags)
       |> assign(:search_query, search_query)
@@ -67,8 +55,13 @@ defmodule Aludel.Web.PromptLive.Index do
     projects = Projects.list_projects(type: :prompt)
     all_prompts = Prompts.list_prompts()
 
-    filtered =
-      filter_prompts(all_prompts, socket.assigns.search_query, socket.assigns.selected_tags)
+    paginated =
+      list_paginated_prompts(
+        socket.assigns.pagination.page_number,
+        socket.assigns.search_query,
+        socket.assigns.selected_tags,
+        socket.assigns.selected_project_id
+      )
 
     filtered_projects =
       filter_projects(
@@ -81,7 +74,8 @@ defmodule Aludel.Web.PromptLive.Index do
     {:noreply,
      socket
      |> assign(:projects, filtered_projects)
-     |> assign(:prompts, filtered)
+     |> assign(:prompts, paginated.entries)
+     |> assign(:pagination, paginated)
      |> assign(:edit_project_forms, build_edit_project_forms(filtered_projects))
      |> assign(:all_tags, extract_all_tags(all_prompts))
      |> put_flash(:info, "Prompt deleted successfully")}
@@ -297,6 +291,17 @@ defmodule Aludel.Web.PromptLive.Index do
 
   defp normalize_project_id(""), do: nil
   defp normalize_project_id(project_id), do: project_id
+
+  defp list_paginated_prompts(page, search_query, selected_tags, selected_project_id) do
+    %{
+      page: page,
+      page_size: 20,
+      search: search_query,
+      tags: selected_tags,
+      project_id: selected_project_id
+    }
+    |> Prompts.list_prompts()
+  end
 
   defp extract_all_tags(prompts) do
     prompts

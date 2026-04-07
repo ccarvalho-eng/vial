@@ -19,6 +19,8 @@ defmodule Aludel.Prompts do
 
     * `:page` - Page number (default: 1)
     * `:page_size` - Number of items per page (default: 20)
+    * `:search` - Case-insensitive search applied to prompt name and description
+    * `:tags` - Filter by any matching prompt tag
     * `:project_id` - Filter by project ID
 
   """
@@ -37,10 +39,16 @@ defmodule Aludel.Prompts do
   def list_prompts(params) when is_map(params) do
     page = Map.get(params, :page, 1)
     page_size = Map.get(params, :page_size, 20)
+    search = normalize_search(Map.get(params, :search))
+    tags = normalize_tags(Map.get(params, :tags, []))
     project_id = normalize_project_id(Map.get(params, :project_id))
 
-    query = from(p in Prompt, order_by: [desc: p.inserted_at])
-    query = if project_id, do: where(query, [p], p.project_id == ^project_id), else: query
+    query =
+      Prompt
+      |> order_by([p], desc: p.inserted_at)
+      |> maybe_filter_by_search(search)
+      |> maybe_filter_by_tags(tags)
+      |> maybe_filter_by_project_id(project_id)
 
     total = repo().aggregate(query, :count)
     offset = (page - 1) * page_size
@@ -356,6 +364,36 @@ defmodule Aludel.Prompts do
       max_version -> max_version + 1
     end
   end
+
+  defp maybe_filter_by_search(query, ""), do: query
+
+  defp maybe_filter_by_search(query, search) do
+    search_pattern = "%#{search}%"
+
+    where(
+      query,
+      [p],
+      ilike(p.name, ^search_pattern) or ilike(coalesce(p.description, ""), ^search_pattern)
+    )
+  end
+
+  defp maybe_filter_by_tags(query, []), do: query
+
+  defp maybe_filter_by_tags(query, tags) do
+    where(query, [p], fragment("? && ?", p.tags, ^tags))
+  end
+
+  defp maybe_filter_by_project_id(query, nil), do: query
+
+  defp maybe_filter_by_project_id(query, project_id),
+    do: where(query, [p], p.project_id == ^project_id)
+
+  defp normalize_search(nil), do: ""
+  defp normalize_search(search) when is_binary(search), do: String.trim(search)
+  defp normalize_search(_search), do: ""
+
+  defp normalize_tags(tags) when is_list(tags), do: Enum.reject(tags, &(&1 == ""))
+  defp normalize_tags(_tags), do: []
 
   defp normalize_project_id(""), do: nil
   defp normalize_project_id(project_id), do: project_id

@@ -1,11 +1,13 @@
 defmodule Aludel.Web.PromptLive.IndexTest do
   use Aludel.Web.ConnCase, async: true
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
   import Aludel.PromptsFixtures
 
   alias Aludel.Projects
   alias Aludel.Prompts
+  alias Aludel.Prompts.Prompt
 
   test "renders list of prompts", %{conn: conn} do
     _prompt = prompt_fixture(%{name: "Test Prompt", tags: ["test"]})
@@ -57,6 +59,43 @@ defmodule Aludel.Web.PromptLive.IndexTest do
 
     assert has_element?(view, "a[href='/prompts/#{matching_prompt.id}']", "Alpha Prompt")
     refute has_element?(view, "a[href='/prompts/#{hidden_prompt.id}']", "Beta Prompt")
+  end
+
+  test "search applies before pagination so off-page matches still appear", %{conn: conn} do
+    target_prompt =
+      prompt_fixture(%{
+        name: "Alpha Prompt",
+        description: "Should be found by search"
+      })
+
+    filler_prompts =
+      for index <- 1..20 do
+        prompt_fixture(%{
+          name: "Prompt #{index}",
+          description: "Filler entry #{index}"
+        })
+      end
+
+    repo = Aludel.Repo.get()
+
+    repo.update_all(
+      from(p in Prompt, where: p.id == ^target_prompt.id),
+      set: [inserted_at: ~U[2026-04-01 00:00:00Z]]
+    )
+
+    Enum.with_index(filler_prompts, 2)
+    |> Enum.each(fn {prompt, day} ->
+      repo.update_all(
+        from(p in Prompt, where: p.id == ^prompt.id),
+        set: [inserted_at: DateTime.add(~U[2026-04-01 00:00:00Z], day, :day)]
+      )
+    end)
+
+    {:ok, view, _html} = live(conn, "/prompts?search=alpha")
+
+    assert has_element?(view, "a[href='/prompts/#{target_prompt.id}']", "Alpha Prompt")
+    refute has_element?(view, "a", "Prompt 1")
+    refute has_element?(view, "a", "Next")
   end
 
   test "creates prompt projects with prompt type", %{conn: conn} do
