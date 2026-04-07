@@ -153,4 +153,46 @@ defmodule Aludel.Web.PromptLive.IndexTest do
 
     assert_raise Ecto.NoResultsError, fn -> Prompts.get_prompt!(prompt.id) end
   end
+
+  test "project prompt delete modal is rendered", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    prompt =
+      prompt_fixture(%{
+        name: "Prompt In Project",
+        project_id: project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts")
+
+    render_click(view, "toggle_project", %{"project_id" => project.id})
+
+    assert has_element?(view, "#confirm-delete-prompt-#{prompt.id}")
+  end
+
+  test "selected empty project remains visible", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Empty Project", type: :prompt})
+
+    {:ok, view, _html} = live(conn, "/prompts?project_id=#{project.id}")
+
+    assert has_element?(view, "tr", "Empty Project")
+    refute render(view) =~ "No prompts yet. Create your first prompt or project to get started."
+  end
+
+  test "search trims whitespace consistently for project prompts", %{conn: conn} do
+    {:ok, project} = Projects.create_project(%{name: "Prompt Project", type: :prompt})
+
+    matching_prompt =
+      prompt_fixture(%{
+        name: "Alpha Prompt",
+        description: "Matches search",
+        project_id: project.id
+      })
+
+    {:ok, view, _html} = live(conn, "/prompts?search=%20alpha%20")
+
+    render_click(view, "toggle_project", %{"project_id" => project.id})
+
+    assert has_element?(view, "a[href='/prompts/#{matching_prompt.id}']", "Alpha Prompt")
+  end
 end

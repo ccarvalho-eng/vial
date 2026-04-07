@@ -16,7 +16,7 @@ defmodule Aludel.Web.PromptLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(params, _uri, socket) do
-    search_query = params["search"] || ""
+    search_query = String.trim(params["search"] || "")
     selected_tags = parse_tags_param(params["tags"] || params["tag"])
     selected_project_id = normalize_project_id(params["project_id"])
 
@@ -28,13 +28,11 @@ defmodule Aludel.Web.PromptLive.Index do
     filtered_projects =
       filter_projects(projects, search_query, selected_tags, selected_project_id)
 
-    unassigned_prompts = Enum.filter(prompts, &is_nil(&1.project_id))
-
     socket =
       socket
       |> assign(:page_title, "Prompts")
       |> assign(:projects, filtered_projects)
-      |> assign(:prompts, unassigned_prompts)
+      |> assign(:prompts, prompts)
       |> assign(:all_tags, all_tags)
       |> assign(:search_query, search_query)
       |> assign(:selected_tags, selected_tags)
@@ -70,12 +68,10 @@ defmodule Aludel.Web.PromptLive.Index do
         socket.assigns.selected_project_id
       )
 
-    unassigned_prompts = Enum.filter(prompts, &is_nil(&1.project_id))
-
     {:noreply,
      socket
      |> assign(:projects, filtered_projects)
-     |> assign(:prompts, unassigned_prompts)
+     |> assign(:prompts, prompts)
      |> assign(:edit_project_forms, build_edit_project_forms(filtered_projects))
      |> assign(:all_tags, extract_all_tags(all_prompts))
      |> put_flash(:info, "Prompt deleted successfully")}
@@ -264,8 +260,7 @@ defmodule Aludel.Web.PromptLive.Index do
     Enum.filter(projects, &(&1.id == selected_project_id))
   end
 
-  defp maybe_reject_empty_projects(projects, "", [], nil), do: projects
-  defp maybe_reject_empty_projects(projects, "", [], ""), do: projects
+  defp maybe_reject_empty_projects(projects, "", [], _selected_project_id), do: projects
 
   defp maybe_reject_empty_projects(projects, _search_query, _selected_tags, _selected_project_id) do
     Enum.reject(projects, &Enum.empty?(&1.prompts))
