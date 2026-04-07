@@ -10,7 +10,7 @@ on:
 
 env:
   ELIXIR_VERSION: "1.19.5"
-  OTP_VERSION: "28.4.1"
+  OTP_VERSION: "28.4"
   NODE_VERSION: "20"
 
 permissions:
