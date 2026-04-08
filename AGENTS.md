@@ -2,6 +2,64 @@ This is a web application written using the Phoenix web framework.
 
 ## Project guidelines
 
+- Baseline engineering standard:
+  - Clarity over cleverness
+  - Small, reversible changes
+  - Explicit over implicit cost
+  - Domain over framework
+  - History is a product
+- Non-negotiables:
+  - No mixed concerns in one commit
+  - No large, unfocused PRs
+  - No dead code without reason
+  - No secrets in code or history
+  - No direct commits to protected branches
+  - No force-push on shared branches
+- Commit discipline:
+  - Follow Conventional Commits
+  - One intent per commit
+  - Type reflects intent, not files
+  - Imperative, concise subjects
+  - Stage deliberately and review the diff before commit
+- Git workflow:
+  - Use short-lived branches from `main`
+  - Rebase before PR and before merge
+  - Keep history linear unless the repo explicitly does otherwise
+  - `--force-with-lease` only on your own branch
+- Pull requests:
+  - Keep PRs small enough to review in one sitting
+  - Separate refactors from behavior changes
+  - Each PR should tell a coherent story
+  - Review the result after each commit
+  - PR descriptions should reference the issue being closed when applicable
+  - Each PR must use `.github/PULL_REQUEST_TEMPLATE.md`
+- Review standard:
+  - Prioritize correctness and invariants
+  - Reject hidden coupling
+  - Ignore style unless it harms clarity
+  - Separate blocking from optional feedback
+- Design rules:
+  - Prefer simple data flow
+  - Isolate side effects at boundaries
+  - Keep modules small and focused
+  - Name by intent, not mechanism
+  - Avoid vague names like `Utils`, `Helpers`, and `Manager`
+  - Avoid hidden state and implicit behavior with non-obvious cost
+- Error handling:
+  - Fail at boundaries
+  - Do not swallow errors
+  - Return structured errors when actionable
+  - Raise only for exceptional states
+  - Log once, at the boundary
+- Testing:
+  - Test behavior, not implementation
+  - Prefer TDD for behavior changes: write test, watch it fail, implement, then refactor
+  - Prefer fast tests by default
+  - Use integration tests at boundaries
+  - Use end-to-end coverage only for critical paths
+  - One reason to fail per test
+  - Keep setup readable
+  - Add regression tests for bugs
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 
@@ -84,6 +142,51 @@ custom classes must fully style the input
 - Predicate function names should not start with `is_` and should end in a question mark. Names like `is_thing` should be reserved for guards
 - Elixir's builtin OTP primitives like `DynamicSupervisor` and `Registry`, require names in the child spec, such as `{DynamicSupervisor, name: MyApp.MyDynamicSup}`, then you can use `DynamicSupervisor.start_child(MyApp.MyDynamicSup, child_spec)`
 - Use `Task.async_stream(collection, callback, options)` for concurrent enumeration with back-pressure. The majority of times you will want to pass `timeout: :infinity` as option
+- Prefer small modules with explicit data
+- Prefer functions over processes
+- Do not introduce processes just for structure
+- Hide complexity behind clear APIs, not macros
+- Order module contents consistently ([link]):
+  - `@moduledoc`
+  - `@behaviour`
+  - `use`
+  - `import`
+  - `require`
+  - `alias`
+  - other `@module_attribute`
+  - `defstruct`
+  - `@type`
+  - `@callback`
+  - `@macrocallback`
+  - `@optional_callbacks`
+  - `defmacro`, `defmodule`, `defguard`, `def`, etc.
+- Add a blank line between those groups
+- Sort grouped terms, such as module names in `alias`/`import`/`require`, alphabetically
+- Public functions should have a single responsibility and minimal surface area
+- Predicate functions should end in `?`
+- Bang functions should only be used when they raise or are intentionally unsafe
+- Only pipe when there is more than one function in the chain
+- Always start a pipe chain with a raw value
+- Keep private functions at the bottom of the module
+- Pattern match at boundaries
+- Prefer multiple function heads over branching where that improves clarity
+- Use `with` for linear success paths only
+- Avoid dense `else` branches
+- Use structs for domain data and maps for transport data
+- Avoid shapeless data in core logic
+- Processes exist for runtime concerns, not organization
+- Keep process state minimal and explicit
+- Supervise based on failure semantics
+- Keep schemas persistence-focused
+- Do not leak DB concerns into domain logic
+- Name queries by intent and keep them composable
+- Controllers should orchestrate, contexts should define capabilities, and validation should happen at boundaries
+- Log signal, not noise
+- Never log secrets
+- Prefer structured events and telemetry
+- Document contracts and constraints
+- Explain why, not what
+- When changing architecture, database design, or data flow, check whether related wiki documentation should be updated
 
 ## Mix guidelines
 
