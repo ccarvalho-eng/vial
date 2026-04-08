@@ -1,0 +1,86 @@
+defmodule Aludel.LLM.PricingTest do
+  use ExUnit.Case, async: true
+
+  alias Aludel.LLM.Pricing
+
+  describe "get_pricing/3" do
+    test "returns custom pricing override with atom keys" do
+      custom = %{input: 10.0, output: 30.0}
+      assert Pricing.get_pricing(:openai, "gpt-4o", custom) == %{input: 10.0, output: 30.0}
+    end
+
+    test "returns custom pricing override with string keys" do
+      custom = %{"input" => 5.0, "output" => 15.0}
+
+      assert Pricing.get_pricing(:anthropic, "claude-sonnet-4-6", custom) == %{
+               input: 5.0,
+               output: 15.0
+             }
+    end
+
+    test "returns LLMDB pricing for known model when no custom pricing" do
+      result = Pricing.get_pricing(:anthropic, "claude-sonnet-4-20250514")
+
+      assert result != nil
+      assert is_number(result.input)
+      assert is_number(result.output)
+      assert result.input > 0
+      assert result.output > 0
+    end
+
+    test "returns LLMDB pricing for openai model" do
+      result = Pricing.get_pricing(:openai, "gpt-4o")
+
+      assert result != nil
+      assert is_number(result.input)
+      assert is_number(result.output)
+    end
+
+    test "returns nil for unknown model" do
+      assert Pricing.get_pricing(:openai, "nonexistent-model-xyz") == nil
+    end
+
+    test "returns nil for ollama model not in LLMDB" do
+      assert Pricing.get_pricing(:ollama, "llama3.2") == nil
+    end
+
+    test "ignores invalid custom pricing map without required keys" do
+      result = Pricing.get_pricing(:openai, "gpt-4o", %{foo: "bar"})
+
+      # Falls through to LLMDB lookup since custom pricing lacks input/output
+      assert result != nil
+      assert is_number(result.input)
+    end
+
+    test "ignores nil custom pricing" do
+      result = Pricing.get_pricing(:openai, "gpt-4o", nil)
+
+      assert result != nil
+      assert is_number(result.input)
+    end
+  end
+
+  describe "format_pricing/1" do
+    test "formats normal pricing" do
+      assert Pricing.format_pricing(%{input: 3.0, output: 15.0}) ==
+               "$3.00 / $15.00 per 1M tokens"
+    end
+
+    test "formats small pricing values" do
+      assert Pricing.format_pricing(%{input: 0.15, output: 0.60}) ==
+               "$0.15 / $0.60 per 1M tokens"
+    end
+
+    test "formats zero pricing as free" do
+      assert Pricing.format_pricing(%{input: 0, output: 0}) == "Free"
+    end
+
+    test "formats zero float pricing as free" do
+      assert Pricing.format_pricing(%{input: 0.0, output: 0.0}) == "Free"
+    end
+
+    test "formats nil as unknown" do
+      assert Pricing.format_pricing(nil) == "Unknown"
+    end
+  end
+end
