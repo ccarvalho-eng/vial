@@ -46,9 +46,9 @@ defmodule Aludel.LLM.PricingTest do
       assert Pricing.get_pricing(:ollama, "unknown-local-model") == %{input: 0.0, output: 0.0}
     end
 
-    test "resolves known model from compile-time defaults without runtime LLMDB call" do
-      # gpt-4o and claude-3-5-haiku are canonical LLMDB models — they must be
-      # in the defaults map regardless of runtime LLMDB availability
+    test "resolves known model from LLMDB index without repeated scans" do
+      # gpt-4o and claude-3-5-haiku are canonical LLMDB models — resolved via
+      # the persistent_term index built once on first call
       result_openai = Pricing.get_pricing(:openai, "gpt-4o")
       assert result_openai != nil
       assert is_number(result_openai.input)
@@ -63,7 +63,7 @@ defmodule Aludel.LLM.PricingTest do
     test "ignores invalid custom pricing map without required keys" do
       result = Pricing.get_pricing(:openai, "gpt-4o", %{foo: "bar"})
 
-      # Falls through to LLMDB lookup since custom pricing lacks input/output
+      # Falls through to compile-time defaults since custom pricing lacks input/output
       assert result != nil
       assert is_number(result.input)
     end
