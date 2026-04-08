@@ -1,5 +1,5 @@
 defmodule Aludel.LLMTest do
-  use Aludel.DataCase, async: true
+  use Aludel.DataCase, async: false
 
   import Mox
 
@@ -13,34 +13,36 @@ defmodule Aludel.LLMTest do
       original_config = Application.get_env(:aludel, :llm)
       Application.put_env(:aludel, :llm, openai_api_key: nil)
 
-      provider =
-        provider_fixture(%{
-          provider: :openai,
-          model: "gpt-4o",
-          config: %{}
-        })
+      try do
+        provider =
+          provider_fixture(%{
+            provider: :openai,
+            model: "gpt-4o",
+            config: %{}
+          })
 
-      result = LLM.call(provider, "test", [])
-      Application.put_env(:aludel, :llm, original_config)
-
-      assert {:error, :missing_api_key} = result
+        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+      after
+        Application.put_env(:aludel, :llm, original_config)
+      end
     end
 
     test "returns error when API key is empty string" do
       original_config = Application.get_env(:aludel, :llm)
       Application.put_env(:aludel, :llm, openai_api_key: "")
 
-      provider =
-        provider_fixture(%{
-          provider: :openai,
-          model: "gpt-4o",
-          config: %{}
-        })
+      try do
+        provider =
+          provider_fixture(%{
+            provider: :openai,
+            model: "gpt-4o",
+            config: %{}
+          })
 
-      result = LLM.call(provider, "test", [])
-      Application.put_env(:aludel, :llm, original_config)
-
-      assert {:error, :missing_api_key} = result
+        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+      after
+        Application.put_env(:aludel, :llm, original_config)
+      end
     end
 
     test "returns structured response with all required fields" do
@@ -143,42 +145,39 @@ defmodule Aludel.LLMTest do
 
   describe "call/3 with Anthropic provider" do
     test "returns error when API key is missing" do
-      # Temporarily clear the config
       original_config = Application.get_env(:aludel, :llm)
       Application.put_env(:aludel, :llm, anthropic_api_key: nil)
 
-      provider =
-        provider_fixture(%{
-          provider: :anthropic,
-          model: "claude-3-5-sonnet-20241022",
-          config: %{}
-        })
+      try do
+        provider =
+          provider_fixture(%{
+            provider: :anthropic,
+            model: "claude-3-5-sonnet-20241022",
+            config: %{}
+          })
 
-      result = LLM.call(provider, "test", [])
-
-      # Restore original config
-      Application.put_env(:aludel, :llm, original_config)
-
-      assert {:error, :missing_api_key} = result
+        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+      after
+        Application.put_env(:aludel, :llm, original_config)
+      end
     end
 
     test "returns error when API key is empty string" do
       original_config = Application.get_env(:aludel, :llm)
       Application.put_env(:aludel, :llm, anthropic_api_key: "")
 
-      provider =
-        provider_fixture(%{
-          provider: :anthropic,
-          model: "claude-3-5-sonnet-20241022",
-          config: %{}
-        })
+      try do
+        provider =
+          provider_fixture(%{
+            provider: :anthropic,
+            model: "claude-3-5-sonnet-20241022",
+            config: %{}
+          })
 
-      result = LLM.call(provider, "test", [])
-
-      # Restore original config
-      Application.put_env(:aludel, :llm, original_config)
-
-      assert {:error, :missing_api_key} = result
+        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+      after
+        Application.put_env(:aludel, :llm, original_config)
+      end
     end
 
     test "returns structured response" do
@@ -375,34 +374,36 @@ defmodule Aludel.LLMTest do
       original_config = Application.get_env(:aludel, :llm)
       Application.put_env(:aludel, :llm, google_api_key: nil)
 
-      provider =
-        provider_fixture(%{
-          provider: :google,
-          model: "gemini-2.5-flash",
-          config: %{}
-        })
+      try do
+        provider =
+          provider_fixture(%{
+            provider: :google,
+            model: "gemini-2.5-flash",
+            config: %{}
+          })
 
-      result = LLM.call(provider, "test", [])
-      Application.put_env(:aludel, :llm, original_config)
-
-      assert {:error, :missing_api_key} = result
+        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+      after
+        Application.put_env(:aludel, :llm, original_config)
+      end
     end
 
     test "returns error when API key is empty string" do
       original_config = Application.get_env(:aludel, :llm)
       Application.put_env(:aludel, :llm, google_api_key: "")
 
-      provider =
-        provider_fixture(%{
-          provider: :google,
-          model: "gemini-2.5-flash",
-          config: %{}
-        })
+      try do
+        provider =
+          provider_fixture(%{
+            provider: :google,
+            model: "gemini-2.5-flash",
+            config: %{}
+          })
 
-      result = LLM.call(provider, "test", [])
-      Application.put_env(:aludel, :llm, original_config)
-
-      assert {:error, :missing_api_key} = result
+        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+      after
+        Application.put_env(:aludel, :llm, original_config)
+      end
     end
 
     test "returns auth error for invalid API key" do
@@ -462,12 +463,16 @@ defmodule Aludel.LLMTest do
       original_config = Application.get_env(:aludel, :llm)
       Application.delete_env(:aludel, :llm)
 
-      for provider_type <- [:openai, :anthropic, :google] do
-        provider = provider_fixture(%{provider: provider_type, model: "test-model", config: %{}})
-        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
-      end
+      try do
+        for provider_type <- [:openai, :anthropic, :google] do
+          provider =
+            provider_fixture(%{provider: provider_type, model: "test-model", config: %{}})
 
-      Application.put_env(:aludel, :llm, original_config)
+          assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+        end
+      after
+        Application.put_env(:aludel, :llm, original_config)
+      end
     end
 
     test "handles network errors gracefully" do
