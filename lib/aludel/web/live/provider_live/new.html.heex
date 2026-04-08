@@ -63,6 +63,87 @@
           </div>
         <% end %>
 
+        <div
+          id="pricing-section"
+          style="margin-bottom: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"
+        >
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <span style="font-weight: 600; font-size: 14px;">Pricing</span>
+            <span
+              id="default-pricing-display"
+              style="font-size: 13px; color: var(--text-secondary);"
+            >
+              <%= if @default_pricing do %>
+                Default: {Aludel.LLM.Pricing.format_pricing(@default_pricing)}
+              <% else %>
+                No default pricing available
+              <% end %>
+            </span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label
+              id="custom-pricing-toggle"
+              style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;"
+            >
+              <input
+                type="checkbox"
+                name="provider[custom_pricing_enabled]"
+                value="true"
+                checked={@custom_pricing_enabled}
+                phx-click="toggle_custom_pricing"
+                style="width: 16px; height: 16px;"
+              /> Use custom pricing
+            </label>
+          </div>
+
+          <%= if @custom_pricing_enabled do %>
+            <div id="custom-pricing-fields" style="display: flex; gap: 16px;">
+              <div style="flex: 1;">
+                <label class="fieldset" style="display: block;">
+                  <span class="label mb-1" style="font-size: 13px;">
+                    Input price (per 1M tokens)
+                  </span>
+                  <input
+                    type="number"
+                    id="pricing-input"
+                    name="provider[pricing_input]"
+                    value={@pricing_input}
+                    step="0.01"
+                    min="0"
+                    placeholder="3.00"
+                    class="w-full input text-[13px]"
+                  />
+                </label>
+              </div>
+              <div style="flex: 1;">
+                <label class="fieldset" style="display: block;">
+                  <span class="label mb-1" style="font-size: 13px;">
+                    Output price (per 1M tokens)
+                  </span>
+                  <input
+                    type="number"
+                    id="pricing-output"
+                    name="provider[pricing_output]"
+                    value={@pricing_output}
+                    step="0.01"
+                    min="0"
+                    placeholder="15.00"
+                    class="w-full input text-[13px]"
+                  />
+                </label>
+              </div>
+            </div>
+          <% else %>
+            <div
+              id="pricing-default-indicator"
+              style="font-size: 13px; color: var(--text-secondary);"
+            >
+              Using default pricing from model database
+            </div>
+          <% end %>
+        </div>
+
         <div>
           <div class="fieldset mb-2">
             <label>
