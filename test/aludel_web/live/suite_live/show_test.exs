@@ -155,17 +155,43 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       # Edit form appears
       assert html =~ "Cancel" or html =~ "cancel_edit"
     end
+
+    test "uses the shared select component in suite metadata editing", %{conn: conn} do
+      prompt1 = prompt_fixture(%{name: "Prompt 1"})
+      prompt2 = prompt_fixture(%{name: "Prompt 2"})
+      suite = suite_fixture(%{name: "Original Name", prompt_id: prompt1.id})
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_suite_metadata']")
+      |> render_click()
+
+      assert has_element?(view, "#suite_prompt_id-select[phx-hook='CustomSelect']")
+      assert has_element?(view, "#suite_prompt_id-select [data-select-option]", prompt2.name)
+      assert has_element?(view, "#suite_project_id-select[phx-hook='CustomSelect']")
+
+      assert has_element?(
+               view,
+               "#suite_project_id-select [data-select-option][data-value='']",
+               "No Project"
+             )
+    end
   end
 
   describe "version and provider selection" do
     test "shows version and provider selectors", %{conn: conn} do
       prompt = prompt_fixture_with_version()
       suite = suite_fixture(%{prompt_id: prompt.id})
+      import Aludel.ProvidersFixtures
+      _provider = provider_fixture()
 
-      {:ok, _view, html} = live(conn, "/suites/#{suite.id}")
+      {:ok, view, html} = live(conn, "/suites/#{suite.id}")
 
       assert html =~ "Version" or html =~ "select_version"
       assert html =~ "Provider" or html =~ "select_provider"
+      assert has_element?(view, "#run_suite_version_id-select[phx-hook='CustomSelect']")
+      assert has_element?(view, "#run_suite_provider_id-select[phx-hook='CustomSelect']")
     end
 
     test "selects a specific version", %{conn: conn} do
