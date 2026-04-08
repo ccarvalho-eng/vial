@@ -40,8 +40,24 @@ defmodule Aludel.LLM.PricingTest do
       assert Pricing.get_pricing(:openai, "nonexistent-model-xyz") == nil
     end
 
-    test "returns nil for ollama model not in LLMDB" do
-      assert Pricing.get_pricing(:ollama, "llama3.2") == nil
+    test "returns free pricing for any ollama model" do
+      assert Pricing.get_pricing(:ollama, "llama3.2") == %{input: 0.0, output: 0.0}
+      assert Pricing.get_pricing(:ollama, "mistral") == %{input: 0.0, output: 0.0}
+      assert Pricing.get_pricing(:ollama, "unknown-local-model") == %{input: 0.0, output: 0.0}
+    end
+
+    test "resolves known model from compile-time defaults without runtime LLMDB call" do
+      # gpt-4o and claude-3-5-haiku are canonical LLMDB models — they must be
+      # in the defaults map regardless of runtime LLMDB availability
+      result_openai = Pricing.get_pricing(:openai, "gpt-4o")
+      assert result_openai != nil
+      assert is_number(result_openai.input)
+      assert is_number(result_openai.output)
+
+      result_anthropic = Pricing.get_pricing(:anthropic, "claude-3-5-haiku-20241022")
+      assert result_anthropic != nil
+      assert is_number(result_anthropic.input)
+      assert is_number(result_anthropic.output)
     end
 
     test "ignores invalid custom pricing map without required keys" do

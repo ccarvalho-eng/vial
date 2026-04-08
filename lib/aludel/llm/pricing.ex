@@ -8,14 +8,31 @@ defmodule Aludel.LLM.Pricing do
   Rates are always expressed per 1 million tokens.
   """
 
+  @defaults (try do
+               LLMDB.models()
+               |> Enum.reduce(%{}, fn
+                 %{provider: p, id: id, cost: %{input: inp, output: out}}, acc
+                 when is_number(inp) and is_number(out) ->
+                   Map.put(acc, {p, id}, %{input: inp, output: out})
+
+                 _, acc ->
+                   acc
+               end)
+             rescue
+               _ -> %{}
+             end)
+
   @doc """
   Returns the effective pricing for a provider/model combination.
 
   ## Priority
 
   1. If `custom_pricing` is a map with `input` and `output` keys, return it directly
-  2. Otherwise, look up the model in LLMDB and extract cost data
-  3. Returns `nil` if no pricing data is available
+  2. Ollama models always resolve to free (`%{input: 0.0, output: 0.0}`) since they
+     run locally and use a different provider atom in LLMDB (`:ollama_cloud`)
+  3. In-module defaults map (seeded from LLMDB at compile time) — O(1) lookup
+  4. Runtime LLMDB lookup as a final fallback
+  5. Returns `nil` if no pricing data is available
 
   ## Parameters
 
@@ -41,8 +58,12 @@ defmodule Aludel.LLM.Pricing do
     %{input: input, output: output}
   end
 
+  def get_pricing(:ollama, _model, _custom_pricing) do
+    %{input: 0.0, output: 0.0}
+  end
+
   def get_pricing(provider, model, _custom_pricing) do
-    lookup_llmdb_pricing(provider, model)
+    Map.get(@defaults, {provider, model}) || lookup_llmdb_pricing(provider, model)
   end
 
   @doc """
