@@ -2,6 +2,8 @@ defmodule Aludel.EvalsTest do
   use Aludel.DataCase
 
   import Mox
+  import Aludel.PromptsFixtures
+  import Aludel.ProvidersFixtures
 
   alias Aludel.Evals
   alias Aludel.Evals.SuiteRun
@@ -735,9 +737,6 @@ defmodule Aludel.EvalsTest do
   end
 
   describe "execute_suite with documents" do
-    import Aludel.PromptsFixtures
-    import Aludel.ProvidersFixtures
-
     test "passes documents to LLM.call" do
       suite = suite_fixture()
       test_case = test_case_fixture(%{suite_id: suite.id})

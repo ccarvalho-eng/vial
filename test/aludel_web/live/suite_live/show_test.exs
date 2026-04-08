@@ -4,6 +4,7 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
   import Phoenix.LiveViewTest
   import Aludel.EvalsFixtures
   import Aludel.PromptsFixtures
+  import Aludel.ProvidersFixtures
 
   test "displays suite details", %{conn: conn} do
     prompt = prompt_fixture(%{name: "Test Prompt"})
@@ -183,7 +184,6 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     test "shows version and provider selectors", %{conn: conn} do
       prompt = prompt_fixture_with_version()
       suite = suite_fixture(%{prompt_id: prompt.id})
-      import Aludel.ProvidersFixtures
       _provider = provider_fixture()
 
       {:ok, view, html} = live(conn, "/suites/#{suite.id}")
@@ -210,8 +210,6 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     end
 
     test "selects a specific provider", %{conn: conn} do
-      import Aludel.ProvidersFixtures
-
       suite = suite_fixture()
       provider = provider_fixture()
 
