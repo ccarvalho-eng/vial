@@ -10,7 +10,7 @@ defmodule Aludel.RunsTest do
   import Aludel.PromptsFixtures
   import Aludel.ProvidersFixtures
 
-  setup :set_mox_from_context
+  setup :set_mox_global
   setup :verify_on_exit!
 
   describe "runs" do
@@ -379,9 +379,11 @@ defmodule Aludel.RunsTest do
     end
 
     test "handles LLM errors gracefully", %{prompt_version: version} do
-      # Create a provider that will cause an error
-      # (We'll need to mock this in implementation)
       provider = provider_fixture(%{name: "Error Provider"})
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, "API timeout"}
+      end)
 
       {:ok, run} =
         Runs.create_run(%{
@@ -391,8 +393,9 @@ defmodule Aludel.RunsTest do
 
       run = Repo.preload(run, :prompt_version)
 
-      # For now, this should still succeed but handle errors per-provider
-      assert {:ok, _result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, result_run} = Runs.execute_run(run, [provider])
+      assert length(result_run.run_results) == 1
+      assert hd(result_run.run_results).status == :error
     end
 
     test "logs warning when run result creation fails on success", %{

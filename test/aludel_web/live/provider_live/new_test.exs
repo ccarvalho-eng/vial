@@ -7,31 +7,42 @@ defmodule Aludel.Web.ProviderLive.NewTest do
   alias Aludel.Providers
 
   describe "new provider page" do
-    test "mounts successfully", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers/new")
+    test "renders the provider form", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
 
-      assert html =~ "New Provider"
+      assert has_element?(view, "#provider-form")
+      assert has_element?(view, "#provider-form input[name='provider[name]']")
+      assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
     end
 
-    test "shows provider form fields", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers/new")
+    test "shows custom input when custom model is selected", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
 
-      assert html =~ "Name"
-      assert html =~ "Provider"
-      assert html =~ "Model"
-    end
+      html =
+        view
+        |> form("#provider-form", provider: %{provider: "openai", model_selection: "custom"})
+        |> render_change()
 
-    test "shows create button", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers/new")
-
-      assert html =~ "Create Provider"
+      assert html =~ "Custom model name"
     end
 
     test "creates provider with valid data", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/providers/new")
 
       view
-      |> form("#provider-form", provider: valid_provider_params())
+      |> form("#provider-form", provider: %{provider: "openai", model_selection: "custom"})
+      |> render_change()
+
+      view
+      |> form("#provider-form",
+        provider: %{
+          name: "Configured Provider",
+          provider: "openai",
+          model_selection: "custom",
+          model_custom: "gpt-4.1",
+          config: ~s({"temperature":0.2,"max_tokens":512})
+        }
+      )
       |> render_submit()
 
       assert_redirect(view, "/providers")
@@ -51,39 +62,45 @@ defmodule Aludel.Web.ProviderLive.NewTest do
         provider: %{
           name: "",
           provider: "",
-          model: ""
+          model_selection: ""
         }
       )
       |> render_submit()
 
       assert has_element?(view, "#provider_name.input-error")
       assert has_element?(view, "#provider_provider.select-error")
-      assert has_element?(view, "#provider_model.input-error")
+      refute has_element?(view, "#provider_model_selection.select-error")
     end
   end
 
   describe "provider editing" do
-    test "loads existing provider for editing", %{conn: conn} do
-      provider = provider_fixture(%{name: "Existing Provider"})
-
-      {:ok, _view, html} = live(conn, "/providers/#{provider.id}/edit")
-
-      assert html =~ "Edit Provider"
-      assert html =~ "Existing Provider"
-    end
-
-    test "displays provider details in form", %{conn: conn} do
+    test "keeps an existing model selectable during edit", %{conn: conn} do
       provider =
         provider_fixture(%{
-          name: "Test Provider",
+          name: "Existing Provider",
           provider: :openai,
           model: "gpt-4o"
         })
 
-      {:ok, _view, html} = live(conn, "/providers/#{provider.id}/edit")
+      {:ok, view, _html} = live(conn, "/providers/#{provider.id}/edit")
 
-      assert html =~ "Test Provider"
-      assert html =~ "gpt-4o"
+      assert has_element?(view, "#provider-form")
+      assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
+    end
+
+    test "loads unknown saved model as custom during edit", %{conn: conn} do
+      provider =
+        provider_fixture(%{
+          name: "Custom Provider",
+          provider: :openai,
+          model: "my-custom-model"
+        })
+
+      {:ok, view, html} = live(conn, "/providers/#{provider.id}/edit")
+
+      assert html =~ "Custom model name"
+      assert has_element?(view, "#provider_model_custom[value='my-custom-model']")
+      assert has_element?(view, "#provider_model_selection option[value='custom'][selected]")
     end
 
     test "updates provider with valid data", %{conn: conn} do
@@ -92,11 +109,16 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       {:ok, view, _html} = live(conn, "/providers/#{provider.id}/edit")
 
       view
+      |> form("#provider-form", provider: %{provider: "anthropic", model_selection: "custom"})
+      |> render_change()
+
+      view
       |> form("#provider-form",
         provider: %{
           name: "Updated Provider",
           provider: "anthropic",
-          model: "claude-3-7-sonnet",
+          model_selection: "custom",
+          model_custom: "claude-3-7-sonnet",
           config: ~s({"temperature":0.4})
         }
       )
@@ -111,6 +133,35 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert updated_provider.config == %{"temperature" => 0.4}
     end
 
+    test "clears stale model selection when provider changes", %{conn: conn} do
+      provider = provider_fixture(%{provider: :openai, model: "gpt-4o"})
+
+      {:ok, view, _html} = live(conn, "/providers/#{provider.id}/edit")
+
+      render_change(
+        view,
+        :validate,
+        %{provider: %{provider: "anthropic", model_selection: "gpt-4o"}}
+      )
+
+      refute has_element?(view, "#provider_model_selection option[value='gpt-4o'][selected]")
+
+      view
+      |> form("#provider-form",
+        provider: %{
+          provider: "anthropic",
+          model_selection: "claude-3-haiku-20240307",
+          name: "OpenAI GPT-4o",
+          config: ~s({})
+        }
+      )
+      |> render_submit()
+
+      reloaded_provider = Providers.get_provider!(provider.id)
+      assert reloaded_provider.provider == :anthropic
+      assert reloaded_provider.model == "claude-3-haiku-20240307"
+    end
+
     test "keeps provider unchanged when invalid data is submitted", %{conn: conn} do
       provider = provider_fixture(%{name: "Existing Provider", model: "gpt-4o"})
 
@@ -121,27 +172,18 @@ defmodule Aludel.Web.ProviderLive.NewTest do
         provider: %{
           name: "",
           provider: "",
-          model: ""
+          model_selection: ""
         }
       )
       |> render_submit()
 
       assert has_element?(view, "#provider_name.input-error")
       assert has_element?(view, "#provider_provider.select-error")
-      assert has_element?(view, "#provider_model.input-error")
+      refute has_element?(view, "#provider_model_selection.select-error")
 
       reloaded_provider = Providers.get_provider!(provider.id)
       assert reloaded_provider.name == "Existing Provider"
       assert reloaded_provider.model == "gpt-4o"
     end
-  end
-
-  defp valid_provider_params do
-    %{
-      name: "Configured Provider",
-      provider: "openai",
-      model: "gpt-4.1",
-      config: ~s({"temperature":0.2,"max_tokens":512})
-    }
   end
 end

@@ -3,7 +3,8 @@ import Config
 # Configure test repo for Aludel
 config :aludel,
   repo: Aludel.Test.Repo,
-  ecto_repos: [Aludel.Test.Repo]
+  ecto_repos: [Aludel.Test.Repo],
+  run_execution_mode: :sequential
 
 config :aludel, Aludel.Test.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,

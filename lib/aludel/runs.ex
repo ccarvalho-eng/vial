@@ -167,16 +167,24 @@ defmodule Aludel.Runs do
       )
 
     _results =
-      Task.Supervisor.async_stream(
-        TaskSupervisor,
-        providers,
-        fn provider ->
-          execute_provider(run, provider, rendered_prompt)
-        end,
-        max_concurrency: 3,
-        timeout: 120_000
-      )
-      |> Enum.to_list()
+      case Application.get_env(:aludel, :run_execution_mode, :concurrent) do
+        :sequential ->
+          Enum.map(providers, fn provider ->
+            execute_provider(run, provider, rendered_prompt)
+          end)
+
+        _ ->
+          Task.Supervisor.async_stream(
+            TaskSupervisor,
+            providers,
+            fn provider ->
+              execute_provider(run, provider, rendered_prompt)
+            end,
+            max_concurrency: 3,
+            timeout: 120_000
+          )
+          |> Enum.to_list()
+      end
 
     case repo().get(Run, run.id) do
       nil -> {:error, :run_not_found}

@@ -32,17 +32,31 @@
         </div>
 
         <div style="margin-bottom: 16px;">
+          <input type="hidden" name={@form[:model].name} value={@form[:model].value || ""} />
           <.input
-            field={@form[:model]}
-            type="text"
+            field={@form[:model_selection]}
+            type="select"
             label="Model"
             required
-            placeholder="gpt-4o, claude-3-5-sonnet-20241022, llama2, etc."
+            prompt="Select a model"
+            options={@model_options}
           />
           <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-            Enter the model identifier (e.g., gpt-4o, claude-3-5-sonnet-20241022)
+            Active and deprecated models are grouped. Choose custom to enter a model name manually.
           </div>
         </div>
+
+        <%= if @form[:model_selection].value == "custom" do %>
+          <div style="margin-bottom: 16px;">
+            <.input
+              field={@form[:model_custom]}
+              type="text"
+              label="Custom model name"
+              placeholder="my-model-name"
+              required
+            />
+          </div>
+        <% end %>
 
         <div>
           <div class="fieldset mb-2">
