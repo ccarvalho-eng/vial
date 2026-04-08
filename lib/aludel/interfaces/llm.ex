@@ -121,7 +121,7 @@ defmodule Aludel.LLM do
   end
 
   defp get_openai_api_key do
-    case Application.get_env(:aludel, :llm)[:openai_api_key] do
+    case Application.get_env(:aludel, :llm, [])[:openai_api_key] do
       nil -> :error
       "" -> :error
       api_key -> {:ok, api_key}
@@ -129,7 +129,7 @@ defmodule Aludel.LLM do
   end
 
   defp get_anthropic_api_key do
-    case Application.get_env(:aludel, :llm)[:anthropic_api_key] do
+    case Application.get_env(:aludel, :llm, [])[:anthropic_api_key] do
       nil -> :error
       "" -> :error
       api_key -> {:ok, api_key}
@@ -137,7 +137,7 @@ defmodule Aludel.LLM do
   end
 
   defp get_google_api_key do
-    case Application.get_env(:aludel, :llm)[:google_api_key] do
+    case Application.get_env(:aludel, :llm, [])[:google_api_key] do
       nil -> :error
       "" -> :error
       api_key -> {:ok, api_key}

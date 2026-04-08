@@ -458,6 +458,18 @@ defmodule Aludel.LLMTest do
   end
 
   describe "call/3 error handling" do
+    test "returns missing_api_key when :llm config is entirely absent" do
+      original_config = Application.get_env(:aludel, :llm)
+      Application.delete_env(:aludel, :llm)
+
+      for provider_type <- [:openai, :anthropic, :google] do
+        provider = provider_fixture(%{provider: provider_type, model: "test-model", config: %{}})
+        assert {:error, :missing_api_key} = LLM.call(provider, "test", [])
+      end
+
+      Application.put_env(:aludel, :llm, original_config)
+    end
+
     test "handles network errors gracefully" do
       expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
         {:error, :timeout}
