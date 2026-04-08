@@ -82,56 +82,35 @@
           </div>
 
           <div style="margin-bottom: 12px;">
-            <label
-              id="custom-pricing-toggle"
-              style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;"
-            >
-              <input
-                type="checkbox"
-                name="provider[custom_pricing_enabled]"
-                value="true"
-                checked={@custom_pricing_enabled}
-                phx-click="toggle_custom_pricing"
-                style="width: 16px; height: 16px;"
-              /> Use custom pricing
-            </label>
+            <.input
+              field={@form[:custom_pricing_enabled]}
+              type="checkbox"
+              label="Use custom pricing"
+              phx-click="toggle_custom_pricing"
+            />
           </div>
 
           <%= if @custom_pricing_enabled do %>
             <div id="custom-pricing-fields" style="display: flex; gap: 16px;">
               <div style="flex: 1;">
-                <label class="fieldset" style="display: block;">
-                  <span class="label mb-1" style="font-size: 13px;">
-                    Input price (per 1M tokens)
-                  </span>
-                  <input
-                    type="number"
-                    id="pricing-input"
-                    name="provider[pricing_input]"
-                    value={@pricing_input}
-                    step="0.01"
-                    min="0"
-                    placeholder="3.00"
-                    class="w-full input text-[13px]"
-                  />
-                </label>
+                <.input
+                  field={@form[:pricing_input]}
+                  type="number"
+                  label="Input price (per 1M tokens)"
+                  step="0.01"
+                  min="0"
+                  placeholder="3.00"
+                />
               </div>
               <div style="flex: 1;">
-                <label class="fieldset" style="display: block;">
-                  <span class="label mb-1" style="font-size: 13px;">
-                    Output price (per 1M tokens)
-                  </span>
-                  <input
-                    type="number"
-                    id="pricing-output"
-                    name="provider[pricing_output]"
-                    value={@pricing_output}
-                    step="0.01"
-                    min="0"
-                    placeholder="15.00"
-                    class="w-full input text-[13px]"
-                  />
-                </label>
+                <.input
+                  field={@form[:pricing_output]}
+                  type="number"
+                  label="Output price (per 1M tokens)"
+                  step="0.01"
+                  min="0"
+                  placeholder="15.00"
+                />
               </div>
             </div>
           <% else %>

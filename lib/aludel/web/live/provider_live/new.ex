@@ -31,9 +31,22 @@ defmodule Aludel.Web.ProviderLive.New do
     provider_type = provider_params["provider"]
     model_groups = Providers.fetch_model_groups(provider_type)
 
+    custom_pricing_enabled =
+      provider_params["custom_pricing_enabled"] == "true" or
+        socket.assigns.custom_pricing_enabled == true
+
+    pricing_input = provider_params["pricing_input"] || socket.assigns.pricing_input || ""
+    pricing_output = provider_params["pricing_output"] || socket.assigns.pricing_output || ""
+
     changeset =
       socket.assigns.provider
-      |> Providers.change_provider(provider_params)
+      |> Providers.change_provider(
+        Map.merge(provider_params, %{
+          "custom_pricing_enabled" => custom_pricing_enabled,
+          "pricing_input" => pricing_input,
+          "pricing_output" => pricing_output
+        })
+      )
       |> ensure_model_selection(model_groups)
       |> validate_model_selection()
       |> Map.put(:action, :validate)
@@ -41,10 +54,6 @@ defmodule Aludel.Web.ProviderLive.New do
     model = resolve_model(provider_params, model_groups)
     provider_atom = safe_to_provider_atom(provider_type)
     default_pricing = resolve_default_pricing(provider_atom, model)
-
-    custom_pricing_enabled =
-      provider_params["custom_pricing_enabled"] == "true" or
-        socket.assigns[:custom_pricing_enabled] == true
 
     {:noreply,
      socket
@@ -54,19 +63,26 @@ defmodule Aludel.Web.ProviderLive.New do
      |> assign(:config_json, Map.get(provider_params, "config", ""))
      |> assign(:default_pricing, default_pricing)
      |> assign(:custom_pricing_enabled, custom_pricing_enabled)
-     |> assign(
-       :pricing_input,
-       provider_params["pricing_input"] || socket.assigns[:pricing_input] || ""
-     )
-     |> assign(
-       :pricing_output,
-       provider_params["pricing_output"] || socket.assigns[:pricing_output] || ""
-     )}
+     |> assign(:pricing_input, pricing_input)
+     |> assign(:pricing_output, pricing_output)}
   end
 
   @impl Phoenix.LiveView
   def handle_event("toggle_custom_pricing", _params, socket) do
-    {:noreply, assign(socket, :custom_pricing_enabled, !socket.assigns.custom_pricing_enabled)}
+    enabled = !socket.assigns.custom_pricing_enabled
+
+    changeset =
+      socket.assigns.provider
+      |> Providers.change_provider(%{
+        "custom_pricing_enabled" => enabled,
+        "pricing_input" => socket.assigns.pricing_input,
+        "pricing_output" => socket.assigns.pricing_output
+      })
+
+    {:noreply,
+     socket
+     |> assign(:custom_pricing_enabled, enabled)
+     |> assign(:form, to_form(changeset))}
   end
 
   @impl Phoenix.LiveView
@@ -76,8 +92,14 @@ defmodule Aludel.Web.ProviderLive.New do
   end
 
   defp apply_action(socket, :new, _params) do
-    changeset = Providers.change_provider(%Provider{})
     model_groups = %{active: [], deprecated: []}
+
+    changeset =
+      Providers.change_provider(%Provider{}, %{
+        "custom_pricing_enabled" => false,
+        "pricing_input" => "",
+        "pricing_output" => ""
+      })
 
     socket
     |> assign(:page_title, "New Provider")
@@ -96,13 +118,6 @@ defmodule Aludel.Web.ProviderLive.New do
     provider = Providers.get_provider!(id)
     model_groups = Providers.fetch_model_groups(provider.provider)
 
-    changeset =
-      provider
-      |> Providers.change_provider()
-      |> ensure_model_selection(model_groups)
-      |> validate_model_selection()
-
-    default_pricing = resolve_default_pricing(provider.provider, provider.model)
     has_custom_pricing = is_map(provider.pricing) and map_size(provider.pricing) > 0
 
     {pricing_input, pricing_output} =
@@ -113,6 +128,18 @@ defmodule Aludel.Web.ProviderLive.New do
       else
         {"", ""}
       end
+
+    changeset =
+      provider
+      |> Providers.change_provider(%{
+        "custom_pricing_enabled" => has_custom_pricing,
+        "pricing_input" => pricing_input,
+        "pricing_output" => pricing_output
+      })
+      |> ensure_model_selection(model_groups)
+      |> validate_model_selection()
+
+    default_pricing = resolve_default_pricing(provider.provider, provider.model)
 
     socket
     |> assign(:page_title, "Edit Provider")
