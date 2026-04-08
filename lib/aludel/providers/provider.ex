@@ -11,7 +11,7 @@ defmodule Aludel.Providers.Provider do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(name provider model)a
-  @optional_fields ~w(config)a
+  @optional_fields ~w(config pricing)a
   @virtual_fields ~w(model_selection model_custom)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -22,6 +22,7 @@ defmodule Aludel.Providers.Provider do
     field :provider, Ecto.Enum, values: [:openai, :anthropic, :ollama, :google]
     field :model, :string
     field :config, :map
+    field :pricing, :map
     field :model_selection, :string, virtual: true
     field :model_custom, :string, virtual: true
 
@@ -37,6 +38,29 @@ defmodule Aludel.Providers.Provider do
     |> cast(attrs, @required_fields ++ @optional_fields ++ @virtual_fields)
     |> normalize_model()
     |> validate_required(@required_fields)
+    |> validate_pricing()
+  end
+
+  defp validate_pricing(changeset) do
+    validate_change(changeset, :pricing, fn :pricing, pricing ->
+      cond do
+        is_nil(pricing) ->
+          []
+
+        not is_map(pricing) ->
+          [pricing: "must be a map"]
+
+        true ->
+          input = pricing["input"] || pricing[:input]
+          output = pricing["output"] || pricing[:output]
+
+          cond do
+            not is_number(input) -> [pricing: "must contain a numeric input rate"]
+            not is_number(output) -> [pricing: "must contain a numeric output rate"]
+            true -> []
+          end
+      end
+    end)
   end
 
   defp normalize_model(changeset) do
