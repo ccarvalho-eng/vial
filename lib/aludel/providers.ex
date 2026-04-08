@@ -96,7 +96,7 @@ defmodule Aludel.Providers do
   end
 
   def fetch_model_groups(provider_type) when is_atom(provider_type) do
-    # credo:disable-for-next-line Credo.Check.Refactor.Apply
+    # credo:disable-for-lines:2 Credo.Check.Refactor.Apply
     LLMDB
     |> apply(:models, [])
     |> Enum.filter(&(&1.provider == provider_type))
