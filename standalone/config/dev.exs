@@ -20,4 +20,5 @@ config :aludel_dash, AludelDash.Endpoint,
 
 config :aludel, :llm,
   openai_api_key: System.get_env("OPENAI_API_KEY"),
-  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
+  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY"),
+  google_api_key: System.get_env("GOOGLE_API_KEY")

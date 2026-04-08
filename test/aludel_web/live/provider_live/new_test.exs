@@ -68,6 +68,39 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert provider.config == %{"temperature" => 0.2, "max_tokens" => 512}
     end
 
+    test "shows Google Gemini in provider type dropdown", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/providers/new")
+
+      assert html =~ "Google Gemini"
+    end
+
+    test "creates a Gemini provider through the form", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
+
+      view
+      |> form("#provider-form", provider: %{provider: "google", model_selection: "custom"})
+      |> render_change()
+
+      view
+      |> form("#provider-form",
+        provider: %{
+          name: "Gemini Flash",
+          provider: "google",
+          model_selection: "custom",
+          model_custom: "gemini-2.5-flash",
+          config: ~s({"temperature":0.7,"max_tokens":1024})
+        }
+      )
+      |> render_submit()
+
+      assert_redirect(view, "/providers")
+
+      [provider] = Providers.list_providers()
+      assert provider.name == "Gemini Flash"
+      assert provider.provider == :google
+      assert provider.model == "gemini-2.5-flash"
+    end
+
     test "shows validation errors for invalid data", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/providers/new")
 

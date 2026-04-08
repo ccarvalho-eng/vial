@@ -35,7 +35,8 @@ config :phoenix_live_view,
 # LLM Provider API Keys - use bogus keys to prevent hitting real APIs in tests
 config :aludel, :llm,
   openai_api_key: "sk-test-fake-openai-key-for-testing",
-  anthropic_api_key: "sk-ant-test-fake-anthropic-key-for-testing"
+  anthropic_api_key: "sk-ant-test-fake-anthropic-key-for-testing",
+  google_api_key: "sk-test-fake-google-api-key-for-testing"
 
 # Use mocked HTTP client for all tests
 config :aludel,

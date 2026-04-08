@@ -301,6 +301,162 @@ defmodule Aludel.LLMTest do
     end
   end
 
+  describe "call/3 with Google provider" do
+    test "returns structured response with all required fields" do
+      mock_response = build_mock_response("Hello from Gemini!", 8, 6)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "gemini-2.5-flash",
+          config: %{"temperature" => 0.7}
+        })
+
+      assert {:ok, result} = LLM.call(provider, "test prompt", [])
+      assert is_binary(result.output)
+      assert result.output != ""
+      assert is_integer(result.input_tokens)
+      assert result.input_tokens > 0
+      assert is_integer(result.output_tokens)
+      assert result.output_tokens > 0
+      assert is_integer(result.latency_ms)
+      assert result.latency_ms >= 0
+      assert is_float(result.cost_usd)
+    end
+
+    test "calculates cost for Google" do
+      mock_response = build_mock_response("Test response", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "gemini-2.5-flash",
+          config: %{}
+        })
+
+      {:ok, result} = LLM.call(provider, "test", [])
+      assert result.cost_usd > 0
+
+      # Verify exact cost: (5 * 0.15 / 1_000_000) + (10 * 0.60 / 1_000_000)
+      expected_cost = Float.round(5 * 0.15 / 1_000_000 + 10 * 0.60 / 1_000_000, 6)
+      assert result.cost_usd == expected_cost
+    end
+
+    test "calls Google adapter successfully" do
+      mock_response = build_mock_response("Hello!", 3, 2)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:ok, mock_response}
+      end)
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "gemini-2.5-flash",
+          config: %{"temperature" => 0.7, "max_tokens" => 100}
+        })
+
+      assert {:ok, result} = LLM.call(provider, "Say hello", [])
+      assert is_binary(result.output)
+      assert result.output != ""
+      assert result.input_tokens > 0
+      assert result.output_tokens > 0
+    end
+
+    test "returns error when API key is missing" do
+      original_config = Application.get_env(:aludel, :llm)
+      Application.put_env(:aludel, :llm, google_api_key: nil)
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "gemini-2.5-flash",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+      Application.put_env(:aludel, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    test "returns error when API key is empty string" do
+      original_config = Application.get_env(:aludel, :llm)
+      Application.put_env(:aludel, :llm, google_api_key: "")
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "gemini-2.5-flash",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+      Application.put_env(:aludel, :llm, original_config)
+
+      assert {:error, :missing_api_key} = result
+    end
+
+    test "returns auth error for invalid API key" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, %{status: 401}}
+      end)
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "gemini-2.5-flash",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      assert {:error, {:auth_error, _message}} = result
+    end
+
+    test "returns invalid_request error for bad parameters" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, %{status: 400}}
+      end)
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "invalid-model-name",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      assert {:error, {:invalid_request, _}} = result
+    end
+
+    test "returns rate_limit error" do
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        {:error, %{status: 429}}
+      end)
+
+      provider =
+        provider_fixture(%{
+          provider: :google,
+          model: "gemini-2.5-flash",
+          config: %{}
+        })
+
+      result = LLM.call(provider, "test", [])
+
+      assert {:error, {:rate_limit, nil}} = result
+    end
+  end
+
   describe "call/3 error handling" do
     test "handles network errors gracefully" do
       expect(HttpClientMock, :request, fn _model, _prompt, _opts ->

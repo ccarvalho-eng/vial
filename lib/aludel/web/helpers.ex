@@ -57,6 +57,7 @@ defmodule Aludel.Web.Helpers do
       :openai -> "/images/open-ai-icon.svg"
       :anthropic -> "/images/anthropic-icon.svg"
       :ollama -> "/images/ollama-icon.svg"
+      :google -> "/images/gemini-icon.svg"
       _ -> nil
     end
   end

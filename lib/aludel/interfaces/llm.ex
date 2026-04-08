@@ -2,7 +2,7 @@ defmodule Aludel.LLM do
   @moduledoc """
   LLM client abstraction for multi-provider support.
 
-  Supports OpenAI, Anthropic, and Ollama providers via direct HTTP calls.
+  Supports OpenAI, Anthropic, Google Gemini, and Ollama providers via direct HTTP calls.
   Provides unified interface for generating text completions and tracking usage metrics.
 
   Returns structured responses containing:
@@ -25,13 +25,14 @@ defmodule Aludel.LLM do
           cost_usd: float()
         }
 
-  alias Aludel.Interfaces.LLM.Providers.{Anthropic, Ollama, OpenAI}
+  alias Aludel.Interfaces.LLM.Providers.{Anthropic, Google, Ollama, OpenAI}
   alias Aludel.Providers.Provider
 
   @providers %{
     openai: OpenAI,
     anthropic: Anthropic,
-    ollama: Ollama
+    ollama: Ollama,
+    google: Google
   }
 
   @type error_reason ::
@@ -109,6 +110,7 @@ defmodule Aludel.LLM do
       case provider.provider do
         :openai -> get_openai_api_key()
         :anthropic -> get_anthropic_api_key()
+        :google -> get_google_api_key()
         :ollama -> nil
       end
 
@@ -134,6 +136,14 @@ defmodule Aludel.LLM do
     end
   end
 
+  defp get_google_api_key do
+    case Application.get_env(:aludel, :llm)[:google_api_key] do
+      nil -> :error
+      "" -> :error
+      api_key -> {:ok, api_key}
+    end
+  end
+
   defp calculate_cost(provider, response) do
     case provider.provider do
       :openai ->
@@ -146,6 +156,12 @@ defmodule Aludel.LLM do
         # Anthropic Claude pricing: $3/million input, $15/million output
         input_cost = response.input_tokens * 3.0 / 1_000_000
         output_cost = response.output_tokens * 15.0 / 1_000_000
+        Float.round(input_cost + output_cost, 6)
+
+      :google ->
+        # Google Gemini Flash pricing: $0.15/million input, $0.60/million output
+        input_cost = response.input_tokens * 0.15 / 1_000_000
+        output_cost = response.output_tokens * 0.60 / 1_000_000
         Float.round(input_cost + output_cost, 6)
 
       :ollama ->

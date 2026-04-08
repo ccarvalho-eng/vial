@@ -41,7 +41,8 @@ if config_env() == :prod do
   # LLM Provider API Keys
   config :aludel, :llm,
     openai_api_key: System.get_env("OPENAI_API_KEY"),
-    anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
+    anthropic_api_key: System.get_env("ANTHROPIC_API_KEY"),
+    google_api_key: System.get_env("GOOGLE_API_KEY")
 
   config :aludel, Aludel.Web.Endpoint,
     url: [host: host, port: 443, scheme: "https"],

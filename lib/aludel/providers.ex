@@ -91,6 +91,7 @@ defmodule Aludel.Providers do
       "openai" -> fetch_model_groups(:openai)
       "anthropic" -> fetch_model_groups(:anthropic)
       "ollama" -> fetch_model_groups(:ollama)
+      "google" -> fetch_model_groups(:google)
       _ -> %{active: [], deprecated: []}
     end
   end

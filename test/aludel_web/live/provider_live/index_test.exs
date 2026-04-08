@@ -40,6 +40,20 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
       assert html =~ "Test Provider"
       assert html =~ "gpt-4o"
     end
+
+    test "displays Google provider with Google icon", %{conn: conn} do
+      _provider =
+        provider_fixture(%{
+          name: "Gemini Flash",
+          provider: :google,
+          model: "gemini-2.5-flash"
+        })
+
+      {:ok, _view, html} = live(conn, "/providers")
+
+      assert html =~ "Gemini Flash"
+      assert html =~ "gemini-icon.svg"
+    end
   end
 
   describe "delete functionality" do
