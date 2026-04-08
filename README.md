@@ -23,6 +23,36 @@ Run prompts across OpenAI, Anthropic, Google Gemini, and Ollama simultaneously. 
 
 ---
 
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Features](#features)
+- [Installation](#installation)
+  - [1. Add dependency](#1-add-dependency)
+  - [2. Configure the repo](#2-configure-the-repo)
+  - [3. Install migrations](#3-install-migrations)
+  - [4. Run migrations](#4-run-migrations)
+  - [5. Add router macro](#5-add-router-macro)
+  - [6. Configure API keys (optional)](#6-configure-api-keys-optional)
+  - [7. Install ImageMagick (for Ollama PDF support)](#7-install-imagemagick-for-ollama-pdf-support)
+  - [8. Seed demo data (optional)](#8-seed-demo-data-optional)
+- [Standalone Mode](#standalone-mode)
+  - [Setup](#setup)
+  - [Configuration](#configuration)
+  - [Docker](#docker)
+  - [Production Deployment](#production-deployment)
+- [Providers](#providers)
+  - [Ollama quickstart](#ollama-quickstart)
+- [Usage](#usage)
+- [Development](#development)
+  - [Working with assets (CSS/JS)](#working-with-assets-cssjs)
+- [Community](#community)
+- [Contributing](#contributing)
+- [Star History](#star-history)
+- [License](#license)
+
+---
+
 ## Requirements
 
 **PostgreSQL 12+** is required. Aludel uses PostgreSQL-specific features:
