@@ -255,8 +255,9 @@ defmodule Aludel.Web.CoreComponents do
               @class || "select",
               @errors != [] && (@error_class || "select-error")
             ]}
+            tabindex="-1"
             data-select-input
-            {@rest}
+            {Map.delete(@rest, :required)}
           >
             <option :if={@prompt} value="">{@prompt}</option>
             {Phoenix.HTML.Form.options_for_select(@options, @value)}
@@ -331,7 +332,7 @@ defmodule Aludel.Web.CoreComponents do
               <span>{option.label}</span>
               <.icon
                 name="hero-check"
-                class={"aludel-select-check size-4#{if @normalized_value == option.value, do: " is-visible", else: ""}"}
+                class={select_check_icon_class(@normalized_value == option.value)}
               />
             </button>
           </div>
@@ -432,6 +433,9 @@ defmodule Aludel.Web.CoreComponents do
       nil -> ""
     end
   end
+
+  defp select_check_icon_class(true), do: "aludel-select-check size-4 is-visible"
+  defp select_check_icon_class(false), do: "aludel-select-check size-4"
 
   @doc """
   Renders a header with title.

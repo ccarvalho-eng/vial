@@ -12,9 +12,11 @@ export const CustomSelect = {
 
   updated() {
     this.button?.removeEventListener("click", this.handleButtonClick)
+    this.button?.removeEventListener("keydown", this.handleKeydown)
     this.unbindOptionEvents()
     this.cacheElements()
     this.button?.addEventListener("click", this.handleButtonClick)
+    this.button?.addEventListener("keydown", this.handleKeydown)
     this.bindOptionEvents()
     this.syncFromInput()
   },
@@ -22,7 +24,7 @@ export const CustomSelect = {
   destroyed() {
     document.removeEventListener("click", this.handleDocumentClick)
     this.button?.removeEventListener("click", this.handleButtonClick)
-    this.el.removeEventListener("keydown", this.handleKeydown)
+    this.button?.removeEventListener("keydown", this.handleKeydown)
     this.unbindOptionEvents()
   },
 
@@ -38,7 +40,7 @@ export const CustomSelect = {
   bindEvents() {
     document.addEventListener("click", this.handleDocumentClick)
     this.button?.addEventListener("click", this.handleButtonClick)
-    this.el.addEventListener("keydown", this.handleKeydown)
+    this.button?.addEventListener("keydown", this.handleKeydown)
     this.bindOptionEvents()
   },
 
@@ -123,7 +125,7 @@ export const CustomSelect = {
   },
 
   isOpen() {
-    return !this.dropdown?.classList.contains("hidden")
+    return !!this.dropdown && !this.dropdown.classList.contains("hidden")
   },
 
   open() {

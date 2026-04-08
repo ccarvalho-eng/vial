@@ -302,7 +302,7 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       |> render_change()
 
       assert has_element?(view, "#suite_name[value='Suite Draft']")
-      assert has_element?(view, "#suite_prompt_id option[selected][value='#{prompt.id}']")
+      assert has_element?(view, "#suite_prompt_id-select [data-select-value]", prompt.name)
     end
   end
 end
