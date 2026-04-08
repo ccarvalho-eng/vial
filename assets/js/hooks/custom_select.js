@@ -1,6 +1,8 @@
+const customSelectState = new Map()
+
 export const CustomSelect = {
   mounted() {
-    this.handleDocumentClick = this.handleDocumentClick.bind(this)
+    this.handleDocumentPointerDown = this.handleDocumentPointerDown.bind(this)
     this.handleButtonClick = this.handleButtonClick.bind(this)
     this.handleKeydown = this.handleKeydown.bind(this)
     this.handleOptionClick = this.handleOptionClick.bind(this)
@@ -8,9 +10,18 @@ export const CustomSelect = {
     this.cacheElements()
     this.bindEvents()
     this.syncFromInput()
+    this.restoreState()
+  },
+
+  beforeUpdate() {
+    this.wasOpenBeforeUpdate = this.isOpen()
+    this.previousActiveIndex = this.activeIndex
   },
 
   updated() {
+    const wasOpen = this.wasOpenBeforeUpdate
+    const previousActiveIndex = this.previousActiveIndex
+
     this.button?.removeEventListener("click", this.handleButtonClick)
     this.button?.removeEventListener("keydown", this.handleKeydown)
     this.unbindOptionEvents()
@@ -19,10 +30,22 @@ export const CustomSelect = {
     this.button?.addEventListener("keydown", this.handleKeydown)
     this.bindOptionEvents()
     this.syncFromInput()
+
+    if (wasOpen) {
+      this.open()
+
+      if (previousActiveIndex >= 0) {
+        this.setActive(previousActiveIndex)
+      }
+    }
+
+    this.wasOpenBeforeUpdate = false
+    this.previousActiveIndex = -1
   },
 
   destroyed() {
-    document.removeEventListener("click", this.handleDocumentClick)
+    this.persistState()
+    document.removeEventListener("pointerdown", this.handleDocumentPointerDown)
     this.button?.removeEventListener("click", this.handleButtonClick)
     this.button?.removeEventListener("keydown", this.handleKeydown)
     this.unbindOptionEvents()
@@ -38,7 +61,7 @@ export const CustomSelect = {
   },
 
   bindEvents() {
-    document.addEventListener("click", this.handleDocumentClick)
+    document.addEventListener("pointerdown", this.handleDocumentPointerDown)
     this.button?.addEventListener("click", this.handleButtonClick)
     this.button?.addEventListener("keydown", this.handleKeydown)
     this.bindOptionEvents()
@@ -52,7 +75,7 @@ export const CustomSelect = {
     this.options?.forEach((option) => option.removeEventListener("click", this.handleOptionClick))
   },
 
-  handleDocumentClick(event) {
+  handleDocumentPointerDown(event) {
     if (!this.el.contains(event.target)) {
       this.close()
     }
@@ -136,12 +159,14 @@ export const CustomSelect = {
     this.dropdown.classList.remove("hidden")
     this.button?.setAttribute("aria-expanded", "true")
     this.setActive(this.selectedIndex())
+    this.persistState()
   },
 
   close() {
     this.dropdown?.classList.add("hidden")
     this.button?.setAttribute("aria-expanded", "false")
     this.clearActive()
+    this.persistState()
   },
 
   moveActive(step) {
@@ -239,5 +264,39 @@ export const CustomSelect = {
     })
 
     this.activeIndex = this.selectedIndex()
+  },
+
+  persistState() {
+    if (!this.el?.id) {
+      return
+    }
+
+    if (!this.isOpen()) {
+      customSelectState.delete(this.el.id)
+      return
+    }
+
+    customSelectState.set(this.el.id, {
+      isOpen: true,
+      activeIndex: this.activeIndex
+    })
+  },
+
+  restoreState() {
+    if (!this.el?.id) {
+      return
+    }
+
+    const state = customSelectState.get(this.el.id)
+
+    if (!state?.isOpen) {
+      return
+    }
+
+    this.open()
+
+    if (state.activeIndex >= 0) {
+      this.setActive(state.activeIndex)
+    }
   }
 }

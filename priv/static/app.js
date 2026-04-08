@@ -20540,28 +20540,47 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
   };
 
   // assets/js/hooks/custom_select.js
+  var customSelectState = /* @__PURE__ */ new Map();
   var CustomSelect = {
     mounted() {
-      this.handleDocumentClick = this.handleDocumentClick.bind(this);
+      this.handleDocumentPointerDown = this.handleDocumentPointerDown.bind(this);
       this.handleButtonClick = this.handleButtonClick.bind(this);
       this.handleKeydown = this.handleKeydown.bind(this);
       this.handleOptionClick = this.handleOptionClick.bind(this);
       this.cacheElements();
       this.bindEvents();
       this.syncFromInput();
+      this.restoreState();
+    },
+    beforeUpdate() {
+      this.wasOpenBeforeUpdate = this.isOpen();
+      this.previousActiveIndex = this.activeIndex;
     },
     updated() {
+      const wasOpen = this.wasOpenBeforeUpdate;
+      const previousActiveIndex = this.previousActiveIndex;
       this.button?.removeEventListener("click", this.handleButtonClick);
+      this.button?.removeEventListener("keydown", this.handleKeydown);
       this.unbindOptionEvents();
       this.cacheElements();
       this.button?.addEventListener("click", this.handleButtonClick);
+      this.button?.addEventListener("keydown", this.handleKeydown);
       this.bindOptionEvents();
       this.syncFromInput();
+      if (wasOpen) {
+        this.open();
+        if (previousActiveIndex >= 0) {
+          this.setActive(previousActiveIndex);
+        }
+      }
+      this.wasOpenBeforeUpdate = false;
+      this.previousActiveIndex = -1;
     },
     destroyed() {
-      document.removeEventListener("click", this.handleDocumentClick);
+      this.persistState();
+      document.removeEventListener("pointerdown", this.handleDocumentPointerDown);
       this.button?.removeEventListener("click", this.handleButtonClick);
-      this.el.removeEventListener("keydown", this.handleKeydown);
+      this.button?.removeEventListener("keydown", this.handleKeydown);
       this.unbindOptionEvents();
     },
     cacheElements() {
@@ -20573,9 +20592,9 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
       this.activeIndex = this.selectedIndex();
     },
     bindEvents() {
-      document.addEventListener("click", this.handleDocumentClick);
+      document.addEventListener("pointerdown", this.handleDocumentPointerDown);
       this.button?.addEventListener("click", this.handleButtonClick);
-      this.el.addEventListener("keydown", this.handleKeydown);
+      this.button?.addEventListener("keydown", this.handleKeydown);
       this.bindOptionEvents();
     },
     bindOptionEvents() {
@@ -20584,7 +20603,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     unbindOptionEvents() {
       this.options?.forEach((option) => option.removeEventListener("click", this.handleOptionClick));
     },
-    handleDocumentClick(event) {
+    handleDocumentPointerDown(event) {
       if (!this.el.contains(event.target)) {
         this.close();
       }
@@ -20650,7 +20669,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
       return this.input?.disabled || this.button?.disabled;
     },
     isOpen() {
-      return !this.dropdown?.classList.contains("hidden");
+      return !!this.dropdown && !this.dropdown.classList.contains("hidden");
     },
     open() {
       if (!this.dropdown || this.options.length === 0) {
@@ -20659,11 +20678,13 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
       this.dropdown.classList.remove("hidden");
       this.button?.setAttribute("aria-expanded", "true");
       this.setActive(this.selectedIndex());
+      this.persistState();
     },
     close() {
       this.dropdown?.classList.add("hidden");
       this.button?.setAttribute("aria-expanded", "false");
       this.clearActive();
+      this.persistState();
     },
     moveActive(step) {
       if (this.options.length === 0) {
@@ -20734,6 +20755,32 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
         checkmark?.classList.toggle("is-visible", isSelected);
       });
       this.activeIndex = this.selectedIndex();
+    },
+    persistState() {
+      if (!this.el?.id) {
+        return;
+      }
+      if (!this.isOpen()) {
+        customSelectState.delete(this.el.id);
+        return;
+      }
+      customSelectState.set(this.el.id, {
+        isOpen: true,
+        activeIndex: this.activeIndex
+      });
+    },
+    restoreState() {
+      if (!this.el?.id) {
+        return;
+      }
+      const state = customSelectState.get(this.el.id);
+      if (!state?.isOpen) {
+        return;
+      }
+      this.open();
+      if (state.activeIndex >= 0) {
+        this.setActive(state.activeIndex);
+      }
     }
   };
 
