@@ -6,7 +6,10 @@ defmodule Aludel.RunsTest do
 
   alias Aludel.Interfaces.HttpClientMock
   alias Aludel.Runs
+  alias Aludel.Runs.Run
+  alias Aludel.Runs.RunResult
 
+  import Aludel.EvalsFixtures
   import Aludel.PromptsFixtures
   import Aludel.ProvidersFixtures
 
@@ -14,8 +17,6 @@ defmodule Aludel.RunsTest do
   setup :verify_on_exit!
 
   describe "runs" do
-    alias Aludel.Runs.Run
-
     @valid_attrs %{
       name: "Test Run",
       variable_values: %{"user" => "Alice", "topic" => "AI"}
@@ -33,8 +34,6 @@ defmodule Aludel.RunsTest do
     end
 
     test "total_cost/0 sums suite test case costs from suite run results" do
-      import Aludel.EvalsFixtures
-
       # Create a run result with cost
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Template")
@@ -170,8 +169,6 @@ defmodule Aludel.RunsTest do
   end
 
   describe "run_results" do
-    alias Aludel.Runs.RunResult
-
     @valid_result_attrs %{
       output: "Hello world",
       input_tokens: 10,

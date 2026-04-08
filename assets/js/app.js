@@ -26,6 +26,7 @@ import topbar from "../vendor/topbar"
 import {EvolutionChart} from "./hooks/evolution_chart"
 // Hook for toggling assertion input fields based on type
 import {AssertionTypeToggle} from "./hooks/assertion_type_toggle"
+import {CustomSelect} from "./hooks/custom_select"
 import {ActivityChart} from "./hooks/activity_chart"
 import {TagInput} from "./hooks/tag_input"
 
@@ -90,7 +91,7 @@ const livePath = document.querySelector("meta[name='live-path']").getAttribute("
 const liveSocket = new LiveSocket(livePath, Socket, {
   transport: liveTran === "longpoll" ? LongPoll : WebSocket,
   params: {_csrf_token: csrfToken},
-  hooks: {AutoDismissFlash, EvolutionChart, AssertionTypeToggle, ActivityChart, TagInput},
+  hooks: {AutoDismissFlash, EvolutionChart, AssertionTypeToggle, CustomSelect, ActivityChart, TagInput},
 })
 
 // Show progress bar on live navigation and form submits
@@ -141,4 +142,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-

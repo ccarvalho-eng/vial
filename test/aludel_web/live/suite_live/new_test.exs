@@ -18,7 +18,7 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
       {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert has_element?(view, "#suite_prompt_id option", "Test Prompt")
+      assert has_element?(view, "#suite_prompt_id-select [data-select-option]", "Test Prompt")
     end
 
     test "shows add test case button", %{conn: conn} do
@@ -33,8 +33,8 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
       {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert has_element?(view, "#suite_project_id option", "Suite Project")
-      refute has_element?(view, "#suite_project_id option", "Prompt Project")
+      assert has_element?(view, "#suite_project_id-select [data-select-option]", "Suite Project")
+      refute has_element?(view, "#suite_project_id-select [data-select-option]", "Prompt Project")
     end
   end
 
@@ -48,7 +48,7 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       |> form("#suite-form", suite: %{name: "", prompt_id: prompt.id})
       |> render_change()
 
-      assert has_element?(view, "#suite_prompt_id option[selected][value='#{prompt.id}']")
+      assert has_element?(view, "#suite_prompt_id-select [data-select-value]", prompt.name)
       assert has_element?(view, "pre", "Hello {{name}}")
     end
 
@@ -57,8 +57,13 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
       {:ok, view, _html} = live(conn, "/suites/new")
 
-      assert has_element?(view, "#suite_prompt_id option[value='']", "Select a prompt")
-      assert has_element?(view, "#suite_prompt_id option", "Test Prompt")
+      assert has_element?(
+               view,
+               "#suite_prompt_id-select [data-select-option][data-value='']",
+               "Select a prompt"
+             )
+
+      assert has_element?(view, "#suite_prompt_id-select [data-select-option]", "Test Prompt")
     end
   end
 
@@ -297,7 +302,7 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       |> render_change()
 
       assert has_element?(view, "#suite_name[value='Suite Draft']")
-      assert has_element?(view, "#suite_prompt_id option[selected][value='#{prompt.id}']")
+      assert has_element?(view, "#suite_prompt_id-select [data-select-value]", prompt.name)
     end
   end
 end

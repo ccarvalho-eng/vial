@@ -13,6 +13,8 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert has_element?(view, "#provider-form")
       assert has_element?(view, "#provider-form input[name='provider[name]']")
       assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
+      assert has_element?(view, "#provider_provider-select[phx-hook='CustomSelect']")
+      assert has_element?(view, "#provider_provider[data-select-input]")
     end
 
     test "shows custom input when custom model is selected", %{conn: conn} do
@@ -24,6 +26,18 @@ defmodule Aludel.Web.ProviderLive.NewTest do
         |> render_change()
 
       assert html =~ "Custom model name"
+    end
+
+    test "renders grouped model options through the shared select component", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
+
+      html =
+        view
+        |> form("#provider-form", provider: %{provider: "openai", model_selection: "custom"})
+        |> render_change()
+
+      assert html =~ "GPT-4o"
+      assert has_element?(view, "#provider_model_selection-select [data-select-option]", "Custom")
     end
 
     test "creates provider with valid data", %{conn: conn} do

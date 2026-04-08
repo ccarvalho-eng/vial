@@ -212,24 +212,135 @@ defmodule Aludel.Web.CoreComponents do
   end
 
   def input(%{type: "select"} = assigns) do
-    ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <select
-          id={@id}
-          name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
-          multiple={@multiple}
-          {@rest}
+    assigns =
+      assigns
+      |> assign(:normalized_options, normalize_select_options(assigns.options || []))
+      |> assign(:normalized_value, normalize_select_value(assigns[:value]))
+      |> then(fn assigns -> assign(assigns, :select_label, selected_select_label(assigns)) end)
+
+    if assigns.multiple do
+      ~H"""
+      <div class="fieldset mb-2">
+        <label>
+          <span :if={@label} class="label mb-1">{@label}</span>
+          <select
+            id={@id}
+            name={@name}
+            class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
+            multiple={@multiple}
+            {@rest}
+          >
+            <option :if={@prompt} value="">{@prompt}</option>
+            {Phoenix.HTML.Form.options_for_select(@options, @value)}
+          </select>
+        </label>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
+      """
+    else
+      ~H"""
+      <div class="fieldset mb-2">
+        <div
+          id={"#{@id}-select"}
+          class="aludel-select"
+          phx-hook="CustomSelect"
+          data-disabled={to_string(!!@rest[:disabled])}
         >
-          <option :if={@prompt} value="">{@prompt}</option>
-          {Phoenix.HTML.Form.options_for_select(@options, @value)}
-        </select>
-      </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
-    </div>
-    """
+          <span :if={@label} id={"#{@id}-label"} class="label mb-1 block">{@label}</span>
+          <select
+            id={@id}
+            name={@name}
+            class={[
+              "sr-only",
+              @class || "select",
+              @errors != [] && (@error_class || "select-error")
+            ]}
+            tabindex="-1"
+            data-select-input
+            {Map.delete(@rest, :required)}
+          >
+            <option :if={@prompt} value="">{@prompt}</option>
+            {Phoenix.HTML.Form.options_for_select(@options, @value)}
+          </select>
+          <button
+            type="button"
+            id={"#{@id}-trigger"}
+            class={[
+              "aludel-select-trigger",
+              @errors != [] && "aludel-select-trigger-error"
+            ]}
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls={"#{@id}-options"}
+            aria-labelledby={
+              if @label,
+                do: "#{@id}-label #{@id}-value",
+                else: "#{@id}-value"
+            }
+            disabled={@rest[:disabled]}
+            data-select-trigger
+          >
+            <span
+              id={"#{@id}-value"}
+              class={[
+                "aludel-select-value",
+                @normalized_value == "" && "aludel-select-placeholder"
+              ]}
+              data-select-value
+            >
+              {@select_label}
+            </span>
+            <span class="aludel-select-icon" aria-hidden="true">
+              <.icon name="hero-chevron-up-down" class="size-4" />
+            </span>
+          </button>
+          <div
+            id={"#{@id}-options"}
+            class="aludel-select-dropdown hidden"
+            role="listbox"
+            aria-labelledby={if @label, do: "#{@id}-label", else: nil}
+            data-select-dropdown
+          >
+            <button
+              :if={@prompt}
+              type="button"
+              class={[
+                "aludel-select-option",
+                @normalized_value == "" && "is-selected"
+              ]}
+              role="option"
+              aria-selected={to_string(@normalized_value == "")}
+              data-select-option
+              data-label={@prompt}
+              data-value=""
+            >
+              {@prompt}
+            </button>
+            <button
+              :for={option <- @normalized_options}
+              type="button"
+              class={[
+                "aludel-select-option",
+                @normalized_value == option.value && "is-selected"
+              ]}
+              role="option"
+              aria-selected={to_string(@normalized_value == option.value)}
+              data-select-option
+              data-label={option.label}
+              data-value={option.value}
+            >
+              <span>{option.label}</span>
+              <.icon
+                name="hero-check"
+                class={select_check_icon_class(@normalized_value == option.value)}
+              />
+            </button>
+          </div>
+        </div>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
+      """
+    end
   end
 
   def input(%{type: "textarea"} = assigns) do
@@ -274,6 +385,57 @@ defmodule Aludel.Web.CoreComponents do
     </div>
     """
   end
+
+  defp normalize_select_options(options) do
+    Enum.flat_map(options, fn
+      {group_label, group_options} when is_list(group_options) ->
+        Enum.map(group_options, fn
+          {label, value} ->
+            %{
+              label: to_string(label),
+              value: normalize_select_value(value),
+              group: to_string(group_label)
+            }
+
+          value ->
+            %{
+              label: to_string(value),
+              value: normalize_select_value(value),
+              group: to_string(group_label)
+            }
+        end)
+
+      {label, value} ->
+        [%{label: to_string(label), value: normalize_select_value(value), group: nil}]
+
+      %{label: label, value: value} ->
+        [%{label: to_string(label), value: normalize_select_value(value), group: nil}]
+
+      value ->
+        [%{label: to_string(value), value: normalize_select_value(value), group: nil}]
+    end)
+  end
+
+  defp normalize_select_value(nil), do: ""
+  defp normalize_select_value(value), do: to_string(value)
+
+  defp selected_select_label(%{normalized_options: options, normalized_value: ""} = assigns) do
+    case {assigns[:prompt], options} do
+      {prompt, _} when is_binary(prompt) -> prompt
+      {_, [%{label: label} | _]} -> label
+      _ -> ""
+    end
+  end
+
+  defp selected_select_label(%{normalized_options: options, normalized_value: value}) do
+    case Enum.find(options, fn option -> option.value == value end) do
+      %{label: label} -> label
+      nil -> ""
+    end
+  end
+
+  defp select_check_icon_class(true), do: "aludel-select-check size-4 is-visible"
+  defp select_check_icon_class(false), do: "aludel-select-check size-4"
 
   @doc """
   Renders a header with title.

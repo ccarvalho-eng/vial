@@ -23,38 +23,22 @@
             />
           </div>
           <div style="margin-bottom: 12px;">
-            <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
-              Prompt
-            </label>
-            <select
-              id={@suite_form[:prompt_id].id}
-              name={@suite_form[:prompt_id].name}
+            <.input
+              field={@suite_form[:prompt_id]}
+              type="select"
+              label="Prompt"
               required
-              style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
-            >
-              <%= for prompt <- @all_prompts do %>
-                <option value={prompt.id} selected={prompt.id == @suite_form[:prompt_id].value}>
-                  {prompt.name}
-                </option>
-              <% end %>
-            </select>
+              options={Enum.map(@all_prompts, &{&1.name, &1.id})}
+            />
           </div>
           <div style="margin-bottom: 12px;">
-            <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
-              Project (optional)
-            </label>
-            <select
-              id={@suite_form[:project_id].id}
-              name={@suite_form[:project_id].name}
-              style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); font-size: 14px;"
-            >
-              <option value="">No Project</option>
-              <%= for project <- @projects do %>
-                <option value={project.id} selected={project.id == @suite_form[:project_id].value}>
-                  {project.name}
-                </option>
-              <% end %>
-            </select>
+            <.input
+              field={@suite_form[:project_id]}
+              type="select"
+              label="Project (optional)"
+              prompt="No Project"
+              options={Enum.map(@projects, &{&1.name, &1.id})}
+            />
           </div>
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
             <button
