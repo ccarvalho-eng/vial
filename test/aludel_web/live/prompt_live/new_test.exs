@@ -78,8 +78,13 @@ defmodule Aludel.Web.PromptLive.NewTest do
 
       {:ok, view, _html} = live(conn, "/prompts/new")
 
-      assert has_element?(view, "#prompt_project_id option", "Prompt Project")
-      refute has_element?(view, "#prompt_project_id option", "Suite Project")
+      assert has_element?(
+               view,
+               "#prompt_project_id-select [data-select-option]",
+               "Prompt Project"
+             )
+
+      refute has_element?(view, "#prompt_project_id-select [data-select-option]", "Suite Project")
     end
   end
 

@@ -158,18 +158,18 @@ defmodule Aludel.Web.ProviderLive.New do
     custom_model = Ecto.Changeset.get_field(changeset, :model_custom)
 
     cond do
-      selection == "custom" ->
+      custom_selection?(selection) ->
         changeset
         |> Ecto.Changeset.put_change(:model_custom, custom_model)
         |> Ecto.Changeset.put_change(:model, custom_model)
 
-      is_binary(selection) and selection != "" and model_in_groups?(model_groups, selection) ->
+      valid_selection?(model_groups, selection) ->
         changeset
         |> Ecto.Changeset.put_change(:model_selection, selection)
         |> Ecto.Changeset.put_change(:model, selection)
         |> Ecto.Changeset.delete_change(:model_custom)
 
-      is_binary(selection) and selection != "" ->
+      invalid_selection?(selection) ->
         changeset
         |> Ecto.Changeset.put_change(:model_selection, nil)
         |> Ecto.Changeset.put_change(:model, nil)
@@ -190,6 +190,16 @@ defmodule Aludel.Web.ProviderLive.New do
         changeset
     end
   end
+
+  defp custom_selection?(selection), do: selection == "custom"
+
+  defp valid_selection?(model_groups, selection) do
+    present_value?(selection) and model_in_groups?(model_groups, selection)
+  end
+
+  defp invalid_selection?(selection), do: present_value?(selection)
+
+  defp present_value?(value), do: is_binary(value) and value != ""
 
   defp model_in_groups?(%{active: active, deprecated: deprecated}, model) do
     Enum.any?(active ++ deprecated, &(&1.id == model))

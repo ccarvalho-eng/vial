@@ -270,6 +270,131 @@ select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%236e6e73' d='M4.427 6.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 6H4.604a.25.25 0 00-.177.427z'/%3E%3C/svg%3E");
 }
 
+.aludel-select {
+  position: relative;
+}
+
+button.aludel-select-trigger {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+
+button.aludel-select-trigger:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+button.aludel-select-trigger:focus-visible,
+button.aludel-select-trigger[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+button.aludel-select-trigger:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+button.aludel-select-trigger.aludel-select-trigger-error {
+  border-color: var(--color-error);
+}
+
+.aludel-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aludel-select-placeholder {
+  color: var(--text-muted);
+}
+
+.aludel-select-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+button.aludel-select-trigger[aria-expanded="true"] .aludel-select-icon {
+  color: var(--accent);
+  transform: rotate(180deg);
+}
+
+.aludel-select-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+button.aludel-select-option {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: none;
+}
+
+button.aludel-select-option:hover,
+button.aludel-select-option.is-active {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+  color: var(--text-primary);
+  transform: none;
+  box-shadow: none;
+}
+
+button.aludel-select-option.is-selected {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.aludel-select-check {
+  opacity: 0;
+  color: var(--accent);
+  transition: opacity 0.15s ease;
+}
+
+.aludel-select-check.is-visible {
+  opacity: 1;
+}
+
 input:hover,
 textarea:hover,
 select:hover {

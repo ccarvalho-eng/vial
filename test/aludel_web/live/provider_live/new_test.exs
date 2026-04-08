@@ -13,6 +13,8 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert has_element?(view, "#provider-form")
       assert has_element?(view, "#provider-form input[name='provider[name]']")
       assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
+      assert has_element?(view, "#provider_provider-select[phx-hook='CustomSelect']")
+      assert has_element?(view, "#provider_provider[data-select-input]")
     end
 
     test "shows custom input when custom model is selected", %{conn: conn} do
