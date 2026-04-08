@@ -69,10 +69,28 @@ case Providers.list_providers() do
         config: %{"temperature" => 0.7, "max_tokens" => 1000}
       })
 
-    IO.puts("✓ Created 6 default providers:")
+    # Google Gemini Providers
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "Gemini 2.5 Flash",
+        provider: :google,
+        model: "gemini-2.5-flash",
+        config: %{"temperature" => 0.7, "max_tokens" => 1024}
+      })
+
+    {:ok, _} =
+      Providers.create_provider(%{
+        name: "Gemini 2.5 Pro",
+        provider: :google,
+        model: "gemini-2.5-pro",
+        config: %{"temperature" => 0.7, "max_tokens" => 1024}
+      })
+
+    IO.puts("✓ Created 8 default providers:")
     IO.puts("  - OpenAI: GPT-4o, GPT-4o Mini")
     IO.puts("  - Anthropic: Claude Sonnet 4.5, Claude Haiku 4.5")
     IO.puts("  - Ollama: Llava (vision), Llama 2 (text)")
+    IO.puts("  - Google Gemini: Gemini 2.5 Flash, Gemini 2.5 Pro")
 
   _ ->
     IO.puts("→ Providers already exist, skipping")

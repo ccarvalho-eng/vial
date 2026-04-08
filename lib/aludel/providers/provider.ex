@@ -19,7 +19,7 @@ defmodule Aludel.Providers.Provider do
 
   schema "providers" do
     field :name, :string
-    field :provider, Ecto.Enum, values: [:openai, :anthropic, :ollama]
+    field :provider, Ecto.Enum, values: [:openai, :anthropic, :ollama, :google]
     field :model, :string
     field :config, :map
     field :model_selection, :string, virtual: true

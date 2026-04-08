@@ -74,6 +74,31 @@ defmodule Aludel.ProvidersTest do
       assert "can't be blank" in errors_on(changeset).model
     end
 
+    test "create_provider/1 with google provider" do
+      attrs = %{
+        name: "Google Gemini Flash",
+        provider: :google,
+        model: "gemini-2.5-flash",
+        config: %{"temperature" => 0.7, "max_tokens" => 1024}
+      }
+
+      assert {:ok, provider} = Providers.create_provider(attrs)
+      assert provider.name == "Google Gemini Flash"
+      assert provider.provider == :google
+      assert provider.model == "gemini-2.5-flash"
+    end
+
+    test "lists providers including google type" do
+      _openai = provider_fixture(%{name: "OpenAI", provider: :openai, model: "gpt-4o"})
+
+      _google =
+        provider_fixture(%{name: "Gemini Flash", provider: :google, model: "gemini-2.5-flash"})
+
+      providers = Providers.list_providers()
+      assert length(providers) == 2
+      assert Enum.any?(providers, fn p -> p.provider == :google end)
+    end
+
     test "create_provider/1 with JSONB config storage" do
       attrs = %{
         name: "Anthropic Claude",

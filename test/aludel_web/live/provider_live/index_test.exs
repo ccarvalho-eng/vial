@@ -6,39 +6,53 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
 
   describe "provider list" do
     test "mounts successfully", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers")
+      {:ok, view, _html} = live(conn, "/providers")
 
-      assert html =~ "Providers"
+      assert has_element?(view, "h1", "Providers")
     end
 
     test "displays list of providers", %{conn: conn} do
-      _provider1 = provider_fixture(%{name: "OpenAI GPT-4"})
-      _provider2 = provider_fixture(%{name: "Claude Sonnet"})
+      provider1 = provider_fixture(%{name: "OpenAI GPT-4"})
+      provider2 = provider_fixture(%{name: "Claude Sonnet"})
 
-      {:ok, _view, html} = live(conn, "/providers")
+      {:ok, view, _html} = live(conn, "/providers")
 
-      assert html =~ "OpenAI GPT-4"
-      assert html =~ "Claude Sonnet"
+      assert has_element?(view, "#provider-#{provider1.id}", "OpenAI GPT-4")
+      assert has_element?(view, "#provider-#{provider2.id}", "Claude Sonnet")
     end
 
     test "shows new provider button", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/providers")
+      {:ok, view, _html} = live(conn, "/providers")
 
-      assert html =~ "New Provider" or html =~ "Add Provider"
+      assert has_element?(view, "#new-provider-btn", "New Provider")
     end
 
     test "displays provider details", %{conn: conn} do
-      _provider =
+      provider =
         provider_fixture(%{
           name: "Test Provider",
           provider: :openai,
           model: "gpt-4o"
         })
 
-      {:ok, _view, html} = live(conn, "/providers")
+      {:ok, view, _html} = live(conn, "/providers")
 
-      assert html =~ "Test Provider"
-      assert html =~ "gpt-4o"
+      assert has_element?(view, "#provider-#{provider.id}", "Test Provider")
+      assert has_element?(view, "#provider-#{provider.id}", "gpt-4o")
+    end
+
+    test "displays Google provider with Google icon", %{conn: conn} do
+      provider =
+        provider_fixture(%{
+          name: "Gemini Flash",
+          provider: :google,
+          model: "gemini-2.5-flash"
+        })
+
+      {:ok, view, _html} = live(conn, "/providers")
+
+      assert has_element?(view, "#provider-#{provider.id}", "Gemini Flash")
+      assert has_element?(view, ".provider-icon-google")
     end
   end
 
@@ -48,25 +62,25 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
 
       {:ok, view, _html} = live(conn, "/providers")
 
-      html = render_click(view, "delete", %{"id" => provider.id})
+      render_click(view, "delete", %{"id" => provider.id})
 
-      assert html =~ "Provider deleted successfully"
-      refute html =~ "Delete Me"
+      assert render(view) =~ "Provider deleted successfully"
+      refute has_element?(view, "#provider-#{provider.id}")
     end
 
     test "refreshes provider list after deletion", %{conn: conn} do
       provider1 = provider_fixture(%{name: "Provider 1"})
-      _provider2 = provider_fixture(%{name: "Provider 2"})
+      provider2 = provider_fixture(%{name: "Provider 2"})
 
       {:ok, view, _html} = live(conn, "/providers")
 
-      assert render(view) =~ "Provider 1"
-      assert render(view) =~ "Provider 2"
+      assert has_element?(view, "#provider-#{provider1.id}", "Provider 1")
+      assert has_element?(view, "#provider-#{provider2.id}", "Provider 2")
 
-      html = render_click(view, "delete", %{"id" => provider1.id})
+      render_click(view, "delete", %{"id" => provider1.id})
 
-      refute html =~ "Provider 1"
-      assert html =~ "Provider 2"
+      refute has_element?(view, "#provider-#{provider1.id}")
+      assert has_element?(view, "#provider-#{provider2.id}", "Provider 2")
     end
   end
 end

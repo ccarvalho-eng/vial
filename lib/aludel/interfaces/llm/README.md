@@ -14,6 +14,7 @@ lib/aludel/interfaces/
     ├── providers/
     │   ├── openai.ex
     │   ├── anthropic.ex
+    │   ├── google.ex
     │   └── ollama.ex
     ├── behaviour.ex            # Provider contract
     ├── config.ex               # HTTP adapter + API key utils
@@ -39,20 +40,22 @@ config :aludel,
 
 ## Adding a Provider
 
-Create `lib/aludel/interfaces/llm/providers/gemini.ex`:
+Create a new provider module, e.g. `lib/aludel/interfaces/llm/providers/google.ex`:
 
 ```elixir
-defmodule Aludel.Interfaces.LLM.Providers.Gemini do
+defmodule Aludel.Interfaces.LLM.Providers.Google do
   alias Aludel.Interfaces.LLM.{Config, ErrorParser}
 
   @behaviour Aludel.Interfaces.LLM.Behaviour
 
   @impl true
-  def generate(model, prompt, config, _opts) do
+  def generate(model, prompt, config, opts) do
     with {:ok, api_key} <- Config.get_api_key(config) do
-      opts = [api_key: api_key, temperature: config["temperature"] || 0.7]
+      req_opts =
+        [api_key: api_key, temperature: config["temperature"] || 0.7]
+        |> Keyword.merge(opts)
 
-      case Config.http_adapter().request("gemini:#{model}", prompt, opts) do
+      case Config.http_adapter().request("google:#{model}", prompt, req_opts) do
         {:ok, response} -> {:ok, response}
         {:error, reason} -> ErrorParser.parse_error(reason)
       end
@@ -68,7 +71,7 @@ Register in `lib/aludel/interfaces/llm.ex`:
   openai: OpenAI,
   anthropic: Anthropic,
   ollama: Ollama,
-  gemini: Gemini
+  google: Google
 }
 ```
 

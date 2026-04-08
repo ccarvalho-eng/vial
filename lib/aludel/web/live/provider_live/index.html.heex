@@ -5,7 +5,7 @@
         <.icon name="hero-server-stack" class="size-7 text-muted" />
         <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Providers</h1>
       </div>
-      <.link navigate={aludel_path("providers/new")} class="button-primary">
+      <.link navigate={aludel_path("providers/new")} class="button-primary" id="new-provider-btn">
         <.icon name="hero-plus" class="size-4" /> New Provider
       </.link>
     </div>
@@ -19,7 +19,7 @@
           </div>
         </div>
       <% else %>
-        <table style="width: 100%; border-collapse: collapse;">
+        <table id="providers-table" style="width: 100%; border-collapse: collapse;">
           <thead style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border);">
             <tr>
               <th style="text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
@@ -35,7 +35,7 @@
           </thead>
           <tbody>
             <%= for provider <- @providers do %>
-              <tr style="border-bottom: 1px solid var(--border);">
+              <tr id={"provider-#{provider.id}"} style="border-bottom: 1px solid var(--border);">
                 <td style="padding: 12px 16px;">
                   <div style="display: flex; align-items: center; gap: 12px;">
                     <%= if icon_path = provider_icon(provider.provider) do %>

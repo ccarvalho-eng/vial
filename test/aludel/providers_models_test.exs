@@ -42,5 +42,27 @@ defmodule Aludel.ProvidersModelsTest do
       assert is_list(groups.active)
       assert is_list(groups.deprecated)
     end
+
+    test "fetches model groups for google provider" do
+      groups = Providers.fetch_model_groups(:google)
+
+      assert Map.has_key?(groups, :active)
+      assert Map.has_key?(groups, :deprecated)
+      assert is_list(groups.active)
+      assert is_list(groups.deprecated)
+    end
+
+    test "fetches model groups for google string type" do
+      groups = Providers.fetch_model_groups("google")
+
+      assert Map.has_key?(groups, :active)
+      assert Map.has_key?(groups, :deprecated)
+      assert is_list(groups.active)
+      assert is_list(groups.deprecated)
+    end
+
+    test "returns empty groups for unknown provider string" do
+      assert %{active: [], deprecated: []} = Providers.fetch_model_groups("unknown")
+    end
   end
 end

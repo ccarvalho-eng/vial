@@ -17,7 +17,7 @@
   <em>Like jinn answering invocation, LLMs respond to prompts; here, their nature is revealed, tested, and distilled.</em></p>
 </div>
 
-Run prompts across OpenAI, Anthropic, and Ollama simultaneously. Compare output quality, latency, token usage, and cost in real-time.
+Run prompts across OpenAI, Anthropic, Google Gemini, and Ollama simultaneously. Compare output quality, latency, token usage, and cost in real-time.
 
 ![Aludel dashboard screenshot](https://github.com/user-attachments/assets/16e8caa6-81e2-44fa-b205-2dd9f6477760)
 
@@ -120,7 +120,8 @@ Aludel reads provider API keys from application config. Add to your host app's c
 # config/dev.exs (or config/runtime.exs for production)
 config :aludel, :llm,
   openai_api_key: System.get_env("OPENAI_API_KEY"),
-  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY")
+  anthropic_api_key: System.get_env("ANTHROPIC_API_KEY"),
+  google_api_key: System.get_env("GOOGLE_API_KEY")
 ```
 
 Then set environment variables before starting the server:
@@ -128,6 +129,7 @@ Then set environment variables before starting the server:
 ```bash
 export OPENAI_API_KEY=sk-...
 export ANTHROPIC_API_KEY=sk-ant-...
+export GOOGLE_API_KEY=...
 mix phx.server
 ```
 
@@ -185,7 +187,7 @@ Edit `standalone/config/dev.exs` to configure:
 
 - **Database** — Default: `postgres://postgres:postgres@localhost/aludel_dash_dev`
 - **Port** — Default: `4000`
-- **API Keys** — Set `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` environment variables
+- **API Keys** — Set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `GOOGLE_API_KEY` environment variables
 
 ### Docker
 
@@ -217,6 +219,7 @@ export DATABASE_URL=postgres://...
 export SECRET_KEY_BASE=$(mix phx.gen.secret)
 export OPENAI_API_KEY=sk-...
 export ANTHROPIC_API_KEY=sk-ant-...
+export GOOGLE_API_KEY=...
 
 # Optional: Enable basic auth
 export BASIC_AUTH_USER=admin
@@ -239,6 +242,7 @@ _build/prod/rel/aludel_dash/bin/aludel_dash start
 | **Ollama** ⭐ | No | Local models - works out of the box |
 | **OpenAI** | Yes | Add `OPENAI_API_KEY` to `.env` ([Get key](https://platform.openai.com)) |
 | **Anthropic** | Yes | Add `ANTHROPIC_API_KEY` to `.env` ([Get key](https://console.anthropic.com)) |
+| **Google Gemini** | Yes | Add `GOOGLE_API_KEY` to `.env` ([Get key](https://aistudio.google.com/apikey)) |
 
 ### Ollama quickstart
 
@@ -249,7 +253,7 @@ ollama pull llama3  # or: mistral, codellama
 mix run priv/repo/seeds.exs
 ```
 
-Seeds create providers for Ollama, OpenAI, and Anthropic, along with 3 sample prompts and 3 evaluation suites with document attachments.
+Seeds create providers for Ollama, OpenAI, Anthropic, and Google Gemini, along with 3 sample prompts and 3 evaluation suites with document attachments.
 
 ---
 
