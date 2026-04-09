@@ -134,16 +134,18 @@ defmodule Aludel.Web.RunLive.New do
             Providers.get_provider!(id)
           end)
 
-        run_with_version = %{run | prompt_version: socket.assigns.prompt_version}
+        case Runs.launch_run(run, providers) do
+          {:ok, _pid} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Run launched successfully")
+             |> push_navigate(to: aludel_path("runs/#{run.id}"))}
 
-        Task.start(fn ->
-          Runs.execute_run(run_with_version, providers)
-        end)
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Run launched successfully")
-         |> push_navigate(to: aludel_path("runs/#{run.id}"))}
+          {:error, reason} ->
+            {:noreply,
+             socket
+             |> put_flash(:error, "Failed to launch run: #{inspect(reason)}")}
+        end
 
       {:error, changeset} ->
         {:noreply,
