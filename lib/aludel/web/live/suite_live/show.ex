@@ -9,7 +9,9 @@ defmodule Aludel.Web.SuiteLive.Show do
   use Aludel.Web, :live_view
 
   alias Aludel.Evals
-  alias Aludel.FileValidation
+  alias Aludel.Evals.AssertionParser
+  alias Aludel.Evals.DocumentIngestion
+  alias Aludel.Evals.TestCaseEditor
   alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Providers
@@ -165,19 +167,7 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   @impl Phoenix.LiveView
   def handle_event("add_test_case", _params, socket) do
-    # Extract variables from prompt template
-    template =
-      socket.assigns.prompt.versions |> List.first() |> then(&if &1, do: &1.template, else: "")
-
-    variables = extract_variables(template)
-    variable_values = Map.new(variables, fn var -> {var, ""} end)
-
-    # Create new test case
-    case Evals.create_test_case(%{
-           suite_id: socket.assigns.suite.id,
-           variable_values: variable_values,
-           assertions: [%{"type" => "contains", "value" => ""}]
-         }) do
+    case TestCaseEditor.create_test_case(socket.assigns.suite.id, socket.assigns.prompt) do
       {:ok, _test_case} ->
         suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
 
@@ -194,13 +184,14 @@ defmodule Aludel.Web.SuiteLive.Show do
   @impl Phoenix.LiveView
   def handle_event("edit_test_case", %{"id" => id}, socket) do
     test_case = Evals.get_test_case!(id)
+    form_params = TestCaseEditor.build_form_params(test_case)
 
     socket =
       socket
       |> assign(:editing_test_case_id, id)
       |> assign(:editing_assertions, test_case.assertions)
-      |> assign(:editing_test_case_params, build_test_case_form_params(test_case))
-      |> assign(:test_case_form, to_form(build_test_case_form_params(test_case), as: :test_case))
+      |> assign(:editing_test_case_params, form_params)
+      |> assign(:test_case_form, to_form(form_params, as: :test_case))
       |> allow_upload(:documents,
         accept: ~w(.pdf .png .jpg .jpeg .csv .json .txt),
         max_entries: 5,
@@ -233,7 +224,7 @@ defmodule Aludel.Web.SuiteLive.Show do
 
     socket =
       if edit_mode == :visual do
-        {:ok, assertions} = parse_assertions(:visual, test_case_params)
+        {:ok, assertions} = AssertionParser.parse(:visual, test_case_params)
         assign(socket, :editing_assertions, assertions)
       else
         socket
@@ -246,26 +237,32 @@ defmodule Aludel.Web.SuiteLive.Show do
   def handle_event("save_test_case", %{"test_case" => test_case_params}, socket) do
     id = test_case_params["id"]
     test_case = Evals.get_test_case!(id)
-    variables = Map.get(test_case_params, "variable_values", %{})
-
-    # Parse assertions based on edit mode
     edit_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
 
-    case parse_assertions(edit_mode, test_case_params) do
-      {:ok, assertions} ->
-        attrs = %{
-          variable_values: variables,
-          assertions: assertions
-        }
+    case TestCaseEditor.update_test_case(test_case, test_case_params, edit_mode) do
+      {:ok, _test_case} ->
+        {successful_uploads, failed_uploads} = handle_test_case_uploads(socket, test_case)
+        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
 
-        update_test_case_with_attrs(socket, test_case, attrs, test_case_params)
+        socket =
+          socket
+          |> assign(:suite, suite)
+          |> assign(:editing_test_case_id, nil)
+          |> assign(:editing_assertions, nil)
+          |> assign(:test_case_form, nil)
+          |> assign(:editing_test_case_params, nil)
 
-      {:error, message} ->
+        {:noreply, put_upload_flash(socket, successful_uploads, failed_uploads)}
+
+      {:error, message} when is_binary(message) ->
         {:noreply,
          socket
          |> assign(:test_case_form, to_form(test_case_params, as: :test_case))
          |> assign(:editing_test_case_params, test_case_params)
          |> put_flash(:error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update test case")}
     end
   end
 
@@ -331,105 +328,12 @@ defmodule Aludel.Web.SuiteLive.Show do
     end
   end
 
-  defp parse_assertions(:json, params) do
-    case Jason.decode(params["assertions_json"] || "[]") do
-      {:ok, json_assertions} when is_list(json_assertions) ->
-        case validate_assertions(json_assertions) do
-          :ok -> {:ok, json_assertions}
-          {:error, _} = error -> error
-        end
-
-      {:ok, _} ->
-        {:error, "Invalid JSON: assertions must be a list"}
-
-      {:error, %Jason.DecodeError{}} ->
-        {:error, "Invalid JSON syntax in assertions"}
-    end
-  end
-
-  defp parse_assertions(:visual, params) do
-    assertion_params = normalize_assertion_params(params["assertions"] || %{})
-
-    assertion_indices =
-      assertion_params
-      |> Map.keys()
-      |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
-      |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
-      |> Enum.sort()
-
-    assertions =
-      Enum.map(assertion_indices, fn idx ->
-        type = Map.get(assertion_params, "assertion_type_#{idx}")
-
-        if type == "json_field" do
-          %{
-            "type" => type,
-            "field" => Map.get(assertion_params, "assertion_field_#{idx}"),
-            "expected" => Map.get(assertion_params, "assertion_expected_#{idx}")
-          }
-        else
-          %{
-            "type" => type,
-            "value" => Map.get(assertion_params, "assertion_value_#{idx}")
-          }
-        end
-      end)
-
-    {:ok, assertions}
-  end
-
-  defp update_test_case_with_attrs(socket, test_case, attrs, _params) do
-    case Evals.update_test_case(test_case, attrs) do
-      {:ok, _test_case} ->
-        {successful_uploads, failed_uploads} = handle_test_case_uploads(socket, test_case)
-        suite = Evals.get_suite_with_test_cases_and_prompt!(socket.assigns.suite.id)
-
-        socket =
-          socket
-          |> assign(:suite, suite)
-          |> assign(:editing_test_case_id, nil)
-          |> assign(:editing_assertions, nil)
-          |> assign(:test_case_form, nil)
-          |> assign(:editing_test_case_params, nil)
-
-        {:noreply, put_upload_flash(socket, successful_uploads, failed_uploads)}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update test case")}
-    end
-  end
-
   defp handle_test_case_uploads(socket, test_case) do
     socket
     |> consume_uploaded_entries(:documents, fn %{path: path}, entry ->
-      process_test_case_upload(path, entry, test_case.id)
+      {:ok, DocumentIngestion.ingest(path, entry, test_case.id)}
     end)
     |> Enum.split_with(&successful_upload?/1)
-  end
-
-  defp process_test_case_upload(path, entry, test_case_id) do
-    {:ok, data} = File.read(path)
-
-    case FileValidation.validate(data, entry.client_type) do
-      :ok -> persist_test_case_document(entry, data, test_case_id)
-      {:error, reason} -> {:ok, {:failed, entry.client_name, reason}}
-    end
-  end
-
-  defp persist_test_case_document(entry, data, test_case_id) do
-    case Evals.create_test_case_document(%{
-           test_case_id: test_case_id,
-           filename: entry.client_name,
-           content_type: entry.client_type,
-           data: data,
-           size_bytes: entry.client_size
-         }) do
-      {:ok, _doc} ->
-        {:ok, {:success, entry.client_name}}
-
-      {:error, _changeset} ->
-        {:ok, {:failed, entry.client_name, "Database error"}}
-    end
   end
 
   defp successful_upload?({:success, _}), do: true
@@ -519,42 +423,6 @@ defmodule Aludel.Web.SuiteLive.Show do
     end
   end
 
-  defp extract_variables(template) do
-    ~r/\{\{([^}]+)\}\}/
-    |> Regex.scan(template)
-    |> Enum.map(fn [_, var] -> String.trim(var) end)
-    |> Enum.uniq()
-  end
-
-  defp validate_assertions(assertions) do
-    valid_types = ["contains", "not_contains", "regex", "exact_match", "json_field"]
-
-    assertions
-    |> Enum.with_index(1)
-    |> Enum.reduce_while(:ok, fn {assertion, idx}, _acc ->
-      type = Map.get(assertion, "type")
-
-      cond do
-        type not in valid_types ->
-          {:halt,
-           {:error,
-            "Invalid assertion type at index #{idx}: #{inspect(type)}. Must be one of: #{Enum.join(valid_types, ", ")}"}}
-
-        type == "json_field" and
-            (not Map.has_key?(assertion, "field") or not Map.has_key?(assertion, "expected")) ->
-          {:halt,
-           {:error,
-            "Assertion at index #{idx}: json_field type requires 'field' and 'expected' fields"}}
-
-        type != "json_field" and not Map.has_key?(assertion, "value") ->
-          {:halt, {:error, "Assertion at index #{idx}: #{type} type requires 'value' field"}}
-
-        true ->
-          {:cont, :ok}
-      end
-    end)
-  end
-
   defp build_run_suite_form(version_id, provider_id) do
     to_form(
       %{
@@ -564,37 +432,4 @@ defmodule Aludel.Web.SuiteLive.Show do
       as: :run_suite
     )
   end
-
-  defp build_test_case_form_params(test_case) do
-    %{
-      "id" => test_case.id,
-      "variable_values" => test_case.variable_values || %{},
-      "assertions_json" => Jason.encode!(test_case.assertions || [], pretty: true),
-      "assertions" => build_assertion_params(test_case.assertions || [])
-    }
-  end
-
-  defp build_assertion_params(assertions) do
-    assertions
-    |> Enum.with_index()
-    |> Enum.reduce(%{}, fn {assertion, idx}, acc ->
-      acc
-      |> Map.put("assertion_type_#{idx}", assertion["type"])
-      |> maybe_put_assertion_value(idx, assertion)
-    end)
-  end
-
-  defp maybe_put_assertion_value(params, idx, %{"type" => "json_field"} = assertion) do
-    params
-    |> Map.put("assertion_field_#{idx}", assertion["field"] || "")
-    |> Map.put("assertion_expected_#{idx}", assertion["expected"] || "")
-  end
-
-  defp maybe_put_assertion_value(params, idx, assertion) do
-    Map.put(params, "assertion_value_#{idx}", assertion["value"] || "")
-  end
-
-  defp normalize_assertion_params(params) when is_map(params), do: params
-  defp normalize_assertion_params(params) when is_list(params), do: Map.new(params)
-  defp normalize_assertion_params(_params), do: %{}
 end
