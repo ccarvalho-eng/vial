@@ -200,6 +200,7 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       provider = provider_fixture()
       {:ok, _version} = Aludel.Prompts.create_prompt_version(prompt, "Version 2 {{name}}")
       prompt = Aludel.Prompts.get_prompt_with_versions!(prompt.id)
+      version_1 = Enum.find(prompt.versions, &(&1.template == "Version 1 {{name}}"))
 
       {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
@@ -208,7 +209,7 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       view
       |> form("#run-suite-form",
         run_suite: %{
-          version_id: List.last(prompt.versions).id,
+          version_id: version_1.id,
           provider_id: provider.id
         }
       )
