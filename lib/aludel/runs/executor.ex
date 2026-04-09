@@ -48,10 +48,11 @@ defmodule Aludel.Runs.Executor do
   """
   @spec execute(Run.t(), [Provider.t()]) :: execution_result()
   def execute(%Run{} = run, providers) when is_list(providers) do
-    with {:ok, run} <- preload_prompt_version(run),
-         rendered_prompt <- render_template(run.prompt_version.template, run.variable_values),
-         provider_outcomes <- execute_providers(run, providers, rendered_prompt),
-         {:ok, updated_run} <- reload_run(run.id) do
+    run = preload_prompt_version(run)
+    rendered_prompt = render_template(run.prompt_version.template, run.variable_values)
+    provider_outcomes = execute_providers(run, providers, rendered_prompt)
+
+    with {:ok, updated_run} <- reload_run(run.id) do
       failures = collect_failures(provider_outcomes)
 
       {:ok,
@@ -64,19 +65,10 @@ defmodule Aludel.Runs.Executor do
     end
   end
 
-  defp preload_prompt_version(%Run{} = run) do
-    run =
-      if Ecto.assoc_loaded?(run.prompt_version) && run.prompt_version do
-        run
-      else
-        repo().preload(run, :prompt_version)
-      end
+  defp preload_prompt_version(%Run{prompt_version: %Ecto.Association.NotLoaded{}} = run),
+    do: repo().preload(run, :prompt_version)
 
-    case run.prompt_version do
-      nil -> {:error, :prompt_version_not_loaded}
-      _prompt_version -> {:ok, run}
-    end
-  end
+  defp preload_prompt_version(%Run{} = run), do: run
 
   defp execute_providers(run, providers, rendered_prompt) do
     case execution_mode() do
