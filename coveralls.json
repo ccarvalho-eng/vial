@@ -26,6 +26,7 @@
     "lib/aludel/web/assets.ex",
     "lib/aludel/interfaces/document_converter/adapters/imagemagick.ex",
     "lib/aludel/interfaces/llm/adapters/http/default.ex",
+    "lib/aludel/runs/execution.ex",
     "lib/mix/tasks/"
   ],
   "custom_skip_files": [
