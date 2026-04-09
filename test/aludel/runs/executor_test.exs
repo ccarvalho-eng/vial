@@ -42,6 +42,10 @@ defmodule Aludel.Runs.ExecutorTest do
       assert hd(execution.provider_results).status == :completed
     end
 
+    test "rejects empty provider lists", %{run: run} do
+      assert {:error, :empty_providers} = Executor.execute(run, [])
+    end
+
     test "returns a partial failure when provider outcomes are mixed", %{run: run} do
       provider1 = provider_fixture(%{name: "Provider 1", model: "provider-1-model"})
       provider2 = provider_fixture(%{name: "Provider 2", model: "provider-2-model"})
@@ -57,6 +61,49 @@ defmodule Aludel.Runs.ExecutorTest do
       assert execution.status == :partial_failure
       assert length(execution.failures) == 1
       assert length(execution.provider_results) == 2
+    end
+
+    test "persists task exits in concurrent execution", %{run: run} do
+      original_mode = Application.get_env(:aludel, :run_execution_mode)
+
+      Application.put_env(:aludel, :run_execution_mode, :concurrent)
+
+      on_exit(fn ->
+        Application.put_env(:aludel, :run_execution_mode, original_mode)
+      end)
+
+      provider = provider_fixture(%{model: "provider-exit-model"})
+
+      expect(HttpClientMock, :request, fn "openai:provider-exit-model", _prompt, _opts ->
+        exit(:boom)
+      end)
+
+      Phoenix.PubSub.subscribe(Aludel.PubSub, "run:#{run.id}")
+
+      assert {:ok, %Execution{} = execution} = Executor.execute(run, [provider])
+      assert execution.status == :error
+
+      assert [%{provider_id: provider_id, provider_name: provider_name, reason: reason}] =
+               execution.failures
+
+      assert provider_id == provider.id
+      assert provider_name == provider.name
+      assert match?({:task_exit, _}, reason)
+
+      assert_receive {:run_result_update, _result_id, :error, message}, 1000
+      assert message =~ "task_exit"
+      assert message =~ "boom"
+
+      assert [result] = execution.provider_results
+      assert result.status == :error
+      assert result.error =~ "task_exit"
+      assert result.error =~ "boom"
+    end
+  end
+
+  describe "launch/2" do
+    test "rejects empty provider lists" do
+      assert {:error, :empty_providers} = Executor.launch(%Aludel.Runs.Run{}, [])
     end
   end
 

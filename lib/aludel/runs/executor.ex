@@ -15,12 +15,15 @@ defmodule Aludel.Runs.Executor do
   @default_max_concurrency 3
   @default_timeout_ms 120_000
 
-  @type execution_result :: {:ok, Execution.t()} | {:error, term()}
+  @type execution_result :: {:ok, Execution.t()} | {:error, :empty_providers | term()}
 
   @doc """
   Launches a run under the executor supervisor.
   """
-  @spec launch(Run.t(), [Provider.t()]) :: DynamicSupervisor.on_start_child()
+  @spec launch(Run.t(), [Provider.t()]) ::
+          DynamicSupervisor.on_start_child() | {:error, :empty_providers}
+  def launch(%Run{}, []), do: {:error, :empty_providers}
+
   def launch(%Run{} = run, providers) when is_list(providers) do
     Task.Supervisor.start_child(@execution_supervisor, fn ->
       case execute(run, providers) do
@@ -47,6 +50,8 @@ defmodule Aludel.Runs.Executor do
   Executes a run against one or more providers and returns a structured outcome.
   """
   @spec execute(Run.t(), [Provider.t()]) :: execution_result()
+  def execute(%Run{}, []), do: {:error, :empty_providers}
+
   def execute(%Run{} = run, providers) when is_list(providers) do
     run = preload_prompt_version(run)
     rendered_prompt = render_template(run.prompt_version.template, run.variable_values)
@@ -101,7 +106,7 @@ defmodule Aludel.Runs.Executor do
         {provider, outcome}
 
       {provider, {:exit, reason}} ->
-        {provider, {:error, provider_failure(provider, {:task_exit, reason})}}
+        {provider, create_error_result(run, provider, {:task_exit, reason})}
     end)
   end
 
@@ -137,14 +142,16 @@ defmodule Aludel.Runs.Executor do
   end
 
   defp create_error_result(run, provider, reason) do
+    inspected_reason = inspect(reason)
+
     case create_run_result(%{
            run_id: run.id,
            provider_id: provider.id,
            status: :error,
-           error: inspect(reason)
+           error: inspected_reason
          }) do
       {:ok, run_result} ->
-        broadcast_update(run.id, run_result.id, :error, inspect(reason))
+        broadcast_update(run.id, run_result.id, :error, inspected_reason)
         {:error, provider_failure(provider, reason)}
 
       {:error, changeset} ->
