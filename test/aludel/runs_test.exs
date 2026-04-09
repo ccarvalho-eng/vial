@@ -465,6 +465,55 @@ defmodule Aludel.RunsTest do
     end
   end
 
+  describe "launch_run/2" do
+    setup do
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Hello {{user}}")
+
+      {:ok, run} =
+        Runs.create_run(%{
+          prompt_version_id: version.id,
+          variable_values: %{"user" => "Alice"}
+        })
+
+      provider = provider_fixture()
+
+      {:ok, run: Repo.preload(run, :prompt_version), provider: provider}
+    end
+
+    test "starts execution under supervision and persists results", %{
+      run: run,
+      provider: provider
+    } do
+      test_pid = self()
+      mock_response = build_mock_response("Hello Alice", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        send(test_pid, :llm_called)
+
+        receive do
+          :continue -> {:ok, mock_response}
+        after
+          1000 -> flunk("timed out waiting to continue executor task")
+        end
+      end)
+
+      Phoenix.PubSub.subscribe(Aludel.PubSub, "run:#{run.id}")
+
+      assert {:ok, pid} = Runs.launch_run(run, [provider])
+      assert_receive :llm_called, 1000
+      assert Process.alive?(pid)
+
+      send(pid, :continue)
+
+      assert_receive {:run_result_update, _result_id, :completed, "Hello Alice"}, 1000
+
+      launched_run = Runs.get_run!(run.id)
+      assert length(launched_run.run_results) == 1
+      assert hd(launched_run.run_results).status == :completed
+    end
+  end
+
   defp build_mock_response(text, input_tokens, output_tokens) do
     %{
       content: text,
