@@ -42,6 +42,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:page_title, suite.name)
       |> assign(:suite, suite)
       |> assign(:prompt, prompt)
+      |> assign(:selected_prompt_version, selected_prompt_version(prompt, default_version_id))
       |> assign(:all_prompts, all_prompts)
       |> assign(:projects, projects)
       |> assign(:providers, providers)
@@ -96,12 +97,19 @@ defmodule Aludel.Web.SuiteLive.Show do
     case Evals.update_suite(socket.assigns.suite, suite_params) do
       {:ok, suite} ->
         prompt = Prompts.get_prompt_with_versions!(suite.prompt_id)
+        default_version_id = List.first(prompt.versions) |> then(&if &1, do: &1.id, else: nil)
 
         {:noreply,
          socket
          |> assign(:suite, suite)
          |> assign(:prompt, prompt)
+         |> assign(:selected_version_id, default_version_id)
+         |> assign(:selected_prompt_version, selected_prompt_version(prompt, default_version_id))
          |> assign(:page_title, suite.name)
+         |> assign(
+           :run_suite_form,
+           build_run_suite_form(default_version_id, socket.assigns.selected_provider_id)
+         )
          |> assign(:editing_suite_metadata, false)
          |> put_flash(:info, "Suite updated successfully")}
 
@@ -115,6 +123,10 @@ defmodule Aludel.Web.SuiteLive.Show do
     {:noreply,
      socket
      |> assign(:selected_version_id, version_id)
+     |> assign(
+       :selected_prompt_version,
+       selected_prompt_version(socket.assigns.prompt, version_id)
+     )
      |> assign(
        :run_suite_form,
        build_run_suite_form(version_id, socket.assigns.selected_provider_id)
@@ -141,6 +153,10 @@ defmodule Aludel.Web.SuiteLive.Show do
      socket
      |> assign(:selected_version_id, version_id)
      |> assign(:selected_provider_id, provider_id)
+     |> assign(
+       :selected_prompt_version,
+       selected_prompt_version(socket.assigns.prompt, version_id)
+     )
      |> assign(:run_suite_form, to_form(run_suite_params, as: :run_suite))}
   end
 
@@ -467,5 +483,11 @@ defmodule Aludel.Web.SuiteLive.Show do
       },
       as: :run_suite
     )
+  end
+
+  defp selected_prompt_version(%{versions: versions}, version_id) when is_list(versions) do
+    Enum.find(versions, List.first(versions), fn version ->
+      to_string(version.id) == to_string(version_id)
+    end)
   end
 end
