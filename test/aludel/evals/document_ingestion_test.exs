@@ -58,8 +58,10 @@ defmodule Aludel.Evals.DocumentIngestionTest do
         client_type: "application/pdf"
       }
 
-      assert {:failed, "sample.pdf", "Database error"} =
+      assert {:failed, "sample.pdf", reason} =
                DocumentIngestion.ingest(path, entry, Ecto.UUID.generate())
+
+      assert reason =~ "test_case_id does not exist"
     end
   end
 

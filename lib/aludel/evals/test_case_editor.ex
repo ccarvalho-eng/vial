@@ -3,11 +3,15 @@ defmodule Aludel.Evals.TestCaseEditor do
   Coordinates suite test case editing workflows outside the web layer.
   """
 
+  import Ecto.Changeset
+
   alias Aludel.Evals
   alias Aludel.Evals.AssertionParser
   alias Aludel.Evals.TestCase
 
   @default_assertions [%{"type" => "contains", "value" => ""}]
+  @form_fields ~w(id variable_values assertions_json)a
+  @form_types %{id: :string, variable_values: :map, assertions_json: :string}
 
   @spec create_test_case(binary(), map()) ::
           {:ok, TestCase.t()} | {:error, Ecto.Changeset.t()}
@@ -34,6 +38,23 @@ defmodule Aludel.Evals.TestCaseEditor do
     |> Map.merge(AssertionParser.build_form_params(test_case.assertions || []))
   end
 
+  @spec change_form(TestCase.t() | map(), keyword()) :: Ecto.Changeset.t()
+  def change_form(test_case_or_params, opts \\ [])
+
+  def change_form(%TestCase{} = test_case, opts) do
+    test_case
+    |> build_form_params()
+    |> change_form(opts)
+  end
+
+  def change_form(params, opts) when is_map(params) do
+    {%{}, @form_types}
+    |> cast(params, @form_fields)
+    |> validate_required([:id])
+    |> maybe_put_assertion_error(opts[:assertion_error])
+    |> maybe_put_action(opts[:action])
+  end
+
   @spec update_test_case(TestCase.t(), map(), AssertionParser.parse_mode()) ::
           {:ok, TestCase.t()} | {:error, String.t()} | {:error, Ecto.Changeset.t()}
   def update_test_case(%TestCase{} = test_case, params, edit_mode) do
@@ -53,4 +74,12 @@ defmodule Aludel.Evals.TestCaseEditor do
     |> Enum.map(fn [_, variable] -> String.trim(variable) end)
     |> Enum.uniq()
   end
+
+  defp maybe_put_assertion_error(changeset, nil), do: changeset
+
+  defp maybe_put_assertion_error(changeset, message),
+    do: add_error(changeset, :assertions_json, message)
+
+  defp maybe_put_action(changeset, nil), do: changeset
+  defp maybe_put_action(changeset, action), do: Map.put(changeset, :action, action)
 end

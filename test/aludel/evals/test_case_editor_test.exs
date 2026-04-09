@@ -47,6 +47,22 @@ defmodule Aludel.Evals.TestCaseEditorTest do
     end
   end
 
+  describe "change_form/2" do
+    test "returns a changeset-backed form with assertion errors when present" do
+      test_case = test_case_fixture()
+
+      changeset =
+        TestCaseEditor.change_form(
+          %{"id" => test_case.id, "variable_values" => %{}, "assertions_json" => "[]"},
+          action: :validate,
+          assertion_error: "Invalid assertion index: abc"
+        )
+
+      assert changeset.action == :validate
+      assert changeset.errors[:assertions_json] == {"Invalid assertion index: abc", []}
+    end
+  end
+
   describe "update_test_case/3" do
     test "updates a test case from JSON assertions" do
       test_case = test_case_fixture(%{variable_values: %{"name" => "Bob"}})

@@ -22,13 +22,14 @@ defmodule Aludel.Evals.AssertionParser do
   end
 
   def parse(:visual, params) do
-    assertions =
-      params
-      |> Map.get("assertions", %{})
-      |> normalize_assertion_params()
-      |> parse_visual_assertions()
-
-    validate(assertions)
+    params
+    |> Map.get("assertions", %{})
+    |> normalize_assertion_params()
+    |> parse_visual_assertions()
+    |> case do
+      {:ok, assertions} -> validate(assertions)
+      {:error, _message} = error -> error
+    end
   end
 
   @spec validate([map()]) :: {:ok, [map()]} | {:error, String.t()}
@@ -68,27 +69,9 @@ defmodule Aludel.Evals.AssertionParser do
   end
 
   defp parse_visual_assertions(assertion_params) do
-    assertion_params
-    |> Map.keys()
-    |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
-    |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
-    |> Enum.sort()
-    |> Enum.map(fn idx ->
-      type = Map.get(assertion_params, "assertion_type_#{idx}")
-
-      if type == "json_field" do
-        %{
-          "type" => type,
-          "field" => Map.get(assertion_params, "assertion_field_#{idx}", ""),
-          "expected" => Map.get(assertion_params, "assertion_expected_#{idx}", "")
-        }
-      else
-        %{
-          "type" => type,
-          "value" => Map.get(assertion_params, "assertion_value_#{idx}", "")
-        }
-      end
-    end)
+    with {:ok, assertion_indices} <- parse_assertion_indices(assertion_params) do
+      {:ok, Enum.map(assertion_indices, &build_visual_assertion(assertion_params, &1))}
+    end
   end
 
   defp build_assertion_params(assertions) do
@@ -109,6 +92,42 @@ defmodule Aludel.Evals.AssertionParser do
 
   defp maybe_put_assertion_value(params, idx, assertion) do
     Map.put(params, "assertion_value_#{idx}", assertion["value"] || "")
+  end
+
+  defp build_visual_assertion(assertion_params, idx) do
+    type = Map.get(assertion_params, "assertion_type_#{idx}")
+
+    if type == "json_field" do
+      %{
+        "type" => type,
+        "field" => Map.get(assertion_params, "assertion_field_#{idx}", ""),
+        "expected" => Map.get(assertion_params, "assertion_expected_#{idx}", "")
+      }
+    else
+      %{
+        "type" => type,
+        "value" => Map.get(assertion_params, "assertion_value_#{idx}", "")
+      }
+    end
+  end
+
+  defp parse_assertion_indices(assertion_params) do
+    assertion_params
+    |> Map.keys()
+    |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
+    |> Enum.reduce_while({:ok, []}, fn "assertion_type_" <> idx, {:ok, indices} ->
+      case Integer.parse(idx) do
+        {parsed_idx, ""} ->
+          {:cont, {:ok, [parsed_idx | indices]}}
+
+        _ ->
+          {:halt, {:error, "Invalid assertion index: #{idx}"}}
+      end
+    end)
+    |> case do
+      {:ok, indices} -> {:ok, Enum.sort(indices)}
+      {:error, _message} = error -> error
+    end
   end
 
   defp normalize_assertion_params(params) when is_map(params), do: params

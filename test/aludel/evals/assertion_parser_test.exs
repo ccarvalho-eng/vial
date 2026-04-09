@@ -58,6 +58,18 @@ defmodule Aludel.Evals.AssertionParserTest do
               ]} = AssertionParser.parse(:visual, params)
     end
 
+    test "rejects visual assertions with invalid indices" do
+      params = %{
+        "assertions" => %{
+          "assertion_type_abc" => "contains",
+          "assertion_value_abc" => "hello"
+        }
+      }
+
+      assert {:error, "Invalid assertion index: abc"} =
+               AssertionParser.parse(:visual, params)
+    end
+
     test "rejects json_field assertions missing expected keys" do
       params = %{
         "assertions_json" => ~s([{"type":"json_field"}])

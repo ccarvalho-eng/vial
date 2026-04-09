@@ -3,6 +3,8 @@ defmodule Aludel.Evals.DocumentIngestion do
   Validates and persists uploaded documents for suite test cases.
   """
 
+  import Ecto.Changeset, only: [traverse_errors: 2]
+
   alias Aludel.Evals
   alias Aludel.FileValidation
 
@@ -17,7 +19,7 @@ defmodule Aludel.Evals.DocumentIngestion do
         validate_and_persist(data, entry, test_case_id)
 
       {:error, reason} ->
-        {:failed, entry.client_name, :file.format_error(reason)}
+        {:failed, entry.client_name, reason |> :file.format_error() |> to_string()}
     end
   end
 
@@ -42,8 +44,20 @@ defmodule Aludel.Evals.DocumentIngestion do
       {:ok, _document} ->
         {:success, entry.client_name}
 
-      {:error, _changeset} ->
-        {:failed, entry.client_name, "Database error"}
+      {:error, changeset} ->
+        {:failed, entry.client_name, format_changeset_errors(changeset)}
     end
+  end
+
+  defp format_changeset_errors(changeset) do
+    changeset
+    |> traverse_errors(fn {message, opts} ->
+      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+      end)
+    end)
+    |> Enum.map_join(", ", fn {field, messages} ->
+      "#{field} #{Enum.join(messages, ", ")}"
+    end)
   end
 end

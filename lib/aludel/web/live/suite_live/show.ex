@@ -191,7 +191,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:editing_test_case_id, id)
       |> assign(:editing_assertions, test_case.assertions)
       |> assign(:editing_test_case_params, form_params)
-      |> assign(:test_case_form, to_form(form_params, as: :test_case))
+      |> assign(:test_case_form, to_form(TestCaseEditor.change_form(form_params), as: :test_case))
       |> allow_upload(:documents,
         accept: ~w(.pdf .png .jpg .jpeg .csv .json .txt),
         max_entries: 5,
@@ -219,15 +219,41 @@ defmodule Aludel.Web.SuiteLive.Show do
 
     socket =
       socket
-      |> assign(:test_case_form, to_form(test_case_params, as: :test_case))
       |> assign(:editing_test_case_params, test_case_params)
 
     socket =
       if edit_mode == :visual do
-        {:ok, assertions} = AssertionParser.parse(:visual, test_case_params)
-        assign(socket, :editing_assertions, assertions)
+        case AssertionParser.parse(:visual, test_case_params) do
+          {:ok, assertions} ->
+            socket
+            |> assign(:editing_assertions, assertions)
+            |> assign(
+              :test_case_form,
+              to_form(TestCaseEditor.change_form(test_case_params, action: :validate),
+                as: :test_case
+              )
+            )
+
+          {:error, message} ->
+            assign(
+              socket,
+              :test_case_form,
+              to_form(
+                TestCaseEditor.change_form(
+                  test_case_params,
+                  action: :validate,
+                  assertion_error: message
+                ),
+                as: :test_case
+              )
+            )
+        end
       else
-        socket
+        assign(
+          socket,
+          :test_case_form,
+          to_form(TestCaseEditor.change_form(test_case_params, action: :validate), as: :test_case)
+        )
       end
 
     {:noreply, socket}
@@ -257,7 +283,17 @@ defmodule Aludel.Web.SuiteLive.Show do
       {:error, message} when is_binary(message) ->
         {:noreply,
          socket
-         |> assign(:test_case_form, to_form(test_case_params, as: :test_case))
+         |> assign(
+           :test_case_form,
+           to_form(
+             TestCaseEditor.change_form(
+               test_case_params,
+               action: :validate,
+               assertion_error: message
+             ),
+             as: :test_case
+           )
+         )
          |> assign(:editing_test_case_params, test_case_params)
          |> put_flash(:error, message)}
 

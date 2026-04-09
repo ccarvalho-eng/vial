@@ -407,6 +407,32 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
 
       assert html =~ "Invalid assertion type"
     end
+
+    test "does not crash validation when visual assertion indices are invalid", %{conn: conn} do
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case']")
+      |> render_click(%{"id" => test_case.id})
+
+      html =
+        render_change(view, "validate_test_case", %{
+          "test_case" => %{
+            "id" => test_case.id,
+            "variable_values" => %{},
+            "assertions" => %{
+              "assertion_type_abc" => "contains",
+              "assertion_value_abc" => "hello"
+            }
+          }
+        })
+
+      assert html =~ "Invalid assertion index: abc"
+      assert Process.alive?(view.pid)
+    end
   end
 
   describe "suite metadata management" do
