@@ -20,6 +20,22 @@ defmodule Aludel.Evals.AssertionParserTest do
                AssertionParser.parse(:json, params)
     end
 
+    test "rejects JSON assertions when the payload is not a list" do
+      params = %{"assertions_json" => ~s({"type":"contains","value":"hello"})}
+
+      assert {:error, "Invalid JSON: assertions must be a list"} =
+               AssertionParser.parse(:json, params)
+    end
+
+    test "rejects JSON assertions with an invalid type" do
+      params = %{
+        "assertions_json" => ~s([{"type":"invalid_type","value":"hello"}])
+      }
+
+      assert {:error, message} = AssertionParser.parse(:json, params)
+      assert message =~ "Invalid assertion type at index 1"
+    end
+
     test "parses visual assertions" do
       params = %{
         "assertions" => %{
@@ -40,6 +56,15 @@ defmodule Aludel.Evals.AssertionParserTest do
                   "expected" => "positive"
                 }
               ]} = AssertionParser.parse(:visual, params)
+    end
+
+    test "rejects json_field assertions missing expected keys" do
+      params = %{
+        "assertions_json" => ~s([{"type":"json_field"}])
+      }
+
+      assert {:error, message} = AssertionParser.parse(:json, params)
+      assert message =~ "json_field type requires 'field' and 'expected' fields"
     end
   end
 

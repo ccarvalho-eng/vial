@@ -12,6 +12,15 @@ defmodule Aludel.Evals.TestCaseEditorTest do
       assert test_case.variable_values == %{"name" => "", "city" => ""}
       assert test_case.assertions == [%{"type" => "contains", "value" => ""}]
     end
+
+    test "creates a test case with empty variables when the prompt has no versions" do
+      suite = suite_fixture()
+      prompt = prompt_fixture()
+
+      assert {:ok, test_case} = TestCaseEditor.create_test_case(suite.id, prompt)
+      assert test_case.variable_values == %{}
+      assert test_case.assertions == [%{"type" => "contains", "value" => ""}]
+    end
   end
 
   describe "build_form_params/1" do
@@ -48,6 +57,24 @@ defmodule Aludel.Evals.TestCaseEditorTest do
       }
 
       assert {:ok, updated_test_case} = TestCaseEditor.update_test_case(test_case, params, :json)
+      assert updated_test_case.variable_values == %{"name" => "Alice"}
+      assert updated_test_case.assertions == [%{"type" => "contains", "value" => "updated"}]
+    end
+
+    test "updates a test case from visual assertions" do
+      test_case = test_case_fixture(%{variable_values: %{"name" => "Bob"}})
+
+      params = %{
+        "variable_values" => %{"name" => "Alice"},
+        "assertions" => %{
+          "assertion_type_0" => "contains",
+          "assertion_value_0" => "updated"
+        }
+      }
+
+      assert {:ok, updated_test_case} =
+               TestCaseEditor.update_test_case(test_case, params, :visual)
+
       assert updated_test_case.variable_values == %{"name" => "Alice"}
       assert updated_test_case.assertions == [%{"type" => "contains", "value" => "updated"}]
     end
