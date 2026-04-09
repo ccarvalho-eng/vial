@@ -371,6 +371,17 @@
                           Types: contains, not_contains, regex, exact_match, json_field
                         </div>
                       <% end %>
+                      <%= if @test_case_form[:assertions_json].errors != [] do %>
+                        <p style="font-size: 11px; color: #dc2626; margin-top: 6px;">
+                          {Enum.map_join(
+                            @test_case_form[:assertions_json].errors,
+                            ", ",
+                            fn {message, _opts} ->
+                              message
+                            end
+                          )}
+                        </p>
+                      <% end %>
                     </div>
                   </div>
                   <div style="display: flex; gap: 8px; justify-content: flex-end;">
