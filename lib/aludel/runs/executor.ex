@@ -65,8 +65,9 @@ defmodule Aludel.Runs.Executor do
     end
   end
 
-  defp preload_prompt_version(%Run{prompt_version: %Ecto.Association.NotLoaded{}} = run),
-    do: repo().preload(run, :prompt_version)
+  defp preload_prompt_version(%Run{prompt_version: %Ecto.Association.NotLoaded{}} = run) do
+    repo().preload(run, :prompt_version)
+  end
 
   defp preload_prompt_version(%Run{} = run), do: run
 
