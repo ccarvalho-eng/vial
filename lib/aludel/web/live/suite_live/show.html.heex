@@ -122,7 +122,10 @@
       <%= if @prompt.versions != [] do %>
         <div style="margin-bottom: 24px;">
           <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Prompt Template</h3>
-          <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);"><%= List.first(@prompt.versions).template %></pre>
+          <pre
+            id="selected-prompt-template"
+            style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);"
+          >{@selected_prompt_version.template}</pre>
         </div>
       <% end %>
     </div>

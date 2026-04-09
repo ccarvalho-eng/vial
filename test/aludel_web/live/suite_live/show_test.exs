@@ -195,18 +195,26 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     end
 
     test "selects a specific version", %{conn: conn} do
-      prompt = prompt_fixture_with_version()
+      prompt = prompt_fixture_with_version(%{template: "Version 1 {{name}}"})
       suite = suite_fixture(%{prompt_id: prompt.id})
-      version = List.first(prompt.versions)
+      provider = provider_fixture()
+      {:ok, _version} = Aludel.Prompts.create_prompt_version(prompt, "Version 2 {{name}}")
+      prompt = Aludel.Prompts.get_prompt_with_versions!(prompt.id)
 
       {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
-      render_click(view, "select_version", %{"version_id" => version.id})
+      assert has_element?(view, "#selected-prompt-template", "Version 2 {{name}}")
 
-      # Version selection should update assigns
-      state = :sys.get_state(view.pid)
-      socket = state.socket
-      assert socket.assigns.selected_version_id == version.id
+      view
+      |> form("#run-suite-form",
+        run_suite: %{
+          version_id: List.last(prompt.versions).id,
+          provider_id: provider.id
+        }
+      )
+      |> render_change()
+
+      assert has_element?(view, "#selected-prompt-template", "Version 1 {{name}}")
     end
 
     test "selects a specific provider", %{conn: conn} do
