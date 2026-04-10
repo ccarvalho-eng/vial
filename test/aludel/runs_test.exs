@@ -6,6 +6,7 @@ defmodule Aludel.RunsTest do
 
   alias Aludel.Interfaces.HttpClientMock
   alias Aludel.Runs
+  alias Aludel.Runs.Execution
   alias Aludel.Runs.Run
   alias Aludel.Runs.RunResult
 
@@ -289,12 +290,13 @@ defmodule Aludel.RunsTest do
       end)
 
       run = Repo.preload(run, :prompt_version)
-      assert {:ok, result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, %Execution{} = execution} = Runs.execute_run(run, [provider])
+      assert execution.status == :ok
 
-      assert Ecto.assoc_loaded?(result_run.run_results)
-      assert length(result_run.run_results) == 1
+      assert Ecto.assoc_loaded?(execution.run.run_results)
+      assert length(execution.run.run_results) == 1
 
-      result = hd(result_run.run_results)
+      result = hd(execution.run.run_results)
       assert result.provider_id == provider.id
       assert result.status == :completed
       assert is_binary(result.output)
@@ -319,19 +321,21 @@ defmodule Aludel.RunsTest do
 
       run = Repo.preload(run, :prompt_version)
 
-      assert {:ok, result_run} =
+      assert {:ok, %Execution{} = execution} =
                Runs.execute_run(run, [provider1, provider2, provider3])
 
-      assert Ecto.assoc_loaded?(result_run.run_results)
-      assert length(result_run.run_results) == 3
+      assert execution.status == :ok
+
+      assert Ecto.assoc_loaded?(execution.run.run_results)
+      assert length(execution.run.run_results) == 3
 
       provider_ids =
-        Enum.map(result_run.run_results, & &1.provider_id) |> Enum.sort()
+        Enum.map(execution.run.run_results, & &1.provider_id) |> Enum.sort()
 
       expected_ids = [provider1.id, provider2.id, provider3.id] |> Enum.sort()
       assert provider_ids == expected_ids
 
-      for result <- result_run.run_results do
+      for result <- execution.run.run_results do
         assert result.status == :completed
         assert is_binary(result.output)
       end
@@ -350,7 +354,7 @@ defmodule Aludel.RunsTest do
       Phoenix.PubSub.subscribe(Aludel.PubSub, "run:#{run.id}")
 
       run = Repo.preload(run, :prompt_version)
-      assert {:ok, _result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, %Execution{status: :ok}} = Runs.execute_run(run, [provider])
 
       # Should receive at least one update message
       assert_receive {:run_result_update, _result_id, :completed, _output},
@@ -368,14 +372,14 @@ defmodule Aludel.RunsTest do
       end)
 
       run = Repo.preload(run, :prompt_version)
-      assert {:ok, result_run} = Runs.execute_run(run, [provider])
+      assert {:ok, %Execution{} = execution} = Runs.execute_run(run, [provider])
 
-      result = hd(result_run.run_results)
+      result = hd(execution.run.run_results)
       # The rendered prompt should contain "Hello Alice"
       assert result.output =~ "Hello Alice"
     end
 
-    test "handles LLM errors gracefully", %{prompt_version: version} do
+    test "marks execution as fully failed when every provider fails", %{prompt_version: version} do
       provider = provider_fixture(%{name: "Error Provider"})
 
       expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
@@ -390,9 +394,30 @@ defmodule Aludel.RunsTest do
 
       run = Repo.preload(run, :prompt_version)
 
-      assert {:ok, result_run} = Runs.execute_run(run, [provider])
-      assert length(result_run.run_results) == 1
-      assert hd(result_run.run_results).status == :error
+      assert {:ok, %Execution{} = execution} = Runs.execute_run(run, [provider])
+      assert execution.status == :error
+      assert length(execution.failures) == 1
+      assert length(execution.run.run_results) == 1
+      assert hd(execution.run.run_results).status == :error
+    end
+
+    test "marks execution as partially failed when some providers fail", %{run: run} do
+      provider1 = provider_fixture(%{name: "Provider 1", model: "provider-1-model"})
+      provider2 = provider_fixture(%{name: "Provider 2", model: "provider-2-model"})
+
+      expect(HttpClientMock, :request, 2, fn provider_model, _prompt, _opts ->
+        case provider_model do
+          "openai:provider-1-model" -> {:ok, build_mock_response("Test response", 5, 10)}
+          "openai:provider-2-model" -> {:error, "API timeout"}
+        end
+      end)
+
+      run = Repo.preload(run, :prompt_version)
+
+      assert {:ok, %Execution{} = execution} = Runs.execute_run(run, [provider1, provider2])
+      assert execution.status == :partial_failure
+      assert length(execution.failures) == 1
+      assert length(execution.run.run_results) == 2
     end
 
     test "logs warning when run result creation fails on success", %{
@@ -437,6 +462,55 @@ defmodule Aludel.RunsTest do
         end)
 
       assert log =~ "Failed to create run result for run #{run.id}"
+    end
+  end
+
+  describe "launch_run/2" do
+    setup do
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Hello {{user}}")
+
+      {:ok, run} =
+        Runs.create_run(%{
+          prompt_version_id: version.id,
+          variable_values: %{"user" => "Alice"}
+        })
+
+      provider = provider_fixture()
+
+      {:ok, run: Repo.preload(run, :prompt_version), provider: provider}
+    end
+
+    test "starts execution under supervision and persists results", %{
+      run: run,
+      provider: provider
+    } do
+      test_pid = self()
+      mock_response = build_mock_response("Hello Alice", 5, 10)
+
+      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+        send(test_pid, :llm_called)
+
+        receive do
+          :continue -> {:ok, mock_response}
+        after
+          1000 -> flunk("timed out waiting to continue executor task")
+        end
+      end)
+
+      Phoenix.PubSub.subscribe(Aludel.PubSub, "run:#{run.id}")
+
+      assert {:ok, pid} = Runs.launch_run(run, [provider])
+      assert_receive :llm_called, 1000
+      assert Process.alive?(pid)
+
+      send(pid, :continue)
+
+      assert_receive {:run_result_update, _result_id, :completed, "Hello Alice"}, 1000
+
+      launched_run = Runs.get_run!(run.id)
+      assert length(launched_run.run_results) == 1
+      assert hd(launched_run.run_results).status == :completed
     end
   end
 

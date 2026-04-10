@@ -11,6 +11,10 @@ config :aludel,
   generators: [timestamp_type: :utc_datetime, binary_id: true],
   run_execution_mode: :concurrent
 
+config :aludel, :llm,
+  max_concurrency: 3,
+  request_timeout_ms: 120_000
+
 # Configures the endpoint
 config :aludel, Aludel.Web.Endpoint,
   url: [host: "localhost"],
