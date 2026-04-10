@@ -327,10 +327,24 @@ defmodule Aludel.Web.ProviderLive.New do
     input = parse_pricing_value(params["pricing_input"])
     output = parse_pricing_value(params["pricing_output"])
 
-    if is_number(input) and is_number(output) do
-      Map.put(params, "pricing", %{"input" => input, "output" => output})
-    else
-      params
+    case {input, output} do
+      {:invalid, _} ->
+        Map.put(params, "pricing", %{
+          "input" => params["pricing_input"],
+          "output" => params["pricing_output"]
+        })
+
+      {_, :invalid} ->
+        Map.put(params, "pricing", %{
+          "input" => params["pricing_input"],
+          "output" => params["pricing_output"]
+        })
+
+      {i, o} when is_number(i) and is_number(o) ->
+        Map.put(params, "pricing", %{"input" => i, "output" => o})
+
+      _ ->
+        Map.put(params, "pricing", nil)
     end
   end
 
@@ -343,8 +357,9 @@ defmodule Aludel.Web.ProviderLive.New do
 
   defp parse_pricing_value(value) when is_binary(value) do
     case Float.parse(value) do
-      {num, _} -> num
-      :error -> nil
+      {num, ""} -> num
+      {_num, _remainder} -> :invalid
+      :error -> :invalid
     end
   end
 end
