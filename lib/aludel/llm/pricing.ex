@@ -91,21 +91,20 @@ defmodule Aludel.LLM.Pricing do
 
   defp build_and_cache_index do
     index =
-      try do
-        apply(LLMDB, :models, [])
-        |> Enum.reduce(%{}, fn
-          %{provider: p, id: id, cost: %{input: inp, output: out}}, acc
-          when is_number(inp) and is_number(out) ->
-            Map.put(acc, {p, id}, %{input: inp, output: out})
+      LLMDB.models()
+      |> Enum.reduce(%{}, fn
+        %{provider: p, id: id, cost: %{input: inp, output: out}}, acc
+        when is_number(inp) and is_number(out) ->
+          Map.put(acc, {p, id}, %{input: inp, output: out})
 
-          _, acc ->
-            acc
-        end)
-      rescue
-        _ -> %{}
-      end
+        _, acc ->
+          acc
+      end)
 
-    :persistent_term.put(@persistent_term_key, index)
+    if map_size(index) > 0 do
+      :persistent_term.put(@persistent_term_key, index)
+    end
+
     index
   end
 
