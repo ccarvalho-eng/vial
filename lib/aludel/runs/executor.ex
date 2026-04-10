@@ -41,7 +41,7 @@ defmodule Aludel.Runs.Executor do
         {:error, reason} ->
           Logger.error("Run execution failed for run #{run.id}: #{inspect(reason)}")
 
-          :error
+          exit({:run_execution_failed, reason})
       end
     end)
   end
