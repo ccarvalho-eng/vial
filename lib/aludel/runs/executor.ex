@@ -21,7 +21,7 @@ defmodule Aludel.Runs.Executor do
   Launches a run under the executor supervisor.
   """
   @spec launch(Run.t(), [Provider.t()]) ::
-          Task.Supervisor.on_start_child() | {:error, :empty_providers | term()}
+          {:ok, pid()} | {:ok, pid(), term()} | {:error, :empty_providers | term()}
   def launch(%Run{}, []), do: {:error, :empty_providers}
 
   def launch(%Run{} = run, providers) when is_list(providers) do
