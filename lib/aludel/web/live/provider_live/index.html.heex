@@ -11,7 +11,7 @@
     </div>
 
     <div class="aludel-card" style="padding: 0; overflow: hidden;">
-      <%= if @providers == [] do %>
+      <%= if @providers_empty? do %>
         <div style="padding: 60px 20px; text-align: center;">
           <.icon name="hero-server-stack" class="size-12 text-muted empty-state-icon" />
           <div class="empty-state-description">
@@ -36,9 +36,9 @@
               </th>
             </tr>
           </thead>
-          <tbody>
-            <%= for provider <- @providers do %>
-              <tr id={"provider-#{provider.id}"} style="border-bottom: 1px solid var(--border);">
+          <tbody id="providers-stream" phx-update="stream">
+            <%= for {id, provider} <- @streams.providers do %>
+              <tr id={id} style="border-bottom: 1px solid var(--border);">
                 <td style="padding: 12px 16px;">
                   <div style="display: flex; align-items: center; gap: 12px;">
                     <%= if icon_path = provider_icon(provider.provider) do %>

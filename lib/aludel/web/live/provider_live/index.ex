@@ -21,7 +21,9 @@ defmodule Aludel.Web.ProviderLive.Index do
       socket
       |> assign(:page_title, "Providers")
       |> assign(:providers, providers)
+      |> assign(:providers_empty?, providers == [])
       |> assign(:provider_pricing, resolve_provider_pricing(providers))
+      |> stream(:providers, providers, reset: true)
 
     {:noreply, socket}
   end
@@ -31,12 +33,14 @@ defmodule Aludel.Web.ProviderLive.Index do
     provider = Providers.get_provider!(id)
     {:ok, _} = Providers.delete_provider(provider)
 
-    providers = Providers.list_providers()
+    remaining = Enum.reject(socket.assigns.providers, &(&1.id == provider.id))
 
     {:noreply,
      socket
-     |> assign(:providers, providers)
-     |> assign(:provider_pricing, resolve_provider_pricing(providers))
+     |> assign(:providers, remaining)
+     |> assign(:providers_empty?, remaining == [])
+     |> assign(:provider_pricing, resolve_provider_pricing(remaining))
+     |> stream_delete(:providers, provider)
      |> put_flash(:info, "Provider deleted successfully")}
   end
 

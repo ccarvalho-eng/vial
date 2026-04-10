@@ -5,7 +5,6 @@ defmodule Aludel.LLMTest do
 
   alias Aludel.Interfaces.HttpClientMock
   alias Aludel.LLM
-  alias Aludel.LLM.Pricing
 
   setup :verify_on_exit!
 
@@ -345,12 +344,9 @@ defmodule Aludel.LLMTest do
       {:ok, result} = LLM.call(provider, "test", [])
       assert result.cost_usd > 0
 
-      # Cost is now derived from LLMDB per-model rates, not hardcoded values
-      pricing = Pricing.get_pricing(:google, "gemini-2.5-flash")
-
-      expected_cost =
-        Float.round(5 * pricing.input / 1_000_000 + 10 * pricing.output / 1_000_000, 6)
-
+      # gemini-2.5-flash LLMDB rates: input $0.30/1M, output $2.50/1M
+      # mock response: 5 input tokens, 10 output tokens
+      expected_cost = Float.round(5 * 0.3 / 1_000_000 + 10 * 2.5 / 1_000_000, 6)
       assert result.cost_usd == expected_cost
     end
 

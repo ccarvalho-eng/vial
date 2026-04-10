@@ -46,9 +46,8 @@ defmodule Aludel.LLM.PricingTest do
       assert Pricing.get_pricing(:ollama, "unknown-local-model") == %{input: 0.0, output: 0.0}
     end
 
-    test "resolves known model from LLMDB index without repeated scans" do
-      # gpt-4o and claude-3-5-haiku are canonical LLMDB models — resolved via
-      # the persistent_term index built once on first call
+    test "resolves canonical LLMDB models across providers" do
+      # gpt-4o and claude-3-5-haiku-20241022 are canonical LLMDB models
       result_openai = Pricing.get_pricing(:openai, "gpt-4o")
       assert result_openai != nil
       assert is_number(result_openai.input)

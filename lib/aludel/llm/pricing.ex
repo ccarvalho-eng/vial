@@ -90,9 +90,11 @@ defmodule Aludel.LLM.Pricing do
   end
 
   defp build_and_cache_index do
+    # credo:disable-for-next-line Credo.Check.Refactor.Apply
+    models = apply(LLMDB, :models, [])
+
     index =
-      apply(LLMDB, :models, [])
-      |> Enum.reduce(%{}, fn
+      Enum.reduce(models, %{}, fn
         %{provider: p, id: id, cost: %{input: inp, output: out}}, acc
         when is_number(inp) and is_number(out) ->
           Map.put(acc, {p, id}, %{input: inp, output: out})

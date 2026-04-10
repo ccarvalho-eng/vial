@@ -17,8 +17,8 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
 
       {:ok, view, _html} = live(conn, "/providers")
 
-      assert has_element?(view, "#provider-#{provider1.id}", "OpenAI GPT-4")
-      assert has_element?(view, "#provider-#{provider2.id}", "Claude Sonnet")
+      assert has_element?(view, "#providers-#{provider1.id}", "OpenAI GPT-4")
+      assert has_element?(view, "#providers-#{provider2.id}", "Claude Sonnet")
     end
 
     test "shows new provider button", %{conn: conn} do
@@ -37,8 +37,8 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
 
       {:ok, view, _html} = live(conn, "/providers")
 
-      assert has_element?(view, "#provider-#{provider.id}", "Test Provider")
-      assert has_element?(view, "#provider-#{provider.id}", "gpt-4o")
+      assert has_element?(view, "#providers-#{provider.id}", "Test Provider")
+      assert has_element?(view, "#providers-#{provider.id}", "gpt-4o")
     end
 
     test "displays Google provider with Google icon", %{conn: conn} do
@@ -51,7 +51,7 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
 
       {:ok, view, _html} = live(conn, "/providers")
 
-      assert has_element?(view, "#provider-#{provider.id}", "Gemini Flash")
+      assert has_element?(view, "#providers-#{provider.id}", "Gemini Flash")
       assert has_element?(view, ".provider-icon-google")
     end
   end
@@ -65,7 +65,7 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
       render_click(view, "delete", %{"id" => provider.id})
 
       assert render(view) =~ "Provider deleted successfully"
-      refute has_element?(view, "#provider-#{provider.id}")
+      refute has_element?(view, "#providers-#{provider.id}")
     end
 
     test "refreshes provider list after deletion", %{conn: conn} do
@@ -74,13 +74,13 @@ defmodule Aludel.Web.ProviderLive.IndexTest do
 
       {:ok, view, _html} = live(conn, "/providers")
 
-      assert has_element?(view, "#provider-#{provider1.id}", "Provider 1")
-      assert has_element?(view, "#provider-#{provider2.id}", "Provider 2")
+      assert has_element?(view, "#providers-#{provider1.id}", "Provider 1")
+      assert has_element?(view, "#providers-#{provider2.id}", "Provider 2")
 
       render_click(view, "delete", %{"id" => provider1.id})
 
-      refute has_element?(view, "#provider-#{provider1.id}")
-      assert has_element?(view, "#provider-#{provider2.id}", "Provider 2")
+      refute has_element?(view, "#providers-#{provider1.id}")
+      assert has_element?(view, "#providers-#{provider2.id}", "Provider 2")
     end
   end
 end
