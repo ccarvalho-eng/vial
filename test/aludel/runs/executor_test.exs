@@ -46,6 +46,13 @@ defmodule Aludel.Runs.ExecutorTest do
       assert {:error, :empty_providers} = Executor.execute(run, [])
     end
 
+    test "rejects runs with missing template variables", %{run: run} do
+      run = %{run | variable_values: %{}}
+
+      assert {:error, {:missing_variables, ["user"]}} =
+               Executor.execute(run, [provider_fixture()])
+    end
+
     test "returns a partial failure when provider outcomes are mixed", %{run: run} do
       provider1 = provider_fixture(%{name: "Provider 1", model: "provider-1-model"})
       provider2 = provider_fixture(%{name: "Provider 2", model: "provider-2-model"})
@@ -53,7 +60,7 @@ defmodule Aludel.Runs.ExecutorTest do
       expect(HttpClientMock, :request, 2, fn provider_model, _prompt, _opts ->
         case provider_model do
           "openai:provider-1-model" -> {:ok, build_mock_response("Hello Alice", 5, 10)}
-          "openai:provider-2-model" -> {:error, "API timeout"}
+          "openai:provider-2-model" -> {:error, {:network_error, :timeout}}
         end
       end)
 

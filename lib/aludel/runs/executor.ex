@@ -21,7 +21,7 @@ defmodule Aludel.Runs.Executor do
   Launches a run under the executor supervisor.
   """
   @spec launch(Run.t(), [Provider.t()]) ::
-          DynamicSupervisor.on_start_child() | {:error, :empty_providers}
+          Task.Supervisor.on_start_child() | {:error, :empty_providers | term()}
   def launch(%Run{}, []), do: {:error, :empty_providers}
 
   def launch(%Run{} = run, providers) when is_list(providers) do
@@ -54,10 +54,11 @@ defmodule Aludel.Runs.Executor do
 
   def execute(%Run{} = run, providers) when is_list(providers) do
     run = preload_prompt_version(run)
-    rendered_prompt = render_template(run.prompt_version.template, run.variable_values)
-    provider_outcomes = execute_providers(run, providers, rendered_prompt)
 
-    with {:ok, updated_run} <- reload_run(run.id) do
+    with :ok <- validate_variable_values(run.prompt_version.variables, run.variable_values),
+         rendered_prompt <- render_template(run.prompt_version.template, run.variable_values),
+         provider_outcomes <- execute_providers(run, providers, rendered_prompt),
+         {:ok, updated_run} <- reload_run(run.id) do
       failures = collect_failures(provider_outcomes)
 
       {:ok,
@@ -197,9 +198,24 @@ defmodule Aludel.Runs.Executor do
     end
   end
 
+  defp validate_variable_values(expected_variables, variable_values) do
+    missing_variables =
+      Enum.reject(expected_variables, fn variable ->
+        Map.has_key?(variable_values, variable)
+      end)
+
+    case missing_variables do
+      [] ->
+        :ok
+
+      _missing_variables ->
+        {:error, {:missing_variables, missing_variables}}
+    end
+  end
+
   defp render_template(template, variable_values) do
     Enum.reduce(variable_values, template, fn {key, value}, acc ->
-      String.replace(acc, "{{#{key}}}", value)
+      String.replace(acc, "{{#{key}}}", to_string(value))
     end)
   end
 
