@@ -112,8 +112,8 @@ defmodule Aludel.Web.RunLive.NewTest do
 
       run = %{run | prompt_version: version}
 
-      assert {:ok, result_run} = Aludel.Runs.execute_run(run, [provider1, provider2])
-      assert length(result_run.run_results) == 2
+      assert {:ok, execution} = Aludel.Runs.execute_run(run, [provider1, provider2])
+      assert length(execution.run.run_results) == 2
     end
 
     test "validates required variable values", %{

@@ -195,18 +195,27 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     end
 
     test "selects a specific version", %{conn: conn} do
-      prompt = prompt_fixture_with_version()
+      prompt = prompt_fixture_with_version(%{template: "Version 1 {{name}}"})
       suite = suite_fixture(%{prompt_id: prompt.id})
-      version = List.first(prompt.versions)
+      provider = provider_fixture()
+      {:ok, _version} = Aludel.Prompts.create_prompt_version(prompt, "Version 2 {{name}}")
+      prompt = Aludel.Prompts.get_prompt_with_versions!(prompt.id)
+      version_1 = Enum.find(prompt.versions, &(&1.template == "Version 1 {{name}}"))
 
       {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
-      render_click(view, "select_version", %{"version_id" => version.id})
+      assert has_element?(view, "#selected-prompt-template", "Version 2 {{name}}")
 
-      # Version selection should update assigns
-      state = :sys.get_state(view.pid)
-      socket = state.socket
-      assert socket.assigns.selected_version_id == version.id
+      view
+      |> form("#run-suite-form",
+        run_suite: %{
+          version_id: version_1.id,
+          provider_id: provider.id
+        }
+      )
+      |> render_change()
+
+      assert has_element?(view, "#selected-prompt-template", "Version 1 {{name}}")
     end
 
     test "selects a specific provider", %{conn: conn} do
@@ -406,6 +415,32 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
         |> render_submit()
 
       assert html =~ "Invalid assertion type"
+    end
+
+    test "does not crash validation when visual assertion indices are invalid", %{conn: conn} do
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case']")
+      |> render_click(%{"id" => test_case.id})
+
+      html =
+        render_change(view, "validate_test_case", %{
+          "test_case" => %{
+            "id" => test_case.id,
+            "variable_values" => %{},
+            "assertions" => %{
+              "assertion_type_abc" => "contains",
+              "assertion_value_abc" => "hello"
+            }
+          }
+        })
+
+      assert html =~ "Invalid assertion index: abc"
+      assert Process.alive?(view.pid)
     end
   end
 

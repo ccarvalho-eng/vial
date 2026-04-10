@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.16] - 2026-04-09
+
+### Added
+- Google Gemini provider support, including provider tests and model handling updates
+
+### Changed
+- Extracted suite editor assertion parsing, document ingestion, and test-case editing workflows out of `SuiteLive.Show`
+- Added a README table of contents and clarified Req / ReqLLM usage guidance
+
 ## [0.1.15] - 2026-04-07
 
 ### Added

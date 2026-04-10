@@ -122,7 +122,10 @@
       <%= if @prompt.versions != [] do %>
         <div style="margin-bottom: 24px;">
           <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Prompt Template</h3>
-          <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);"><%= List.first(@prompt.versions).template %></pre>
+          <pre
+            id="selected-prompt-template"
+            style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; color: var(--text-secondary);"
+          >{@selected_prompt_version.template}</pre>
         </div>
       <% end %>
     </div>
@@ -370,6 +373,17 @@
                         <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
                           Types: contains, not_contains, regex, exact_match, json_field
                         </div>
+                      <% end %>
+                      <%= if @test_case_form[:assertions_json].errors != [] do %>
+                        <p style="font-size: 11px; color: #dc2626; margin-top: 6px;">
+                          {Enum.map_join(
+                            @test_case_form[:assertions_json].errors,
+                            ", ",
+                            fn {message, _opts} ->
+                              message
+                            end
+                          )}
+                        </p>
                       <% end %>
                     </div>
                   </div>

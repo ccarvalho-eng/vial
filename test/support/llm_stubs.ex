@@ -80,15 +80,15 @@ defmodule Aludel.LlmStubs do
   """
   @spec rate_limit_error() :: llm_response()
   def rate_limit_error do
-    {:error, {:rate_limit_error, "Rate limit exceeded. Retry after 60s"}}
+    {:error, {:rate_limit, 60}}
   end
 
   @doc """
   Generic API error response.
   """
-  @spec api_error(String.t()) :: llm_response()
-  def api_error(message \\ "API request failed") do
-    {:error, {:api_error, message}}
+  @spec api_error(non_neg_integer(), String.t()) :: llm_response()
+  def api_error(status \\ 500, message \\ "API request failed") do
+    {:error, {:api_error, status, message}}
   end
 
   @doc """
@@ -96,7 +96,7 @@ defmodule Aludel.LlmStubs do
   """
   @spec malformed_response_error() :: llm_response()
   def malformed_response_error do
-    {:error, {:api_error, "Unexpected response format"}}
+    {:error, {:api_error, 500, "Unexpected response format"}}
   end
 
   @doc """
