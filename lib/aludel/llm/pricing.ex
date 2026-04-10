@@ -92,7 +92,7 @@ defmodule Aludel.LLM.Pricing do
   defp build_and_cache_index do
     index =
       try do
-        LLMDB.models()
+        apply(LLMDB, :models, [])
         |> Enum.reduce(%{}, fn
           %{provider: p, id: id, cost: %{input: inp, output: out}}, acc
           when is_number(inp) and is_number(out) ->
