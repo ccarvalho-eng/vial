@@ -2,39 +2,22 @@
   <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="220"/>
   <h1>Aludel</h1>
   <p><strong>LLM eval workbench for Phoenix.</strong></p>
-  <p>
-    Compare providers side by side, version prompts, and run regression suites from a dashboard that can live inside your app or run standalone.
-  </p>
+  <p><em>Compare providers, version prompts, and run regression suites from one dashboard.</em></p>
   <p>
     <a href="https://hex.pm/packages/aludel"><img src="https://img.shields.io/hexpm/v/aludel.svg" alt="Hex.pm"/></a>
-    <a href="https://hexdocs.pm/aludel"><img src="https://img.shields.io/badge/docs-hexdocs-6e4aff" alt="HexDocs"/></a>
     <a href="https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml"><img src="https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-    <a href="https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml"><img src="https://github.com/ccarvalho-eng/aludel/actions/workflows/security.yml/badge.svg" alt="Security"/></a>
-    <a href="https://codecov.io/gh/ccarvalho-eng/aludel"><img src="https://codecov.io/gh/ccarvalho-eng/aludel/branch/main/graph/badge.svg" alt="Codecov"/></a>
+    <a href="https://hexdocs.pm/aludel"><img src="https://img.shields.io/badge/documentation-gray" alt="Documentation"/></a>
     <a href="https://github.com/ccarvalho-eng/aludel/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ccarvalho-eng/aludel" alt="License"/></a>
-    <a href="https://github.com/ccarvalho-eng/aludel/discussions"><img src="https://img.shields.io/github/discussions/ccarvalho-eng/aludel" alt="Discussions"/></a>
   </p>
-  <p><em>Named for the vessel used in sublimation: a place where raw material is refined through stages.</em></p>
 </div>
 
-![Aludel dashboard screenshot](https://github.com/user-attachments/assets/16e8caa6-81e2-44fa-b205-2dd9f6477760)
+Aludel helps teams evaluate prompt and model behavior without building a custom dashboard first.
 
-## What Aludel does
-
-Aludel helps you evaluate prompt and model behavior with less spreadsheet work and less hand-rolled glue code.
-
-- Compare the same prompt across OpenAI, Anthropic, Gemini, and Ollama.
-- Track output quality, latency, token usage, and cost in one place.
-- Version prompts over time and inspect how changes affect results.
-- Build evaluation suites with assertions and document attachments to catch regressions.
-- Run as an embedded Phoenix dashboard or as a standalone app.
-
-## Why teams use it
-
-- **Provider comparison**: run the same input across multiple providers side by side.
-- **Prompt versioning**: treat prompt changes like product changes, with history and traceability.
-- **Regression testing**: keep suites of test cases and assertions for repeatable checks.
-- **Operational visibility**: see cost, latency, and pass-rate trends without custom tooling.
+- Run the same prompt across OpenAI, Anthropic, Gemini, and Ollama.
+- Compare output, latency, token usage, and cost side by side.
+- Version prompts and track how changes affect results over time.
+- Build suites with assertions and document attachments to catch regressions.
+- Use it inside an existing Phoenix app or run it standalone.
 
 ## Quick Start
 
@@ -106,16 +89,21 @@ mix phx.server
 
 Visit `http://localhost:4000`.
 
+## Documentation
+
+The README covers the fastest path to value. Use the resources below for deeper setup and usage details.
+
+- [Wiki](https://github.com/ccarvalho-eng/aludel/wiki)
+- [HexDocs](https://hexdocs.pm/aludel)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Issue Tracker](https://github.com/ccarvalho-eng/aludel/issues)
+- [Discussions](https://github.com/ccarvalho-eng/aludel/discussions)
+
 ## Provider support
 
-| Provider | API Key Required | Notes |
-|---|---|---|
-| **Ollama** | No | Local-first, works out of the box |
-| **OpenAI** | Yes | Configure via `OPENAI_API_KEY` |
-| **Anthropic** | Yes | Configure via `ANTHROPIC_API_KEY` |
-| **Google Gemini** | Yes | Configure via `GOOGLE_API_KEY` |
+Aludel supports OpenAI, Anthropic, Google Gemini, and Ollama.
 
-For embedded apps, configure keys in your host application's config:
+For embedded apps, configure provider keys in your host app:
 
 ```elixir
 config :aludel, :llm,
@@ -125,24 +113,6 @@ config :aludel, :llm,
 ```
 
 Ollama runs locally and does not require an API key.
-
-## Typical workflow
-
-1. Create a prompt with `{{variable}}` placeholders.
-2. Run it across multiple providers.
-3. Compare responses, latency, token usage, and cost.
-4. Turn important checks into suites with assertions.
-5. Track performance over time as prompts evolve.
-
-## Documentation
-
-The README covers the fastest path to value. Use the docs below for deeper setup and usage details.
-
-- [Wiki](https://github.com/ccarvalho-eng/aludel/wiki)
-- [HexDocs](https://hexdocs.pm/aludel)
-- [Contributing Guide](CONTRIBUTING.md)
-- [Issue Tracker](https://github.com/ccarvalho-eng/aludel/issues)
-- [Discussions](https://github.com/ccarvalho-eng/aludel/discussions)
 
 ## Development
 
@@ -168,6 +138,8 @@ For full-app development with watchers, run the standalone app:
 cd standalone
 mix phx.server
 ```
+
+![Aludel dashboard screenshot](https://github.com/user-attachments/assets/16e8caa6-81e2-44fa-b205-2dd9f6477760)
 
 ## License
 
