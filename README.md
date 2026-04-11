@@ -5,7 +5,7 @@
   <p>
     <a href="https://hex.pm/packages/aludel"><img src="https://img.shields.io/hexpm/v/aludel.svg" alt="Hex.pm"/></a>
     <a href="https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml"><img src="https://github.com/ccarvalho-eng/aludel/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-    <a href="https://hexdocs.pm/aludel"><img src="https://img.shields.io/badge/Hex%20Docs-gray" alt="Hex Docs"/></a>
+    <a href="https://hexdocs.pm/aludel"><img src="https://img.shields.io/badge/docs-hexdocs-purple" alt="Hex Docs"/></a>
     <a href="https://github.com/ccarvalho-eng/aludel/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ccarvalho-eng/aludel" alt="License"/></a>
   </p>
 </div>
@@ -156,11 +156,18 @@ mix assets.build
 mix compile --force
 ```
 
-For full-app development with watchers, run the standalone app:
+For standalone development, run the app from the `standalone` directory:
 
 ```bash
 cd standalone
 mix phx.server
+```
+
+If you change frontend assets, rebuild them from the repo root and restart the standalone server:
+
+```bash
+mix assets.build
+mix compile --force
 ```
 
 ## License
