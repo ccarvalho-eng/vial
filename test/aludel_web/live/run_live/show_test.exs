@@ -104,6 +104,7 @@ defmodule Aludel.Web.RunLive.ShowTest do
       )
 
       html = render(view)
+      assert html =~ provider3.name
       assert html =~ "Streaming update from Cohere"
     end
 
