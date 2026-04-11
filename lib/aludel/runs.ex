@@ -120,6 +120,19 @@ defmodule Aludel.Runs do
   end
 
   @doc """
+  Gets a run result by ID, raising if not found.
+
+  Preloads the associated provider so the result is ready for
+  rendering without additional database lookups.
+  """
+  @spec get_run_result!(binary()) :: RunResult.t()
+  def get_run_result!(id) do
+    RunResult
+    |> repo().get!(id)
+    |> repo().preload(:provider)
+  end
+
+  @doc """
   Updates an existing run result.
   """
   @spec update_run_result(RunResult.t(), map()) ::
