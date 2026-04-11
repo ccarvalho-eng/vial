@@ -1,6 +1,5 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/logo.png" alt="Aludel Logo" width="200"/>
-  <h1>Aludel</h1>
   <p><strong>Evaluate prompts with real visibility.</strong></p>
   <p><em>A Phoenix-native workbench for comparing providers, tracking prompt history, and running regression suites.</em></p>
   <p>
