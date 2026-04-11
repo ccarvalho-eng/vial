@@ -110,9 +110,10 @@ Aludel supports OpenAI, Anthropic, Google Gemini, and Ollama.
 | Google Gemini | Yes | Configure with `GOOGLE_API_KEY` |
 | Ollama | No | Runs locally |
 
-For embedded apps, configure provider keys in your host app:
+For embedded apps, configure provider keys in `config/runtime.exs`:
 
 ```elixir
+# In config/runtime.exs
 config :aludel, :llm,
   openai_api_key: System.get_env("OPENAI_API_KEY"),
   anthropic_api_key: System.get_env("ANTHROPIC_API_KEY"),
