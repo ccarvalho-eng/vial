@@ -97,6 +97,12 @@ mix ecto.migrate
 mix phx.server
 ```
 
+To populate the local database with sample prompts, providers, and suites:
+
+```bash
+mix aludel.seed
+```
+
 Visit `http://localhost:4000`.
 
 ## Provider support
