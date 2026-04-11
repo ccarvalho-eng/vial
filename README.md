@@ -18,7 +18,7 @@ Aludel gives teams a clean way to evaluate prompt and model behavior without inv
 - Run evaluation suites with assertions and document attachments.
 - Use it inside an existing Phoenix app or run it standalone.
 
-[![Aludel dashboard screenshot](https://github.com/user-attachments/assets/16e8caa6-81e2-44fa-b205-2dd9f6477760)](https://github.com/user-attachments/assets/16e8caa6-81e2-44fa-b205-2dd9f6477760)
+[![Aludel dashboard screenshot](https://raw.githubusercontent.com/ccarvalho-eng/aludel/e67e5f34e200233dc7ce508d0ef340bf9951deca/assets/images/dashboard-screenshot.png)](https://raw.githubusercontent.com/ccarvalho-eng/aludel/e67e5f34e200233dc7ce508d0ef340bf9951deca/assets/images/dashboard-screenshot.png)
 
 ## Why Aludel
 
@@ -89,7 +89,8 @@ Visit your configured path, for example `http://localhost:4000/dev/aludel`.
 If you want to run Aludel by itself:
 
 ```bash
-cd standalone
+git clone https://github.com/ccarvalho-eng/aludel.git
+cd aludel/standalone
 mix deps.get
 mix ecto.create
 mix ecto.migrate
