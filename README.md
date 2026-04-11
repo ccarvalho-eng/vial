@@ -18,7 +18,7 @@ Aludel gives teams a clean way to evaluate prompt and model behavior without inv
 - Run evaluation suites with assertions and document attachments.
 - Use it inside an existing Phoenix app or run it standalone.
 
-[![Aludel dashboard screenshot](https://raw.githubusercontent.com/ccarvalho-eng/aludel/e67e5f34e200233dc7ce508d0ef340bf9951deca/assets/images/dashboard-screenshot.png)](https://raw.githubusercontent.com/ccarvalho-eng/aludel/e67e5f34e200233dc7ce508d0ef340bf9951deca/assets/images/dashboard-screenshot.png)
+[![Aludel dashboard screenshot](https://raw.githubusercontent.com/ccarvalho-eng/aludel/docs/readme-refresh/assets/images/dashboard-screenshot.png)](https://raw.githubusercontent.com/ccarvalho-eng/aludel/docs/readme-refresh/assets/images/dashboard-screenshot.png)
 
 ## Why Aludel
 
