@@ -128,7 +128,7 @@ The README is intentionally optimized for first contact. For deeper setup, usage
 
 - [Wiki](https://github.com/ccarvalho-eng/aludel/wiki)
 - [HexDocs](https://hexdocs.pm/aludel)
-- [Contributing Guide](CONTRIBUTING.md)
+- [Contributing Guide](https://github.com/ccarvalho-eng/aludel/blob/main/CONTRIBUTING.md)
 - [Issue Tracker](https://github.com/ccarvalho-eng/aludel/issues)
 - [Discussions](https://github.com/ccarvalho-eng/aludel/discussions)
 
@@ -159,4 +159,4 @@ mix phx.server
 
 ## License
 
-[Apache License 2.0](LICENSE)
+[Apache License 2.0](https://github.com/ccarvalho-eng/aludel/blob/main/LICENSE)
