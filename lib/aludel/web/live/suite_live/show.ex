@@ -15,7 +15,6 @@ defmodule Aludel.Web.SuiteLive.Show do
   alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Providers
-  alias Aludel.TaskSupervisor
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -48,6 +47,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:providers, providers)
       |> assign(:suite_runs, suite_runs)
       |> assign(:running, false)
+      |> assign(:run_task_monitor_ref, nil)
       |> assign(:selected_version_id, default_version_id)
       |> assign(:selected_provider_id, default_provider_id)
       |> assign(:run_suite_form, build_run_suite_form(default_version_id, default_provider_id))
@@ -362,21 +362,7 @@ defmodule Aludel.Web.SuiteLive.Show do
     else
       version_id = Map.get(run_suite_params, "version_id", socket.assigns.selected_version_id)
       provider_id = Map.get(run_suite_params, "provider_id", socket.assigns.selected_provider_id)
-
-      # Start async execution
-      pid = self()
-      suite_id = socket.assigns.suite.id
-
-      Task.Supervisor.start_child(TaskSupervisor, fn ->
-        version = Prompts.get_prompt_version!(version_id)
-        provider = Providers.get_provider!(provider_id)
-        suite = Evals.get_suite_with_test_cases!(suite_id)
-
-        result = Evals.execute_suite(suite, version, provider)
-        send(pid, {:suite_completed, result})
-      end)
-
-      {:noreply, assign(socket, :running, true)}
+      {:noreply, start_suite_execution(socket, version_id, provider_id)}
     end
   end
 
@@ -438,16 +424,31 @@ defmodule Aludel.Web.SuiteLive.Show do
     {:noreply,
      socket
      |> assign(:suite_runs, [suite_run | socket.assigns.suite_runs])
-     |> assign(:running, false)
+     |> clear_run_task_state()
      |> put_flash(:info, "Suite executed successfully")}
   end
 
   @impl Phoenix.LiveView
-  def handle_info({:suite_completed, {:error, _reason}}, socket) do
+  def handle_info({:suite_completed, {:error, reason}}, socket) do
     {:noreply,
      socket
-     |> assign(:running, false)
-     |> put_flash(:error, "Failed to execute suite")}
+     |> clear_run_task_state()
+     |> put_flash(:error, suite_execution_error_message(reason))}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_info(
+        {:DOWN, monitor_ref, :process, _pid, reason},
+        %{assigns: %{run_task_monitor_ref: monitor_ref}} = socket
+      ) do
+    if reason == :normal do
+      {:noreply, socket}
+    else
+      {:noreply,
+       socket
+       |> clear_run_task_state()
+       |> put_flash(:error, "Suite execution crashed before completion")}
+    end
   end
 
   defp relative_time(datetime) do
@@ -490,4 +491,52 @@ defmodule Aludel.Web.SuiteLive.Show do
       to_string(version.id) == to_string(version_id)
     end)
   end
+
+  defp clear_run_task_state(socket) do
+    case socket.assigns.run_task_monitor_ref do
+      nil ->
+        assign(socket, :running, false)
+
+      monitor_ref ->
+        Process.demonitor(monitor_ref, [:flush])
+
+        socket
+        |> assign(:run_task_monitor_ref, nil)
+        |> assign(:running, false)
+    end
+  end
+
+  defp start_suite_execution(socket, version_id, provider_id) do
+    case Evals.launch_suite_execution(
+           self(),
+           socket.assigns.suite.id,
+           version_id,
+           provider_id
+         ) do
+      {:ok, monitor_ref} ->
+        socket
+        |> assign(:run_task_monitor_ref, monitor_ref)
+        |> assign(:running, true)
+
+      {:error, _reason} ->
+        put_flash(socket, :error, "Failed to start suite execution")
+    end
+  end
+
+  defp suite_execution_error_message(:suite_not_found),
+    do: "Failed to execute suite: suite not found"
+
+  defp suite_execution_error_message(:prompt_version_not_found),
+    do: "Failed to execute suite: prompt version not found"
+
+  defp suite_execution_error_message(:provider_not_found),
+    do: "Failed to execute suite: provider not found"
+
+  defp suite_execution_error_message({:execution_failed, detail}),
+    do: "Failed to execute suite: #{format_execution_error_detail(detail)}"
+
+  defp suite_execution_error_message(_reason), do: "Failed to execute suite"
+
+  defp format_execution_error_detail(detail) when is_binary(detail), do: detail
+  defp format_execution_error_detail(detail), do: inspect(detail)
 end
