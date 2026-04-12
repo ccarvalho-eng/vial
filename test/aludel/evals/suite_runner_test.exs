@@ -15,6 +15,15 @@ defmodule Aludel.Evals.SuiteRunnerTest do
       assert suite_run.prompt_version_id == version.id
       assert suite_run.provider_id == provider.id
     end
+
+    test "returns a structured error when dependent records cannot be loaded" do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      version = List.first(prompt.versions)
+
+      assert {:error, :provider_not_found} =
+               SuiteRunner.execute(suite.id, version.id, Ecto.UUID.generate())
+    end
   end
 
   describe "launch/4" do
@@ -32,7 +41,7 @@ defmodule Aludel.Evals.SuiteRunnerTest do
       assert_receive {:DOWN, ^monitor_ref, :process, ^task_pid, :normal}, 1000
     end
 
-    test "crashes when dependent records cannot be loaded" do
+    test "sends an error result when dependent records cannot be loaded" do
       prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
       suite = suite_fixture(%{prompt_id: prompt.id})
       version = List.first(prompt.versions)
@@ -42,9 +51,8 @@ defmodule Aludel.Evals.SuiteRunnerTest do
 
       monitor_ref = Process.monitor(task_pid)
 
-      refute_receive {:suite_completed, _}, 200
-      assert_receive {:DOWN, ^monitor_ref, :process, ^task_pid, reason}, 1000
-      assert match?({%Ecto.NoResultsError{}, _}, reason)
+      assert_receive {:suite_completed, {:error, :provider_not_found}}, 1000
+      assert_receive {:DOWN, ^monitor_ref, :process, ^task_pid, :normal}, 1000
     end
   end
 end

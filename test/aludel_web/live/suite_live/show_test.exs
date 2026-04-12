@@ -521,7 +521,7 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
   end
 
   describe "suite execution" do
-    test "recovers when the background execution task crashes", %{conn: conn} do
+    test "recovers when the background execution task fails", %{conn: conn} do
       prompt = prompt_fixture_with_version()
       suite = suite_fixture(%{prompt_id: prompt.id})
       provider = provider_fixture()
@@ -541,7 +541,7 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
         assert_running_state(view, false)
       end)
 
-      assert has_element?(view, "#flash-error", "Suite execution crashed before completion")
+      assert has_element?(view, "#flash-error", "Failed to execute suite: provider not found")
       refute has_element?(view, "#run-suite-btn[disabled]")
       assert has_element?(view, "#run-suite-form option[selected][value='#{provider.id}']")
     end

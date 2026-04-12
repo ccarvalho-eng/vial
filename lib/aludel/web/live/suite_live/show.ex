@@ -429,11 +429,11 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   @impl Phoenix.LiveView
-  def handle_info({:suite_completed, {:error, _reason}}, socket) do
+  def handle_info({:suite_completed, {:error, reason}}, socket) do
     {:noreply,
      socket
      |> clear_run_task_state()
-     |> put_flash(:error, "Failed to execute suite")}
+     |> put_flash(:error, suite_execution_error_message(reason))}
   end
 
   @impl Phoenix.LiveView
@@ -513,13 +513,24 @@ defmodule Aludel.Web.SuiteLive.Show do
            version_id,
            provider_id
          ) do
-      {:ok, task_pid} ->
+      {:ok, monitor_ref} ->
         socket
-        |> assign(:run_task_monitor_ref, Process.monitor(task_pid))
+        |> assign(:run_task_monitor_ref, monitor_ref)
         |> assign(:running, true)
 
       {:error, _reason} ->
         put_flash(socket, :error, "Failed to start suite execution")
     end
   end
+
+  defp suite_execution_error_message(:suite_not_found),
+    do: "Failed to execute suite: suite not found"
+
+  defp suite_execution_error_message(:prompt_version_not_found),
+    do: "Failed to execute suite: prompt version not found"
+
+  defp suite_execution_error_message(:provider_not_found),
+    do: "Failed to execute suite: provider not found"
+
+  defp suite_execution_error_message(_reason), do: "Failed to execute suite"
 end

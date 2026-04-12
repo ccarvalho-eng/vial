@@ -346,9 +346,12 @@ defmodule Aludel.Evals do
   back to the given recipient process.
   """
   @spec launch_suite_execution(pid(), binary(), binary(), binary()) ::
-          {:ok, pid()} | {:error, term()}
+          {:ok, reference()} | {:error, term()}
   def launch_suite_execution(recipient, suite_id, version_id, provider_id) do
-    SuiteRunner.launch(recipient, suite_id, version_id, provider_id)
+    case SuiteRunner.launch(recipient, suite_id, version_id, provider_id) do
+      {:ok, task_pid} -> {:ok, Process.monitor(task_pid)}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   # Test Case Document functions
