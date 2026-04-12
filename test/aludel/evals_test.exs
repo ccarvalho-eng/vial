@@ -764,6 +764,26 @@ defmodule Aludel.EvalsTest do
     end
   end
 
+  describe "launch_suite_execution/4" do
+    test "launches suite execution and sends the completion result" do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      provider = provider_fixture()
+      version = List.first(prompt.versions)
+
+      assert {:ok, task_pid} =
+               Evals.launch_suite_execution(self(), suite.id, version.id, provider.id)
+
+      monitor_ref = Process.monitor(task_pid)
+
+      assert_receive {:suite_completed, {:ok, suite_run}}, 1000
+      assert suite_run.suite_id == suite.id
+      assert suite_run.prompt_version_id == version.id
+      assert suite_run.provider_id == provider.id
+      assert_receive {:DOWN, ^monitor_ref, :process, ^task_pid, :normal}, 1000
+    end
+  end
+
   defp build_mock_response(text, input_tokens, output_tokens) do
     %{
       content: text,
