@@ -545,6 +545,61 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       refute has_element?(view, "#run-suite-btn[disabled]")
       assert has_element?(view, "#run-suite-form option[selected][value='#{provider.id}']")
     end
+
+    test "recovers from an abnormal task down message", %{conn: conn} do
+      suite = suite_fixture()
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      monitor_ref = make_ref()
+
+      :sys.replace_state(view.pid, fn state ->
+        put_in(state.socket.assigns, %{
+          state.socket.assigns
+          | running: true,
+            run_task_monitor_ref: monitor_ref
+        })
+      end)
+
+      send(view.pid, {:DOWN, monitor_ref, :process, self(), :boom})
+
+      assert_running_state(view, false)
+      assert has_element?(view, "#flash-error", "Suite execution crashed before completion")
+      refute has_element?(view, "#run-suite-btn[disabled]")
+    end
+
+    test "allows rerunning after a failed attempt", %{conn: conn} do
+      prompt = prompt_fixture_with_version()
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      provider = provider_fixture()
+      version = List.first(prompt.versions)
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      capture_log(fn ->
+        render_submit(view, "run_suite", %{
+          "run_suite" => %{
+            "version_id" => version.id,
+            "provider_id" => Ecto.UUID.generate()
+          }
+        })
+
+        assert_running_state(view, false)
+      end)
+
+      assert has_element?(view, "#flash-error", "Failed to execute suite: provider not found")
+
+      render_submit(view, "run_suite", %{
+        "run_suite" => %{
+          "version_id" => version.id,
+          "provider_id" => provider.id
+        }
+      })
+
+      assert_running_state(view, false)
+      assert has_element?(view, "#flash-info", "Suite executed successfully")
+      refute has_element?(view, "#run-suite-btn[disabled]")
+    end
   end
 
   describe "test case edit cancellation" do

@@ -19,7 +19,14 @@ defmodule Aludel.Evals.SuiteRunnerTest do
     test "returns a structured error when dependent records cannot be loaded" do
       prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
       suite = suite_fixture(%{prompt_id: prompt.id})
+      provider = provider_fixture()
       version = List.first(prompt.versions)
+
+      assert {:error, :suite_not_found} =
+               SuiteRunner.execute(Ecto.UUID.generate(), version.id, provider.id)
+
+      assert {:error, :prompt_version_not_found} =
+               SuiteRunner.execute(suite.id, Ecto.UUID.generate(), provider.id)
 
       assert {:error, :provider_not_found} =
                SuiteRunner.execute(suite.id, version.id, Ecto.UUID.generate())
