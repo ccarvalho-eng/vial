@@ -1,6 +1,7 @@
 defmodule Aludel.Web.SuiteLive.ShowTest do
   use Aludel.Web.ConnCase, async: false
 
+  import ExUnit.CaptureLog
   import Phoenix.LiveViewTest
   import Aludel.EvalsFixtures
   import Aludel.PromptsFixtures
@@ -519,6 +520,33 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     end
   end
 
+  describe "suite execution" do
+    test "recovers when the background execution task crashes", %{conn: conn} do
+      prompt = prompt_fixture_with_version()
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      provider = provider_fixture()
+      version = List.first(prompt.versions)
+      invalid_provider_id = Ecto.UUID.generate()
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      capture_log(fn ->
+        render_submit(view, "run_suite", %{
+          "run_suite" => %{
+            "version_id" => version.id,
+            "provider_id" => invalid_provider_id
+          }
+        })
+
+        assert_running_state(view, false)
+      end)
+
+      assert has_element?(view, "#flash-error", "Suite execution crashed before completion")
+      refute has_element?(view, "#run-suite-btn[disabled]")
+      assert has_element?(view, "#run-suite-form option[selected][value='#{provider.id}']")
+    end
+  end
+
   describe "test case edit cancellation" do
     test "cancels test case editing", %{conn: conn} do
       suite = suite_fixture()
@@ -535,5 +563,26 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       # Should return to normal view, not showing edit form
       refute html =~ "Save"
     end
+  end
+
+  defp assert_running_state(view, expected_running, attempts \\ 20)
+
+  defp assert_running_state(view, expected_running, attempts) when attempts > 0 do
+    running = view_running?(view)
+
+    if running == expected_running do
+      assert running == expected_running
+    else
+      Process.sleep(10)
+      assert_running_state(view, expected_running, attempts - 1)
+    end
+  end
+
+  defp assert_running_state(view, expected_running, 0) do
+    assert view_running?(view) == expected_running
+  end
+
+  defp view_running?(view) do
+    :sys.get_state(view.pid).socket.assigns.running
   end
 end

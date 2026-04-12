@@ -5,7 +5,7 @@ defmodule Aludel.Evals do
 
   import Ecto.Query
 
-  alias Aludel.Evals.{Suite, SuiteRun, TestCase, TestCaseDocument}
+  alias Aludel.Evals.{Suite, SuiteRun, SuiteRunner, TestCase, TestCaseDocument}
   alias Aludel.LLM
   alias Aludel.Prompts.PromptVersion
   alias Aludel.Providers.Provider
@@ -339,6 +339,16 @@ defmodule Aludel.Evals do
       avg_cost_usd: avg_cost_usd,
       avg_latency_ms: avg_latency_ms
     })
+  end
+
+  @doc """
+  Launches suite execution in a supervised task and reports completion
+  back to the given recipient process.
+  """
+  @spec launch_suite_execution(pid(), binary(), binary(), binary()) ::
+          {:ok, pid()} | {:error, term()}
+  def launch_suite_execution(recipient, suite_id, version_id, provider_id) do
+    SuiteRunner.launch(recipient, suite_id, version_id, provider_id)
   end
 
   # Test Case Document functions
