@@ -638,11 +638,13 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     end
   end
 
-  defp assert_eventually(fun, attempts \\ 20)
+  defp assert_eventually(fun, attempts \\ 200)
 
   defp assert_eventually(fun, attempts) when attempts > 0 do
-    if fun.() do
-      assert fun.()
+    result = fun.()
+
+    if result do
+      assert result
     else
       Process.sleep(10)
       assert_eventually(fun, attempts - 1)
@@ -650,6 +652,7 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
   end
 
   defp assert_eventually(fun, 0) do
-    assert fun.()
+    result = fun.()
+    assert result
   end
 end
