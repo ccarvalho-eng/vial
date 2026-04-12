@@ -531,18 +531,24 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
       capture_log(fn ->
-        render_submit(view, "run_suite", %{
-          "run_suite" => %{
-            "version_id" => version.id,
-            "provider_id" => invalid_provider_id
+        view
+        |> element("#run-suite-form")
+        |> render_submit(%{
+          run_suite: %{
+            version_id: version.id,
+            provider_id: invalid_provider_id
           }
         })
-
-        assert_running_state(view, false)
       end)
 
-      assert has_element?(view, "#flash-error", "Failed to execute suite: provider not found")
-      refute has_element?(view, "#run-suite-btn[disabled]")
+      assert_eventually(fn ->
+        has_element?(view, "#flash-error", "Failed to execute suite: provider not found")
+      end)
+
+      assert_eventually(fn ->
+        not has_element?(view, "#run-suite-btn[disabled]")
+      end)
+
       assert has_element?(view, "#run-suite-form option[selected][value='#{provider.id}']")
     end
 
@@ -563,9 +569,13 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
 
       send(view.pid, {:DOWN, monitor_ref, :process, self(), :boom})
 
-      assert_running_state(view, false)
-      assert has_element?(view, "#flash-error", "Suite execution crashed before completion")
-      refute has_element?(view, "#run-suite-btn[disabled]")
+      assert_eventually(fn ->
+        has_element?(view, "#flash-error", "Suite execution crashed before completion")
+      end)
+
+      assert_eventually(fn ->
+        not has_element?(view, "#run-suite-btn[disabled]")
+      end)
     end
 
     test "allows rerunning after a failed attempt", %{conn: conn} do
@@ -577,28 +587,36 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
 
       capture_log(fn ->
-        render_submit(view, "run_suite", %{
-          "run_suite" => %{
-            "version_id" => version.id,
-            "provider_id" => Ecto.UUID.generate()
+        view
+        |> element("#run-suite-form")
+        |> render_submit(%{
+          run_suite: %{
+            version_id: version.id,
+            provider_id: Ecto.UUID.generate()
           }
         })
-
-        assert_running_state(view, false)
       end)
 
-      assert has_element?(view, "#flash-error", "Failed to execute suite: provider not found")
+      assert_eventually(fn ->
+        has_element?(view, "#flash-error", "Failed to execute suite: provider not found")
+      end)
 
-      render_submit(view, "run_suite", %{
-        "run_suite" => %{
-          "version_id" => version.id,
-          "provider_id" => provider.id
+      view
+      |> element("#run-suite-form")
+      |> render_submit(%{
+        run_suite: %{
+          version_id: version.id,
+          provider_id: provider.id
         }
       })
 
-      assert_running_state(view, false)
-      assert has_element?(view, "#flash-info", "Suite executed successfully")
-      refute has_element?(view, "#run-suite-btn[disabled]")
+      assert_eventually(fn ->
+        has_element?(view, "#flash-info", "Suite executed successfully")
+      end)
+
+      assert_eventually(fn ->
+        not has_element?(view, "#run-suite-btn[disabled]")
+      end)
     end
   end
 
@@ -620,24 +638,18 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     end
   end
 
-  defp assert_running_state(view, expected_running, attempts \\ 20)
+  defp assert_eventually(fun, attempts \\ 20)
 
-  defp assert_running_state(view, expected_running, attempts) when attempts > 0 do
-    running = view_running?(view)
-
-    if running == expected_running do
-      assert running == expected_running
+  defp assert_eventually(fun, attempts) when attempts > 0 do
+    if fun.() do
+      assert fun.()
     else
       Process.sleep(10)
-      assert_running_state(view, expected_running, attempts - 1)
+      assert_eventually(fun, attempts - 1)
     end
   end
 
-  defp assert_running_state(view, expected_running, 0) do
-    assert view_running?(view) == expected_running
-  end
-
-  defp view_running?(view) do
-    :sys.get_state(view.pid).socket.assigns.running
+  defp assert_eventually(fun, 0) do
+    assert fun.()
   end
 end

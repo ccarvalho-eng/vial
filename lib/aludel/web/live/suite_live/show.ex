@@ -532,5 +532,11 @@ defmodule Aludel.Web.SuiteLive.Show do
   defp suite_execution_error_message(:provider_not_found),
     do: "Failed to execute suite: provider not found"
 
+  defp suite_execution_error_message({:execution_failed, detail}),
+    do: "Failed to execute suite: #{format_execution_error_detail(detail)}"
+
   defp suite_execution_error_message(_reason), do: "Failed to execute suite"
+
+  defp format_execution_error_detail(detail) when is_binary(detail), do: detail
+  defp format_execution_error_detail(detail), do: inspect(detail)
 end
