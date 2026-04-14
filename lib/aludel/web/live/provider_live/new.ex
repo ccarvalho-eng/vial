@@ -30,12 +30,10 @@ defmodule Aludel.Web.ProviderLive.New do
     provider_type = provider_params["provider"]
     model_groups = Providers.fetch_model_groups(provider_type)
 
-    custom_pricing_enabled =
-      provider_params["custom_pricing_enabled"] == "true" or
-        socket.assigns.custom_pricing_enabled == true
+    custom_pricing_enabled = provider_params["custom_pricing_enabled"] == "true"
 
-    pricing_input = provider_params["pricing_input"] || socket.assigns.pricing_input || ""
-    pricing_output = provider_params["pricing_output"] || socket.assigns.pricing_output || ""
+    pricing_input = provider_params["pricing_input"] || ""
+    pricing_output = provider_params["pricing_output"] || ""
 
     changeset =
       socket.assigns.provider
@@ -89,8 +87,10 @@ defmodule Aludel.Web.ProviderLive.New do
 
   @impl Phoenix.LiveView
   def handle_event("save", %{"provider" => provider_params}, socket) do
+    custom_pricing_enabled = provider_params["custom_pricing_enabled"] == "true"
+
     provider_params =
-      Providers.build_pricing_attrs(provider_params, socket.assigns.custom_pricing_enabled)
+      Providers.build_pricing_attrs(provider_params, custom_pricing_enabled)
 
     save_provider(socket, socket.assigns.live_action, provider_params)
   end

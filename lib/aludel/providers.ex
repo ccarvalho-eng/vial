@@ -169,8 +169,14 @@ defmodule Aludel.Providers do
       {i, o} when is_number(i) and is_number(o) ->
         Map.put(params, "pricing", %{"input" => i, "output" => o})
 
-      _ ->
+      {nil, nil} ->
         Map.put(params, "pricing", nil)
+
+      _ ->
+        Map.put(params, "pricing", %{
+          "input" => params["pricing_input"],
+          "output" => params["pricing_output"]
+        })
     end
   end
 

@@ -199,6 +199,18 @@ defmodule Aludel.ProvidersTest do
       assert result["pricing"] == %{"input" => "5.0", "output" => "bad"}
     end
 
+    test "forwards raw values when only pricing_input is empty so changeset can validate" do
+      params = %{"pricing_input" => "", "pricing_output" => "15.0"}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == %{"input" => "", "output" => "15.0"}
+    end
+
+    test "forwards raw values when only pricing_output is empty so changeset can validate" do
+      params = %{"pricing_input" => "5.0", "pricing_output" => ""}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == %{"input" => "5.0", "output" => ""}
+    end
+
     test "sets pricing to nil when both inputs are empty strings and enabled" do
       params = %{"pricing_input" => "", "pricing_output" => ""}
       result = Providers.build_pricing_attrs(params, true)
