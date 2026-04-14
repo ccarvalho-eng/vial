@@ -3,7 +3,7 @@ defmodule Aludel.Providers do
   Context for managing AI provider configurations.
   """
 
-  alias Aludel.LLM.Pricing
+  alias Aludel.Providers.Pricing
   alias Aludel.Providers.Provider
   alias Ecto.Changeset
 

@@ -26,7 +26,7 @@ defmodule Aludel.LLM do
         }
 
   alias Aludel.Interfaces.LLM.Providers.{Anthropic, Google, Ollama, OpenAI}
-  alias Aludel.LLM.Pricing
+  alias Aludel.Providers.Pricing
   alias Aludel.Providers.Provider
 
   @providers %{

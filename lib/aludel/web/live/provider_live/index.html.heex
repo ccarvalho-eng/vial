@@ -66,7 +66,7 @@
                   <%= if pricing_info && pricing_info.pricing do %>
                     <div style="display: flex; align-items: center; gap: 6px;">
                       <span style="color: var(--text-secondary);">
-                        {Aludel.LLM.Pricing.format_pricing(pricing_info.pricing)}
+                        {Aludel.Providers.Pricing.format_pricing(pricing_info.pricing)}
                       </span>
                       <%= if pricing_info.custom do %>
                         <span class="tag" style="font-size: 11px;">Custom</span>

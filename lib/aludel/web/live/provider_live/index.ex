@@ -5,8 +5,8 @@ defmodule Aludel.Web.ProviderLive.Index do
 
   use Aludel.Web, :live_view
 
-  alias Aludel.LLM.Pricing
   alias Aludel.Providers
+  alias Aludel.Providers.Pricing
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do

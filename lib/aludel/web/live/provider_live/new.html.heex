@@ -74,7 +74,7 @@
               style="font-size: 13px; color: var(--text-secondary);"
             >
               <%= if @default_pricing do %>
-                Default: {Aludel.LLM.Pricing.format_pricing(@default_pricing)}
+                Default: {Aludel.Providers.Pricing.format_pricing(@default_pricing)}
               <% else %>
                 No default pricing available
               <% end %>

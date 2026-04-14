@@ -1,7 +1,7 @@
-defmodule Aludel.LLM.PricingTest do
+defmodule Aludel.Providers.PricingTest do
   use ExUnit.Case, async: true
 
-  alias Aludel.LLM.Pricing
+  alias Aludel.Providers.Pricing
 
   describe "get_pricing/3" do
     test "returns custom pricing override with atom keys" do

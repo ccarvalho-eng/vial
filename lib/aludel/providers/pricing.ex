@@ -1,4 +1,4 @@
-defmodule Aludel.LLM.Pricing do
+defmodule Aludel.Providers.Pricing do
   @moduledoc """
   Resolves pricing for a given provider and model.
 
@@ -61,13 +61,13 @@ defmodule Aludel.LLM.Pricing do
 
   ## Examples
 
-      iex> Aludel.LLM.Pricing.format_pricing(%{input: 3.0, output: 15.0})
+      iex> Aludel.Providers.Pricing.format_pricing(%{input: 3.0, output: 15.0})
       "$3.00 / $15.00 per 1M tokens"
 
-      iex> Aludel.LLM.Pricing.format_pricing(%{input: 0, output: 0})
+      iex> Aludel.Providers.Pricing.format_pricing(%{input: 0, output: 0})
       "Free"
 
-      iex> Aludel.LLM.Pricing.format_pricing(nil)
+      iex> Aludel.Providers.Pricing.format_pricing(nil)
       "Unknown"
   """
   @spec format_pricing(%{input: number(), output: number()} | nil) :: String.t()
