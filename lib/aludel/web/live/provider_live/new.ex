@@ -271,15 +271,11 @@ defmodule Aludel.Web.ProviderLive.New do
     end
   end
 
-  defp resolve_model(params, model_groups) do
+  defp resolve_model(params, _model_groups) do
     case params["model_selection"] do
       "custom" -> params["model_custom"]
       value when is_binary(value) and value != "" -> value
       _ -> nil
     end
-    |> then(fn
-      nil -> nil
-      model -> if model_in_groups?(model_groups, model), do: model, else: model
-    end)
   end
 end

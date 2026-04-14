@@ -126,7 +126,7 @@ defmodule Aludel.Providers do
 
   Returns `nil` when either argument is nil/empty or when no pricing data is found.
   """
-  @spec default_pricing(atom() | nil, String.t() | nil) ::
+  @spec default_pricing(atom() | binary() | nil, String.t() | nil) ::
           %{input: float(), output: float()} | nil
   def default_pricing(nil, _model), do: nil
   def default_pricing(_provider, nil), do: nil
