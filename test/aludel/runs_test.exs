@@ -246,6 +246,24 @@ defmodule Aludel.RunsTest do
       assert result.error == "API error"
     end
 
+    test "get_run_result!/1 preloads the provider", %{
+      run: run,
+      provider: provider
+    } do
+      attrs =
+        @valid_result_attrs
+        |> Map.put(:run_id, run.id)
+        |> Map.put(:provider_id, provider.id)
+
+      {:ok, result} = Runs.create_run_result(attrs)
+
+      loaded_result = Runs.get_run_result!(result.id)
+
+      assert loaded_result.id == result.id
+      assert Ecto.assoc_loaded?(loaded_result.provider)
+      assert loaded_result.provider.id == provider.id
+    end
+
     test "update_run_result/2 with invalid data returns error changeset", %{
       run: run,
       provider: provider

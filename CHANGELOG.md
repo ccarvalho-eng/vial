@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2026-04-12
+
+### Fixed
+- Corrected the README dashboard screenshot URL to point at the image on `main`, so it renders reliably on GitHub and Hex.pm
+
+## [0.1.17] - 2026-04-12
+
+### Changed
+- Moved run execution into a supervised executor and optimized live run result updates for lower UI refresh overhead
+- Refined the Hex-facing README with clearer positioning, setup guidance, and package presentation updates
+
+### Fixed
+- Suite prompt previews now stay in sync with the selected prompt version
+
 ## [0.1.16] - 2026-04-09
 
 ### Added
