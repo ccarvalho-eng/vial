@@ -5,7 +5,6 @@ defmodule Aludel.Web.ProviderLive.New do
 
   use Aludel.Web, :live_view
 
-  alias Aludel.LLM.Pricing
   alias Aludel.Providers
   alias Aludel.Providers.Provider
 
@@ -52,8 +51,7 @@ defmodule Aludel.Web.ProviderLive.New do
       |> Map.put(:action, :validate)
 
     model = resolve_model(provider_params, model_groups)
-    provider_atom = safe_to_provider_atom(provider_type)
-    default_pricing = resolve_default_pricing(provider_atom, model)
+    default_pricing = Providers.default_pricing(provider_type, model)
 
     {:noreply,
      socket
@@ -91,7 +89,9 @@ defmodule Aludel.Web.ProviderLive.New do
 
   @impl Phoenix.LiveView
   def handle_event("save", %{"provider" => provider_params}, socket) do
-    provider_params = apply_pricing_params(provider_params, socket.assigns.custom_pricing_enabled)
+    provider_params =
+      Providers.build_pricing_attrs(provider_params, socket.assigns.custom_pricing_enabled)
+
     save_provider(socket, socket.assigns.live_action, provider_params)
   end
 
@@ -122,16 +122,11 @@ defmodule Aludel.Web.ProviderLive.New do
     provider = Providers.get_provider!(id)
     model_groups = Providers.fetch_model_groups(provider.provider)
 
-    has_custom_pricing = is_map(provider.pricing) and map_size(provider.pricing) > 0
-
-    {pricing_input, pricing_output} =
-      if has_custom_pricing do
-        input = provider.pricing["input"] || provider.pricing[:input] || ""
-        output = provider.pricing["output"] || provider.pricing[:output] || ""
-        {to_string(input), to_string(output)}
-      else
-        {"", ""}
-      end
+    %{
+      custom_pricing_enabled: has_custom_pricing,
+      pricing_input: pricing_input,
+      pricing_output: pricing_output
+    } = Providers.pricing_form_attrs(provider)
 
     changeset =
       provider
@@ -143,7 +138,7 @@ defmodule Aludel.Web.ProviderLive.New do
       |> ensure_model_selection(model_groups)
       |> validate_model_selection()
 
-    default_pricing = resolve_default_pricing(provider.provider, provider.model)
+    default_pricing = Providers.default_pricing(provider.provider, provider.model)
 
     socket
     |> assign(:page_title, "Edit Provider")
@@ -308,62 +303,5 @@ defmodule Aludel.Web.ProviderLive.New do
       nil -> nil
       model -> if model_in_groups?(model_groups, model), do: model, else: model
     end)
-  end
-
-  defp resolve_default_pricing(nil, _model), do: nil
-  defp resolve_default_pricing(_provider, nil), do: nil
-  defp resolve_default_pricing(_provider, ""), do: nil
-
-  defp resolve_default_pricing(provider, model) do
-    Pricing.get_pricing(provider, model)
-  end
-
-  defp safe_to_provider_atom(nil), do: nil
-  defp safe_to_provider_atom(""), do: nil
-
-  defp safe_to_provider_atom(provider_type) when is_binary(provider_type) do
-    String.to_existing_atom(provider_type)
-  rescue
-    ArgumentError -> nil
-  end
-
-  defp apply_pricing_params(params, true) do
-    input = parse_pricing_value(params["pricing_input"])
-    output = parse_pricing_value(params["pricing_output"])
-
-    case {input, output} do
-      {:invalid, _} ->
-        Map.put(params, "pricing", %{
-          "input" => params["pricing_input"],
-          "output" => params["pricing_output"]
-        })
-
-      {_, :invalid} ->
-        Map.put(params, "pricing", %{
-          "input" => params["pricing_input"],
-          "output" => params["pricing_output"]
-        })
-
-      {i, o} when is_number(i) and is_number(o) ->
-        Map.put(params, "pricing", %{"input" => i, "output" => o})
-
-      _ ->
-        Map.put(params, "pricing", nil)
-    end
-  end
-
-  defp apply_pricing_params(params, _custom_pricing_disabled) do
-    Map.put(params, "pricing", nil)
-  end
-
-  defp parse_pricing_value(nil), do: nil
-  defp parse_pricing_value(""), do: nil
-
-  defp parse_pricing_value(value) when is_binary(value) do
-    case Float.parse(value) do
-      {num, ""} -> num
-      {_num, _remainder} -> :invalid
-      :error -> :invalid
-    end
   end
 end

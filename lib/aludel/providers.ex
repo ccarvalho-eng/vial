@@ -3,6 +3,7 @@ defmodule Aludel.Providers do
   Context for managing AI provider configurations.
   """
 
+  alias Aludel.LLM.Pricing
   alias Aludel.Providers.Provider
   alias Ecto.Changeset
 
@@ -118,6 +119,110 @@ defmodule Aludel.Providers do
     |> then(fn grouped ->
       %{active: Map.get(grouped, false, []), deprecated: Map.get(grouped, true, [])}
     end)
+  end
+
+  @doc """
+  Resolves the LLMDB default pricing for a given provider atom and model string.
+
+  Returns `nil` when either argument is nil/empty or when no pricing data is found.
+  """
+  @spec default_pricing(atom() | nil, String.t() | nil) ::
+          %{input: float(), output: float()} | nil
+  def default_pricing(nil, _model), do: nil
+  def default_pricing(_provider, nil), do: nil
+  def default_pricing(_provider, ""), do: nil
+
+  def default_pricing(provider, model) when is_atom(provider) and is_binary(model) do
+    Pricing.get_pricing(provider, model)
+  end
+
+  def default_pricing(provider, model) when is_binary(provider) and is_binary(model) do
+    default_pricing(to_provider_atom(provider), model)
+  end
+
+  @doc """
+  Builds the `"pricing"` key in a params map from raw form string inputs.
+
+  When `custom_pricing_enabled` is `true`, parses `"pricing_input"` and
+  `"pricing_output"` from `params` into numeric rates and sets `"pricing"`.
+  Invalid strings are forwarded as-is so changeset validation surfaces the
+  error. When disabled, `"pricing"` is set to `nil`.
+  """
+  @spec build_pricing_attrs(map(), boolean()) :: map()
+  def build_pricing_attrs(params, true) do
+    input = parse_pricing_value(params["pricing_input"])
+    output = parse_pricing_value(params["pricing_output"])
+
+    case {input, output} do
+      {:invalid, _} ->
+        Map.put(params, "pricing", %{
+          "input" => params["pricing_input"],
+          "output" => params["pricing_output"]
+        })
+
+      {_, :invalid} ->
+        Map.put(params, "pricing", %{
+          "input" => params["pricing_input"],
+          "output" => params["pricing_output"]
+        })
+
+      {i, o} when is_number(i) and is_number(o) ->
+        Map.put(params, "pricing", %{"input" => i, "output" => o})
+
+      _ ->
+        Map.put(params, "pricing", nil)
+    end
+  end
+
+  def build_pricing_attrs(params, _custom_pricing_disabled) do
+    Map.put(params, "pricing", nil)
+  end
+
+  @doc """
+  Extracts pricing-related virtual field values from a persisted provider.
+
+  Returns a map suitable for merging into changeset attrs or socket assigns
+  when re-hydrating the provider form on edit.
+  """
+  @spec pricing_form_attrs(Provider.t()) :: %{
+          custom_pricing_enabled: boolean(),
+          pricing_input: String.t(),
+          pricing_output: String.t()
+        }
+  def pricing_form_attrs(%Provider{pricing: pricing}) do
+    has_custom = is_map(pricing) and map_size(pricing) > 0
+
+    {input, output} =
+      if has_custom do
+        i = pricing["input"] || pricing[:input] || ""
+        o = pricing["output"] || pricing[:output] || ""
+        {to_string(i), to_string(o)}
+      else
+        {"", ""}
+      end
+
+    %{
+      custom_pricing_enabled: has_custom,
+      pricing_input: input,
+      pricing_output: output
+    }
+  end
+
+  defp parse_pricing_value(nil), do: nil
+  defp parse_pricing_value(""), do: nil
+
+  defp parse_pricing_value(value) when is_binary(value) do
+    case Float.parse(value) do
+      {num, ""} -> num
+      {_num, _remainder} -> :invalid
+      :error -> :invalid
+    end
+  end
+
+  defp to_provider_atom(value) when is_binary(value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError -> nil
   end
 
   defp normalize_model(%{id: id} = model) do
