@@ -64,28 +64,6 @@ defmodule Aludel.Web.ProviderLive.New do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("toggle_custom_pricing", _params, socket) do
-    enabled = !socket.assigns.custom_pricing_enabled
-
-    current_params = socket.assigns.form.params
-
-    changeset =
-      socket.assigns.provider
-      |> Providers.change_provider(
-        Map.merge(current_params, %{
-          "custom_pricing_enabled" => enabled,
-          "pricing_input" => socket.assigns.pricing_input,
-          "pricing_output" => socket.assigns.pricing_output
-        })
-      )
-
-    {:noreply,
-     socket
-     |> assign(:custom_pricing_enabled, enabled)
-     |> assign(:form, to_form(changeset))}
-  end
-
-  @impl Phoenix.LiveView
   def handle_event("save", %{"provider" => provider_params}, socket) do
     custom_pricing_enabled = provider_params["custom_pricing_enabled"] == "true"
 
