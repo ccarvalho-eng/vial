@@ -327,7 +327,7 @@ defmodule Aludel.LLMTest do
       assert is_float(result.cost_usd)
     end
 
-    test "calculates cost for Google" do
+    test "calculates cost for Google using LLMDB rates" do
       mock_response = build_mock_response("Test response", 5, 10)
 
       expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
@@ -344,8 +344,9 @@ defmodule Aludel.LLMTest do
       {:ok, result} = LLM.call(provider, "test", [])
       assert result.cost_usd > 0
 
-      # Verify exact cost: (5 * 0.15 / 1_000_000) + (10 * 0.60 / 1_000_000)
-      expected_cost = Float.round(5 * 0.15 / 1_000_000 + 10 * 0.60 / 1_000_000, 6)
+      # gemini-2.5-flash LLMDB rates: input $0.30/1M, output $2.50/1M
+      # mock response: 5 input tokens, 10 output tokens
+      expected_cost = Float.round(5 * 0.3 / 1_000_000 + 10 * 2.5 / 1_000_000, 6)
       assert result.cost_usd == expected_cost
     end
 

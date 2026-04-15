@@ -173,4 +173,138 @@ defmodule Aludel.ProvidersTest do
       assert changeset.changes.name == "New Name"
     end
   end
+
+  describe "build_pricing_attrs/2" do
+    test "sets pricing to nil when custom pricing is disabled" do
+      params = %{"pricing_input" => "5.0", "pricing_output" => "15.0"}
+      result = Providers.build_pricing_attrs(params, false)
+      assert result["pricing"] == nil
+    end
+
+    test "parses valid numeric strings into a pricing map when enabled" do
+      params = %{"pricing_input" => "5.0", "pricing_output" => "15.0"}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == %{"input" => 5.0, "output" => 15.0}
+    end
+
+    test "forwards raw strings when pricing_input is invalid so changeset can validate" do
+      params = %{"pricing_input" => "not-a-number", "pricing_output" => "15.0"}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == %{"input" => "not-a-number", "output" => "15.0"}
+    end
+
+    test "forwards raw strings when pricing_output is invalid so changeset can validate" do
+      params = %{"pricing_input" => "5.0", "pricing_output" => "bad"}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == %{"input" => "5.0", "output" => "bad"}
+    end
+
+    test "forwards raw values when only pricing_input is empty so changeset can validate" do
+      params = %{"pricing_input" => "", "pricing_output" => "15.0"}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == %{"input" => "", "output" => "15.0"}
+    end
+
+    test "forwards raw values when only pricing_output is empty so changeset can validate" do
+      params = %{"pricing_input" => "5.0", "pricing_output" => ""}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == %{"input" => "5.0", "output" => ""}
+    end
+
+    test "sets pricing to nil when both inputs are empty strings and enabled" do
+      params = %{"pricing_input" => "", "pricing_output" => ""}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == nil
+    end
+
+    test "sets pricing to nil when inputs are nil and enabled" do
+      params = %{"pricing_input" => nil, "pricing_output" => nil}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["pricing"] == nil
+    end
+
+    test "preserves other params untouched" do
+      params = %{"name" => "My Provider", "pricing_input" => "1.0", "pricing_output" => "2.0"}
+      result = Providers.build_pricing_attrs(params, true)
+      assert result["name"] == "My Provider"
+    end
+  end
+
+  describe "default_pricing/2" do
+    test "returns nil when provider is nil" do
+      assert Providers.default_pricing(nil, "gpt-4o") == nil
+    end
+
+    test "returns nil when model is nil" do
+      assert Providers.default_pricing(:openai, nil) == nil
+    end
+
+    test "returns nil when model is an empty string" do
+      assert Providers.default_pricing(:openai, "") == nil
+    end
+
+    test "returns free pricing for ollama" do
+      result = Providers.default_pricing(:ollama, "llama3")
+      assert result == %{input: 0.0, output: 0.0}
+    end
+
+    test "returns a pricing map with input and output rates for known models" do
+      result = Providers.default_pricing(:openai, "gpt-4o")
+      assert is_map(result)
+      assert is_number(result[:input] || result["input"])
+      assert is_number(result[:output] || result["output"])
+    end
+
+    test "accepts provider as a binary string" do
+      result = Providers.default_pricing("openai", "gpt-4o")
+      assert is_map(result)
+    end
+
+    test "returns nil for an unknown model" do
+      assert Providers.default_pricing(:openai, "non-existent-model-xyz") == nil
+    end
+  end
+
+  describe "pricing_form_attrs/1" do
+    test "returns empty strings and false when provider has no custom pricing" do
+      provider = provider_fixture()
+      result = Providers.pricing_form_attrs(provider)
+
+      assert result == %{
+               custom_pricing_enabled: false,
+               pricing_input: "",
+               pricing_output: ""
+             }
+    end
+
+    test "returns pricing values and true when provider has custom pricing with string keys" do
+      provider = provider_fixture(%{pricing: %{"input" => 3.0, "output" => 9.0}})
+      result = Providers.pricing_form_attrs(provider)
+
+      assert result == %{
+               custom_pricing_enabled: true,
+               pricing_input: "3.0",
+               pricing_output: "9.0"
+             }
+    end
+
+    test "returns pricing values and true when provider has custom pricing with atom keys" do
+      provider = provider_fixture(%{pricing: %{input: 2.5, output: 7.5}})
+      result = Providers.pricing_form_attrs(provider)
+
+      assert result == %{
+               custom_pricing_enabled: true,
+               pricing_input: "2.5",
+               pricing_output: "7.5"
+             }
+    end
+
+    test "returns false when provider pricing is an empty map" do
+      provider = provider_fixture()
+      # Simulate a provider with an empty pricing map (no custom override)
+      provider_with_empty_pricing = %{provider | pricing: %{}}
+      result = Providers.pricing_form_attrs(provider_with_empty_pricing)
+      assert result.custom_pricing_enabled == false
+    end
+  end
 end

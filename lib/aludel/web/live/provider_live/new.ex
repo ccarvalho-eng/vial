@@ -30,29 +30,58 @@ defmodule Aludel.Web.ProviderLive.New do
     provider_type = provider_params["provider"]
     model_groups = Providers.fetch_model_groups(provider_type)
 
+    custom_pricing_enabled = provider_params["custom_pricing_enabled"] == "true"
+
+    pricing_input = provider_params["pricing_input"] || ""
+    pricing_output = provider_params["pricing_output"] || ""
+
     changeset =
       socket.assigns.provider
-      |> Providers.change_provider(provider_params)
+      |> Providers.change_provider(
+        Map.merge(provider_params, %{
+          "custom_pricing_enabled" => custom_pricing_enabled,
+          "pricing_input" => pricing_input,
+          "pricing_output" => pricing_output
+        })
+      )
       |> ensure_model_selection(model_groups)
       |> validate_model_selection()
       |> Map.put(:action, :validate)
+
+    model = resolve_model(provider_params, model_groups)
+    default_pricing = Providers.default_pricing(provider_type, model)
 
     {:noreply,
      socket
      |> assign(:model_groups, model_groups)
      |> assign(:model_options, model_options(model_groups))
      |> assign(:form, to_form(changeset))
-     |> assign(:config_json, Map.get(provider_params, "config", ""))}
+     |> assign(:config_json, Map.get(provider_params, "config", ""))
+     |> assign(:default_pricing, default_pricing)
+     |> assign(:custom_pricing_enabled, custom_pricing_enabled)
+     |> assign(:pricing_input, pricing_input)
+     |> assign(:pricing_output, pricing_output)}
   end
 
   @impl Phoenix.LiveView
   def handle_event("save", %{"provider" => provider_params}, socket) do
+    custom_pricing_enabled = provider_params["custom_pricing_enabled"] == "true"
+
+    provider_params =
+      Providers.build_pricing_attrs(provider_params, custom_pricing_enabled)
+
     save_provider(socket, socket.assigns.live_action, provider_params)
   end
 
   defp apply_action(socket, :new, _params) do
-    changeset = Providers.change_provider(%Provider{})
     model_groups = %{active: [], deprecated: []}
+
+    changeset =
+      Providers.change_provider(%Provider{}, %{
+        "custom_pricing_enabled" => false,
+        "pricing_input" => "",
+        "pricing_output" => ""
+      })
 
     socket
     |> assign(:page_title, "New Provider")
@@ -61,17 +90,33 @@ defmodule Aludel.Web.ProviderLive.New do
     |> assign(:model_options, model_options(model_groups))
     |> assign(:config_json, "")
     |> assign(:form, to_form(changeset))
+    |> assign(:default_pricing, nil)
+    |> assign(:custom_pricing_enabled, false)
+    |> assign(:pricing_input, "")
+    |> assign(:pricing_output, "")
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
     provider = Providers.get_provider!(id)
     model_groups = Providers.fetch_model_groups(provider.provider)
 
+    %{
+      custom_pricing_enabled: has_custom_pricing,
+      pricing_input: pricing_input,
+      pricing_output: pricing_output
+    } = Providers.pricing_form_attrs(provider)
+
     changeset =
       provider
-      |> Providers.change_provider()
+      |> Providers.change_provider(%{
+        "custom_pricing_enabled" => has_custom_pricing,
+        "pricing_input" => pricing_input,
+        "pricing_output" => pricing_output
+      })
       |> ensure_model_selection(model_groups)
       |> validate_model_selection()
+
+    default_pricing = Providers.default_pricing(provider.provider, provider.model)
 
     socket
     |> assign(:page_title, "Edit Provider")
@@ -80,6 +125,10 @@ defmodule Aludel.Web.ProviderLive.New do
     |> assign(:model_options, model_options(model_groups))
     |> assign(:config_json, encode_config(provider.config))
     |> assign(:form, to_form(changeset))
+    |> assign(:default_pricing, default_pricing)
+    |> assign(:custom_pricing_enabled, has_custom_pricing)
+    |> assign(:pricing_input, pricing_input)
+    |> assign(:pricing_output, pricing_output)
   end
 
   defp save_provider(socket, :new, provider_params) do
@@ -219,6 +268,14 @@ defmodule Aludel.Web.ProviderLive.New do
       "" -> Ecto.Changeset.add_error(changeset, :model_selection, "can't be blank")
       "custom" -> Ecto.Changeset.validate_required(changeset, [:model_custom])
       _ -> changeset
+    end
+  end
+
+  defp resolve_model(params, _model_groups) do
+    case params["model_selection"] do
+      "custom" -> params["model_custom"]
+      value when is_binary(value) and value != "" -> value
+      _ -> nil
     end
   end
 end

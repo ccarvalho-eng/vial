@@ -26,6 +26,7 @@ defmodule Aludel.LLM do
         }
 
   alias Aludel.Interfaces.LLM.Providers.{Anthropic, Google, Ollama, OpenAI}
+  alias Aludel.Providers.Pricing
   alias Aludel.Providers.Provider
 
   @providers %{
@@ -145,27 +146,13 @@ defmodule Aludel.LLM do
   end
 
   defp calculate_cost(provider, response) do
-    case provider.provider do
-      :openai ->
-        # OpenAI GPT-4o pricing: $5/million input, $15/million output
-        input_cost = response.input_tokens * 5.0 / 1_000_000
-        output_cost = response.output_tokens * 15.0 / 1_000_000
+    case Pricing.get_pricing(provider.provider, provider.model, provider.pricing) do
+      %{input: input_rate, output: output_rate} ->
+        input_cost = response.input_tokens * input_rate / 1_000_000
+        output_cost = response.output_tokens * output_rate / 1_000_000
         Float.round(input_cost + output_cost, 6)
 
-      :anthropic ->
-        # Anthropic Claude pricing: $3/million input, $15/million output
-        input_cost = response.input_tokens * 3.0 / 1_000_000
-        output_cost = response.output_tokens * 15.0 / 1_000_000
-        Float.round(input_cost + output_cost, 6)
-
-      :google ->
-        # Google Gemini Flash pricing: $0.15/million input, $0.60/million output
-        input_cost = response.input_tokens * 0.15 / 1_000_000
-        output_cost = response.output_tokens * 0.60 / 1_000_000
-        Float.round(input_cost + output_cost, 6)
-
-      :ollama ->
-        # Ollama is local, no cost
+      nil ->
         0.0
     end
   end

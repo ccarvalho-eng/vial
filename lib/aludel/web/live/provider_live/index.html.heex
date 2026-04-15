@@ -11,7 +11,7 @@
     </div>
 
     <div class="aludel-card" style="padding: 0; overflow: hidden;">
-      <%= if @providers == [] do %>
+      <%= if @providers_empty? do %>
         <div style="padding: 60px 20px; text-align: center;">
           <.icon name="hero-server-stack" class="size-12 text-muted empty-state-icon" />
           <div class="empty-state-description">
@@ -28,14 +28,17 @@
               <th style="text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
                 MODEL
               </th>
+              <th style="text-align: left; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary);">
+                PRICING
+              </th>
               <th style="text-align: right; padding: 12px 16px; font-weight: 600; font-size: 13px; color: var(--text-secondary); width: 200px;">
                 ACTIONS
               </th>
             </tr>
           </thead>
-          <tbody>
-            <%= for provider <- @providers do %>
-              <tr id={"provider-#{provider.id}"} style="border-bottom: 1px solid var(--border);">
+          <tbody id="providers-stream" phx-update="stream">
+            <%= for {id, provider} <- @streams.providers do %>
+              <tr id={id} style="border-bottom: 1px solid var(--border);">
                 <td style="padding: 12px 16px;">
                   <div style="display: flex; align-items: center; gap: 12px;">
                     <%= if icon_path = provider_icon(provider.provider) do %>
@@ -54,6 +57,26 @@
                 </td>
                 <td style="padding: 12px 16px; color: var(--text-secondary); font-size: 14px;">
                   {provider.model}
+                </td>
+                <td
+                  id={"provider-pricing-#{provider.id}"}
+                  style="padding: 12px 16px; font-size: 13px;"
+                >
+                  <% pricing_info = @provider_pricing[provider.id] %>
+                  <%= if pricing_info && pricing_info.pricing do %>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="color: var(--text-secondary);">
+                        {Aludel.Providers.Pricing.format_pricing(pricing_info.pricing)}
+                      </span>
+                      <%= if pricing_info.custom do %>
+                        <span class="tag" style="font-size: 11px;">Custom</span>
+                      <% else %>
+                        <span class="tag" style="font-size: 11px; opacity: 0.7;">Default</span>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <span style="color: var(--text-secondary); opacity: 0.5;">&mdash;</span>
+                  <% end %>
                 </td>
                 <td style="padding: 12px 16px; text-align: right;">
                   <div style="display: flex; gap: 8px; justify-content: flex-end;">

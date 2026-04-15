@@ -63,6 +63,65 @@
           </div>
         <% end %>
 
+        <div
+          id="pricing-section"
+          style="margin-bottom: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"
+        >
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <span style="font-weight: 600; font-size: 14px;">Pricing</span>
+            <span
+              id="default-pricing-display"
+              style="font-size: 13px; color: var(--text-secondary);"
+            >
+              <%= if @default_pricing do %>
+                Default: {Aludel.Providers.Pricing.format_pricing(@default_pricing)}
+              <% else %>
+                No default pricing available
+              <% end %>
+            </span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <.input
+              field={@form[:custom_pricing_enabled]}
+              type="checkbox"
+              label="Use custom pricing"
+            />
+          </div>
+
+          <%= if @custom_pricing_enabled do %>
+            <div id="custom-pricing-fields" style="display: flex; gap: 16px;">
+              <div style="flex: 1;">
+                <.input
+                  field={@form[:pricing_input]}
+                  type="number"
+                  label="Input price (per 1M tokens)"
+                  step="0.01"
+                  min="0"
+                  placeholder="3.00"
+                />
+              </div>
+              <div style="flex: 1;">
+                <.input
+                  field={@form[:pricing_output]}
+                  type="number"
+                  label="Output price (per 1M tokens)"
+                  step="0.01"
+                  min="0"
+                  placeholder="15.00"
+                />
+              </div>
+            </div>
+          <% else %>
+            <div
+              id="pricing-default-indicator"
+              style="font-size: 13px; color: var(--text-secondary);"
+            >
+              Using default pricing from model database
+            </div>
+          <% end %>
+        </div>
+
         <div>
           <div class="fieldset mb-2">
             <label>
