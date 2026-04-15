@@ -15,6 +15,92 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert has_element?(view, "#provider-form select[name='provider[model_selection]']")
       assert has_element?(view, "#provider_provider-select[phx-hook='CustomSelect']")
       assert has_element?(view, "#provider_provider[data-select-input]")
+      assert has_element?(view, "#pricing-section.pricing-panel")
+      assert has_element?(view, "#pricing-section-heading", "Pricing")
+      assert has_element?(view, "#default-pricing-display.pricing-panel-meta")
+
+      assert has_element?(
+               view,
+               "#pricing-section-copy",
+               "Default model pricing is applied automatically"
+             )
+    end
+
+    test "renders custom pricing steppers when pricing override is enabled", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
+
+      html =
+        view
+        |> form("#provider-form", provider: %{custom_pricing_enabled: "true"})
+        |> render_change()
+
+      assert html =~ "data-stepper-direction=\"decrement\""
+      assert has_element?(view, "#provider_pricing_input-stepper")
+      assert has_element?(view, "#provider_pricing_output-stepper")
+      refute has_element?(view, "#default-pricing-display")
+    end
+
+    test "prefills custom pricing inputs from default pricing when enabled", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
+
+      default_pricing = Providers.default_pricing("openai", "gpt-4o")
+      assert default_pricing
+
+      render_change(view, :validate, %{
+        "provider" => %{
+          "provider" => "openai",
+          "model_selection" => "gpt-4o",
+          "custom_pricing_enabled" => "true",
+          "pricing_input" => "",
+          "pricing_output" => ""
+        }
+      })
+
+      assert has_element?(
+               view,
+               "#provider_pricing_input[value='#{format_price(default_pricing.input)}']"
+             )
+
+      assert has_element?(
+               view,
+               "#provider_pricing_output[value='#{format_price(default_pricing.output)}']"
+             )
+    end
+
+    test "refreshes auto-filled custom pricing when the selected model changes", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/providers/new")
+
+      {first_model, second_model, first_pricing, second_pricing} = distinct_openai_pricing_pair()
+
+      render_change(view, :validate, %{
+        "provider" => %{
+          "provider" => "openai",
+          "model_selection" => first_model,
+          "custom_pricing_enabled" => "true",
+          "pricing_input" => "",
+          "pricing_output" => ""
+        }
+      })
+
+      render_change(view, :validate, %{
+        "provider" => %{
+          "provider" => "openai",
+          "model_selection" => second_model,
+          "custom_pricing_enabled" => "true",
+          "pricing_input" => format_price(first_pricing.input),
+          "pricing_output" => format_price(first_pricing.output)
+        }
+      })
+
+      assert has_element?(
+               view,
+               "#provider_pricing_input[value='#{format_price(second_pricing.input)}']"
+             )
+
+      assert has_element?(
+               view,
+               "#provider_pricing_output[value='#{format_price(second_pricing.output)}']"
+             )
     end
 
     test "shows custom input when custom model is selected", %{conn: conn} do
@@ -231,6 +317,34 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       reloaded_provider = Providers.get_provider!(provider.id)
       assert reloaded_provider.name == "Existing Provider"
       assert reloaded_provider.model == "gpt-4o"
+    end
+  end
+
+  defp format_price(value) when is_number(value) do
+    :erlang.float_to_binary(value / 1, decimals: 2)
+  end
+
+  defp distinct_openai_pricing_pair do
+    models = Providers.fetch_model_groups("openai").active
+
+    models
+    |> Enum.flat_map(fn first ->
+      first_pricing = Providers.default_pricing("openai", first.id)
+
+      Enum.map(models, fn second ->
+        {first, second, first_pricing, Providers.default_pricing("openai", second.id)}
+      end)
+    end)
+    |> Enum.find(fn {first, second, first_pricing, second_pricing} ->
+      first.id != second.id and is_map(first_pricing) and is_map(second_pricing) and
+        first_pricing != second_pricing
+    end)
+    |> case do
+      {first, second, first_pricing, second_pricing} ->
+        {first.id, second.id, first_pricing, second_pricing}
+
+      nil ->
+        raise "expected at least two OpenAI models with distinct default pricing"
     end
   end
 end

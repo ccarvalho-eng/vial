@@ -29,6 +29,7 @@ import {AssertionTypeToggle} from "./hooks/assertion_type_toggle"
 import {CustomSelect} from "./hooks/custom_select"
 import {ActivityChart} from "./hooks/activity_chart"
 import {TagInput} from "./hooks/tag_input"
+import {StepperInput} from "./hooks/stepper_input"
 
 // Auto-dismiss flash messages after 5 seconds
 const AutoDismissFlash = {
@@ -91,7 +92,7 @@ const livePath = document.querySelector("meta[name='live-path']").getAttribute("
 const liveSocket = new LiveSocket(livePath, Socket, {
   transport: liveTran === "longpoll" ? LongPoll : WebSocket,
   params: {_csrf_token: csrfToken},
-  hooks: {AutoDismissFlash, EvolutionChart, AssertionTypeToggle, CustomSelect, ActivityChart, TagInput},
+  hooks: {AutoDismissFlash, EvolutionChart, AssertionTypeToggle, CustomSelect, ActivityChart, TagInput, StepperInput},
 })
 
 // Show progress bar on live navigation and form submits
