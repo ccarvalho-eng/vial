@@ -386,6 +386,89 @@ defmodule Aludel.Web.CoreComponents do
     """
   end
 
+  @doc """
+  Renders a custom text-based numeric input with increment and decrement controls.
+  """
+  attr :id, :any, default: nil
+  attr :name, :any
+  attr :label, :string, default: nil
+  attr :value, :any
+  attr :field, Phoenix.HTML.FormField
+  attr :errors, :list, default: []
+  attr :step, :string, default: "1"
+  attr :min, :string, default: nil
+  attr :aria_label, :string, default: nil
+  attr :wrapper_class, :string, default: "aludel-stepper"
+  attr :input_class, :string, default: "aludel-stepper-input"
+
+  attr :rest, :global,
+    include: ~w(autocomplete disabled form inputmode max maxlength min minlength pattern
+                placeholder readonly required)
+
+  def stepper_input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
+    errors = if Phoenix.Component.used_input?(field), do: field.errors, else: []
+
+    assigns
+    |> assign(field: nil, id: assigns.id || field.id)
+    |> assign(:errors, Enum.map(errors, &translate_error(&1)))
+    |> assign_new(:name, fn -> field.name end)
+    |> assign_new(:value, fn -> field.value end)
+    |> stepper_input()
+  end
+
+  def stepper_input(assigns) do
+    ~H"""
+    <div class="fieldset mb-2">
+      <label :if={@label} id={"#{@id}-label"} for={@id} class="label mb-1 block">
+        {@label}
+      </label>
+      <div
+        id={"#{@id}-stepper"}
+        class={[
+          @wrapper_class,
+          @errors != [] && "aludel-stepper-error"
+        ]}
+        phx-hook="StepperInput"
+        data-step={@step}
+        data-min={@min || ""}
+      >
+        <button
+          type="button"
+          class="aludel-stepper-button"
+          data-stepper-direction="decrement"
+          aria-label={"Decrease #{@label || @name}"}
+          aria-disabled={to_string(!!@rest[:disabled])}
+          disabled={@rest[:disabled]}
+        >
+          <span class="aludel-stepper-glyph" aria-hidden="true">-</span>
+        </button>
+        <input
+          type="text"
+          id={@id}
+          name={@name}
+          value={Phoenix.HTML.Form.normalize_value("text", @value)}
+          class={@input_class}
+          aria-labelledby={@label && "#{@id}-label"}
+          aria-label={if @label, do: nil, else: @aria_label || to_string(@name)}
+          data-stepper-input
+          {@rest}
+        />
+        <button
+          type="button"
+          class="aludel-stepper-button"
+          data-stepper-direction="increment"
+          aria-label={"Increase #{@label || @name}"}
+          aria-disabled={to_string(!!@rest[:disabled])}
+          disabled={@rest[:disabled]}
+        >
+          <span class="aludel-stepper-glyph" aria-hidden="true">+</span>
+        </button>
+      </div>
+      <.error :for={msg <- @errors}>{msg}</.error>
+    </div>
+    """
+  end
+
   defp normalize_select_options(options) do
     Enum.flat_map(options, fn
       {group_label, group_options} when is_list(group_options) ->

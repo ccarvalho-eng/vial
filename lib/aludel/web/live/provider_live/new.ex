@@ -31,9 +31,17 @@ defmodule Aludel.Web.ProviderLive.New do
     model_groups = Providers.fetch_model_groups(provider_type)
 
     custom_pricing_enabled = provider_params["custom_pricing_enabled"] == "true"
+    model = resolve_model(provider_params, model_groups)
+    default_pricing = Providers.default_pricing(provider_type, model)
 
-    pricing_input = provider_params["pricing_input"] || ""
-    pricing_output = provider_params["pricing_output"] || ""
+    {pricing_input, pricing_output} =
+      resolve_pricing_inputs(
+        provider_params["pricing_input"],
+        provider_params["pricing_output"],
+        custom_pricing_enabled,
+        default_pricing,
+        socket.assigns.default_pricing
+      )
 
     changeset =
       socket.assigns.provider
@@ -47,9 +55,6 @@ defmodule Aludel.Web.ProviderLive.New do
       |> ensure_model_selection(model_groups)
       |> validate_model_selection()
       |> Map.put(:action, :validate)
-
-    model = resolve_model(provider_params, model_groups)
-    default_pricing = Providers.default_pricing(provider_type, model)
 
     {:noreply,
      socket
@@ -277,5 +282,57 @@ defmodule Aludel.Web.ProviderLive.New do
       value when is_binary(value) and value != "" -> value
       _ -> nil
     end
+  end
+
+  defp resolve_pricing_inputs(
+         pricing_input,
+         pricing_output,
+         true,
+         %{input: input, output: output},
+         previous_default_pricing
+       ) do
+    if (blank_string?(pricing_input) and blank_string?(pricing_output)) or
+         matches_default_pricing?(pricing_input, pricing_output, previous_default_pricing) do
+      {format_price(input), format_price(output)}
+    else
+      {pricing_input || "", pricing_output || ""}
+    end
+  end
+
+  defp resolve_pricing_inputs(
+         pricing_input,
+         pricing_output,
+         true,
+         nil,
+         previous_default_pricing
+       ) do
+    if (blank_string?(pricing_input) and blank_string?(pricing_output)) or
+         matches_default_pricing?(pricing_input, pricing_output, previous_default_pricing) do
+      {"", ""}
+    else
+      {pricing_input || "", pricing_output || ""}
+    end
+  end
+
+  defp resolve_pricing_inputs(
+         pricing_input,
+         pricing_output,
+         _custom_pricing_enabled,
+         _default_pricing,
+         _previous_default_pricing
+       ) do
+    {pricing_input || "", pricing_output || ""}
+  end
+
+  defp blank_string?(value), do: value in [nil, ""]
+
+  defp matches_default_pricing?(_pricing_input, _pricing_output, nil), do: false
+
+  defp matches_default_pricing?(pricing_input, pricing_output, %{input: input, output: output}) do
+    pricing_input == format_price(input) and pricing_output == format_price(output)
+  end
+
+  defp format_price(value) when is_number(value) do
+    :erlang.float_to_binary(value / 1, decimals: 2)
   end
 end

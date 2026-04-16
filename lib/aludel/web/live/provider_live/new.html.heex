@@ -63,64 +63,117 @@
           </div>
         <% end %>
 
-        <div
-          id="pricing-section"
-          style="margin-bottom: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"
-        >
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-            <span style="font-weight: 600; font-size: 14px;">Pricing</span>
-            <span
-              id="default-pricing-display"
-              style="font-size: 13px; color: var(--text-secondary);"
-            >
-              <%= if @default_pricing do %>
-                Default: {Aludel.Providers.Pricing.format_pricing(@default_pricing)}
-              <% else %>
-                No default pricing available
-              <% end %>
-            </span>
+        <section id="pricing-section" class="pricing-panel">
+          <div class="pricing-panel-header">
+            <div class="pricing-panel-copy-wrap">
+              <div class="pricing-panel-title-row">
+                <h2 id="pricing-section-heading" class="pricing-panel-title">
+                  Pricing
+                </h2>
+              </div>
+              <p id="pricing-section-copy" class="pricing-panel-copy">
+                Default model pricing is applied automatically. Add an override only when this provider uses different token rates.
+              </p>
+            </div>
+
+            <%= if !@custom_pricing_enabled do %>
+              <div
+                id="default-pricing-display"
+                class={[
+                  "pricing-panel-meta",
+                  @default_pricing && "is-default",
+                  !@default_pricing && "is-empty"
+                ]}
+              >
+                <%= if @default_pricing do %>
+                  <div class="pricing-panel-meta-label">
+                    <span>Default</span>
+                  </div>
+                  <div class="pricing-panel-meta-value">
+                    {Aludel.Providers.Pricing.format_pricing(@default_pricing)}
+                  </div>
+                <% else %>
+                  <div class="pricing-panel-meta-label">
+                    <span>Pricing unavailable</span>
+                  </div>
+                  <div class="pricing-panel-meta-value">
+                    No default pricing is available for the selected model yet.
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
           </div>
 
-          <div style="margin-bottom: 12px;">
+          <div class="pricing-panel-toggle">
             <.input
               field={@form[:custom_pricing_enabled]}
               type="checkbox"
+              class="checkbox checkbox-sm pricing-toggle-checkbox"
               label="Use custom pricing"
             />
+            <p class="pricing-panel-toggle-copy">
+              Enable this when you need provider-specific rates instead of the shared model catalog.
+            </p>
           </div>
 
           <%= if @custom_pricing_enabled do %>
-            <div id="custom-pricing-fields" style="display: flex; gap: 16px;">
-              <div style="flex: 1;">
-                <.input
+            <div id="custom-pricing-fields" class="pricing-grid">
+              <div class="pricing-rate-card">
+                <div class="pricing-rate-header">
+                  <div class="pricing-rate-title">Input price</div>
+                  <span class="pricing-rate-badge">Prompt tokens</span>
+                </div>
+                <.stepper_input
                   field={@form[:pricing_input]}
-                  type="number"
-                  label="Input price (per 1M tokens)"
+                  aria_label="Input price"
+                  wrapper_class="pricing-stepper"
+                  input_class="pricing-stepper-input"
                   step="0.01"
                   min="0"
+                  inputmode="decimal"
+                  pattern="^[0-9]*[.]?[0-9]+$"
                   placeholder="3.00"
                 />
+                <p class="pricing-rate-copy">
+                  Price per 1M prompt and input tokens.
+                </p>
               </div>
-              <div style="flex: 1;">
-                <.input
+              <div class="pricing-rate-card">
+                <div class="pricing-rate-header">
+                  <div class="pricing-rate-title">Output price</div>
+                  <span class="pricing-rate-badge">Completion tokens</span>
+                </div>
+                <.stepper_input
                   field={@form[:pricing_output]}
-                  type="number"
-                  label="Output price (per 1M tokens)"
+                  aria_label="Output price"
+                  wrapper_class="pricing-stepper"
+                  input_class="pricing-stepper-input"
                   step="0.01"
                   min="0"
+                  inputmode="decimal"
+                  pattern="^[0-9]*[.]?[0-9]+$"
                   placeholder="15.00"
                 />
+                <p class="pricing-rate-copy">
+                  Price per 1M generated and completion tokens.
+                </p>
               </div>
             </div>
           <% else %>
             <div
               id="pricing-default-indicator"
-              style="font-size: 13px; color: var(--text-secondary);"
+              class="pricing-default-indicator"
             >
-              Using default pricing from model database
+              <.icon
+                name="hero-information-circle"
+                class="pricing-default-indicator-icon"
+              />
+              <span>
+                Using the selected model&apos;s default pricing from the model database.
+              </span>
             </div>
           <% end %>
-        </div>
+        </section>
 
         <div>
           <div class="fieldset mb-2">

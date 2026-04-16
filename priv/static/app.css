@@ -2530,6 +2530,342 @@ textarea {
   min-height: 100px;
   resize: vertical;
 }
+.pricing-panel {
+  margin-bottom: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border: 1px solid color-mix(in srgb, var(--border) 96%, transparent);
+  }
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-secondary) 98%, transparent);
+  }
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+.pricing-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pricing-panel-copy-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pricing-panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pricing-panel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-heading);
+}
+.pricing-panel-copy {
+  max-width: 620px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pricing-panel-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+}
+.pricing-panel-meta-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pricing-panel-meta-value {
+  color: var(--text-heading);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.pricing-panel-meta.is-empty .pricing-panel-meta-value {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.pricing-panel-toggle {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
+  }
+  border-radius: 8px;
+  background: var(--bg-primary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
+  }
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.pricing-panel-toggle .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0;
+  color: var(--text-heading);
+  font-size: 14px;
+  font-weight: 650;
+}
+.pricing-toggle-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border: 1px solid color-mix(in srgb, var(--border) 96%, transparent);
+  }
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-secondary) 100%, transparent);
+  }
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.pricing-toggle-checkbox:hover {
+  border-color: var(--accent);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  }
+  background: var(--bg-secondary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-secondary) 100%, transparent);
+  }
+}
+.pricing-toggle-checkbox:checked, .pricing-toggle-checkbox[aria-checked="true"] {
+  border-color: var(--accent);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in srgb, var(--accent) 72%, white);
+  }
+  background-color: var(--accent);
+  color: white;
+}
+.pricing-toggle-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14), 0 2px 8px rgba(15, 23, 42, 0.12);
+}
+.pricing-panel-toggle-copy {
+  margin: 8px 0 0 28px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pricing-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+.pricing-rate-card {
+  padding: 18px;
+  border: 1px solid var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
+  }
+  border-radius: 8px;
+  background: var(--bg-primary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+  }
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.pricing-rate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.pricing-rate-title {
+  color: var(--text-heading);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.pricing-rate-badge {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pricing-stepper {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  align-items: stretch;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border: 1px solid color-mix(in srgb, var(--border) 96%, transparent);
+  }
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-secondary) 100%, transparent);
+  }
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.pricing-stepper:hover {
+  border-color: var(--accent);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  }
+}
+.pricing-stepper:focus-within {
+  border-color: var(--accent);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in srgb, var(--accent) 72%, white);
+  }
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+.pricing-stepper-input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-left: 1px solid color-mix(in srgb, var(--border) 94%, transparent);
+  }
+  border-right: 1px solid var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-right: 1px solid color-mix(in srgb, var(--border) 94%, transparent);
+  }
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-heading);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+  text-align: center;
+}
+.pricing-stepper-input:hover, .pricing-stepper-input:focus {
+  border-left-color: var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-left-color: color-mix(in srgb, var(--border) 94%, transparent);
+  }
+  border-right-color: var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-right-color: color-mix(in srgb, var(--border) 94%, transparent);
+  }
+  box-shadow: none;
+}
+.aludel-stepper-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: var(--bg-primary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-primary) 98%, transparent);
+  }
+  color: var(--text-heading);
+  box-shadow: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.aludel-stepper-button:hover {
+  background: var(--bg-primary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-primary) 90%, transparent);
+  }
+  color: var(--text-heading);
+  box-shadow: none;
+}
+.aludel-stepper-button:active {
+  transform: none;
+  background: var(--bg-primary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  }
+}
+.aludel-stepper-button:focus-visible {
+  outline: none;
+  position: relative;
+  z-index: 1;
+  color: var(--text-heading);
+}
+.aludel-stepper-glyph {
+  display: inline-block;
+  min-width: 1ch;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.pricing-rate-copy {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.pricing-default-indicator {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  @supports (color: color-mix(in lab, red, red)) {
+    border: 1px dashed color-mix(in srgb, var(--border) 82%, transparent);
+  }
+  border-radius: 8px;
+  background: var(--bg-primary);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  }
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pricing-default-indicator-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+@media (min-width: 768px) {
+  .pricing-panel-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .pricing-panel-meta {
+    width: auto;
+    max-width: 320px;
+    flex: 0 1 320px;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .pricing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 label {
   display: block;
   font-size: 13px;
