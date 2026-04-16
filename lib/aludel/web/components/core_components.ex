@@ -397,6 +397,7 @@ defmodule Aludel.Web.CoreComponents do
   attr :errors, :list, default: []
   attr :step, :string, default: "1"
   attr :min, :string, default: nil
+  attr :aria_label, :string, default: nil
   attr :wrapper_class, :string, default: "aludel-stepper"
   attr :input_class, :string, default: "aludel-stepper-input"
 
@@ -418,7 +419,9 @@ defmodule Aludel.Web.CoreComponents do
   def stepper_input(assigns) do
     ~H"""
     <div class="fieldset mb-2">
-      <span :if={@label} class="label mb-1 block">{@label}</span>
+      <label :if={@label} id={"#{@id}-label"} for={@id} class="label mb-1 block">
+        {@label}
+      </label>
       <div
         id={"#{@id}-stepper"}
         class={[
@@ -434,6 +437,8 @@ defmodule Aludel.Web.CoreComponents do
           class="aludel-stepper-button"
           data-stepper-direction="decrement"
           aria-label={"Decrease #{@label || @name}"}
+          aria-disabled={to_string(!!@rest[:disabled])}
+          disabled={@rest[:disabled]}
         >
           <span class="aludel-stepper-glyph" aria-hidden="true">-</span>
         </button>
@@ -443,6 +448,8 @@ defmodule Aludel.Web.CoreComponents do
           name={@name}
           value={Phoenix.HTML.Form.normalize_value("text", @value)}
           class={@input_class}
+          aria-labelledby={@label && "#{@id}-label"}
+          aria-label={if @label, do: nil, else: @aria_label || to_string(@name)}
           data-stepper-input
           {@rest}
         />
@@ -451,6 +458,8 @@ defmodule Aludel.Web.CoreComponents do
           class="aludel-stepper-button"
           data-stepper-direction="increment"
           aria-label={"Increase #{@label || @name}"}
+          aria-disabled={to_string(!!@rest[:disabled])}
+          disabled={@rest[:disabled]}
         >
           <span class="aludel-stepper-glyph" aria-hidden="true">+</span>
         </button>

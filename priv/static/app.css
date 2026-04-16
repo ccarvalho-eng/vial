@@ -2840,6 +2840,14 @@ textarea {
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pricing-default-indicator-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 @media (min-width: 768px) {
   .pricing-panel-header {

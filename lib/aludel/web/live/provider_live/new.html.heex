@@ -125,6 +125,7 @@
                 </div>
                 <.stepper_input
                   field={@form[:pricing_input]}
+                  aria_label="Input price"
                   wrapper_class="pricing-stepper"
                   input_class="pricing-stepper-input"
                   step="0.01"
@@ -144,6 +145,7 @@
                 </div>
                 <.stepper_input
                   field={@form[:pricing_output]}
+                  aria_label="Output price"
                   wrapper_class="pricing-stepper"
                   input_class="pricing-stepper-input"
                   step="0.01"
@@ -162,7 +164,13 @@
               id="pricing-default-indicator"
               class="pricing-default-indicator"
             >
-              Using the selected model&apos;s default pricing from the model database.
+              <.icon
+                name="hero-information-circle"
+                class="pricing-default-indicator-icon"
+              />
+              <span>
+                Using the selected model&apos;s default pricing from the model database.
+              </span>
             </div>
           <% end %>
         </section>

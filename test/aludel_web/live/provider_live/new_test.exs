@@ -18,6 +18,7 @@ defmodule Aludel.Web.ProviderLive.NewTest do
       assert has_element?(view, "#pricing-section.pricing-panel")
       assert has_element?(view, "#pricing-section-heading", "Pricing")
       assert has_element?(view, "#default-pricing-display.pricing-panel-meta")
+      assert has_element?(view, "#pricing-default-indicator .pricing-default-indicator-icon")
 
       assert has_element?(
                view,
@@ -101,6 +102,39 @@ defmodule Aludel.Web.ProviderLive.NewTest do
                view,
                "#provider_pricing_output[value='#{format_price(second_pricing.output)}']"
              )
+    end
+
+    test "clears auto-filled custom pricing when the next model has no default pricing", %{
+      conn: conn
+    } do
+      {:ok, view, _html} = live(conn, "/providers/new")
+
+      default_pricing = Providers.default_pricing("openai", "gpt-4o")
+      assert default_pricing
+
+      render_change(view, :validate, %{
+        "provider" => %{
+          "provider" => "openai",
+          "model_selection" => "gpt-4o",
+          "custom_pricing_enabled" => "true",
+          "pricing_input" => "",
+          "pricing_output" => ""
+        }
+      })
+
+      render_change(view, :validate, %{
+        "provider" => %{
+          "provider" => "openai",
+          "model_selection" => "custom",
+          "model_custom" => "my-unpriced-model",
+          "custom_pricing_enabled" => "true",
+          "pricing_input" => format_price(default_pricing.input),
+          "pricing_output" => format_price(default_pricing.output)
+        }
+      })
+
+      assert has_element?(view, "#provider_pricing_input[value='']")
+      assert has_element?(view, "#provider_pricing_output[value='']")
     end
 
     test "shows custom input when custom model is selected", %{conn: conn} do

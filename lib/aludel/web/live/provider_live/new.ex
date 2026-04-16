@@ -302,6 +302,21 @@ defmodule Aludel.Web.ProviderLive.New do
   defp resolve_pricing_inputs(
          pricing_input,
          pricing_output,
+         true,
+         nil,
+         previous_default_pricing
+       ) do
+    if (blank_string?(pricing_input) and blank_string?(pricing_output)) or
+         matches_default_pricing?(pricing_input, pricing_output, previous_default_pricing) do
+      {"", ""}
+    else
+      {pricing_input || "", pricing_output || ""}
+    end
+  end
+
+  defp resolve_pricing_inputs(
+         pricing_input,
+         pricing_output,
          _custom_pricing_enabled,
          _default_pricing,
          _previous_default_pricing
