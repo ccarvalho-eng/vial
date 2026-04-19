@@ -26,7 +26,7 @@ reviews:
       instructions: |
         Focus on migration safety and reversibility.
         Flag destructive or tightly coupled schema changes, missing indexes or constraints, and changes that look unsafe for existing PostgreSQL data.
-    - path: ".github/workflows/**/*.yml"
+    - path: ".github/workflows/**/*.{yml,yaml}"
       instructions: |
         Review GitHub Actions changes for correctness, least-privilege permissions, safe caching, and maintainability.
   tools:
