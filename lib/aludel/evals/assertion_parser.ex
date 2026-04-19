@@ -143,6 +143,10 @@ defmodule Aludel.Evals.AssertionParser do
       blank_string?(Map.get(assertion, "field")) ->
         {:error, "Assertion at index #{idx}: json_field type requires a non-blank 'field' value"}
 
+      blank_string?(Map.get(assertion, "expected")) ->
+        {:error,
+         "Assertion at index #{idx}: json_field type requires a non-blank 'expected' value"}
+
       true ->
         :ok
     end

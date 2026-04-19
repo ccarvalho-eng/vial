@@ -108,6 +108,28 @@ defmodule Aludel.Evals.AssertionParserTest do
       assert {:error, message} = AssertionParser.parse(:json, params)
       assert message =~ "json_field type requires a non-blank 'field' value"
     end
+
+    test "rejects json_field assertions with blank expected values in JSON mode" do
+      params = %{
+        "assertions_json" => ~s([{"type":"json_field","field":"sentiment","expected":"   "}])
+      }
+
+      assert {:error, message} = AssertionParser.parse(:json, params)
+      assert message =~ "json_field type requires a non-blank 'expected' value"
+    end
+
+    test "rejects json_field assertions with blank expected values in visual mode" do
+      params = %{
+        "assertions" => %{
+          "assertion_type_0" => "json_field",
+          "assertion_field_0" => "sentiment",
+          "assertion_expected_0" => "  "
+        }
+      }
+
+      assert {:error, message} = AssertionParser.parse(:visual, params)
+      assert message =~ "json_field type requires a non-blank 'expected' value"
+    end
   end
 
   describe "build_form_params/1" do
