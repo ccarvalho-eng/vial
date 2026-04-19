@@ -59,6 +59,23 @@ defmodule Aludel.Evals.TestCaseTest do
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset).assertions
     end
+
+    test "rejects assertions with unsupported types" do
+      suite = suite_fixture()
+
+      changeset =
+        TestCase.changeset(%TestCase{}, %{
+          suite_id: suite.id,
+          variable_values: %{"name" => "John"},
+          assertions: [%{"type" => "invalid_type", "value" => "Hello"}]
+        })
+
+      refute changeset.valid?
+
+      assert {"Invalid assertion type at index 1: \"invalid_type\". Must be one of: contains, not_contains, regex, exact_match, json_field",
+              []} =
+               changeset.errors[:assertions]
+    end
   end
 
   describe "associations" do

@@ -15,7 +15,7 @@ defmodule Aludel.Evals.TestCase do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Aludel.Evals.{Suite, TestCaseDocument}
+  alias Aludel.Evals.{AssertionParser, Suite, TestCaseDocument}
   alias Ecto.Changeset
 
   @type t :: %__MODULE__{}
@@ -47,5 +47,15 @@ defmodule Aludel.Evals.TestCase do
     test_case
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_assertions()
+  end
+
+  defp validate_assertions(%Changeset{} = changeset) do
+    validate_change(changeset, :assertions, fn :assertions, assertions ->
+      case AssertionParser.validate(assertions) do
+        {:ok, _assertions} -> []
+        {:error, message} -> [assertions: message]
+      end
+    end)
   end
 end

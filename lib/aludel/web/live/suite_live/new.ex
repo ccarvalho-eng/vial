@@ -6,6 +6,7 @@ defmodule Aludel.Web.SuiteLive.New do
   use Aludel.Web, :live_view
 
   alias Aludel.Evals
+  alias Aludel.Evals.AssertionParser
   alias Aludel.Evals.Suite
   alias Aludel.Projects
   alias Aludel.Prompts
@@ -170,7 +171,7 @@ defmodule Aludel.Web.SuiteLive.New do
   end
 
   defp save_suite(socket, :new, suite_params) do
-    case validate_test_cases_json(suite_params) do
+    case validate_test_cases(suite_params) do
       :ok ->
         case create_suite_with_test_cases(suite_params) do
           {:ok, suite} ->
@@ -199,7 +200,7 @@ defmodule Aludel.Web.SuiteLive.New do
   end
 
   defp save_suite(socket, :edit, suite_params) do
-    case validate_test_cases_json(suite_params) do
+    case validate_test_cases(suite_params) do
       :ok ->
         case update_suite_with_test_cases(socket.assigns.suite, suite_params) do
           {:ok, suite} ->
@@ -227,31 +228,24 @@ defmodule Aludel.Web.SuiteLive.New do
     end
   end
 
-  defp validate_test_cases_json(params) do
+  defp validate_test_cases(params) do
     test_cases = params["test_cases"] || %{}
 
     test_cases
     |> Enum.reduce_while(:ok, fn {_id, test_case_params}, _acc ->
-      case validate_assertions_json(test_case_params["assertions_json"]) do
-        :ok -> {:cont, :ok}
-        {:error, _} = error -> {:halt, error}
+      case parse_test_case_assertions(test_case_params) do
+        {:ok, _assertions} -> {:cont, :ok}
+        {:error, _message} = error -> {:halt, error}
       end
     end)
   end
 
-  defp validate_assertions_json(nil), do: :ok
+  defp parse_test_case_assertions(%{"assertions_json" => assertions_json}) do
+    AssertionParser.parse(:json, %{"assertions_json" => assertions_json})
+  end
 
-  defp validate_assertions_json(assertions_json) do
-    case Jason.decode(assertions_json) do
-      {:ok, json_assertions} when is_list(json_assertions) ->
-        validate_assertion_structure(json_assertions)
-
-      {:ok, _} ->
-        {:error, "Invalid JSON: assertions must be a list"}
-
-      {:error, %Jason.DecodeError{}} ->
-        {:error, "Invalid JSON syntax in assertions"}
-    end
+  defp parse_test_case_assertions(test_case_params) do
+    AssertionParser.parse(:visual, test_case_params)
   end
 
   defp create_suite_with_test_cases(params) do
@@ -275,10 +269,9 @@ defmodule Aludel.Web.SuiteLive.New do
       variable_values = Map.get(test_case_params, "variable_values", %{})
 
       assertions =
-        if test_case_params["assertions_json"] do
-          parse_assertions(test_case_params["assertions_json"])
-        else
-          parse_visual_assertions(Map.get(test_case_params, "assertions", %{}))
+        case parse_test_case_assertions(test_case_params) do
+          {:ok, assertions} -> assertions
+          {:error, _message} -> []
         end
 
       %{
@@ -310,42 +303,11 @@ defmodule Aludel.Web.SuiteLive.New do
     end
   end
 
-  defp parse_assertions(nil), do: []
-  defp parse_assertions(""), do: []
-
-  defp parse_assertions(str) do
-    case Jason.decode(str) do
-      {:ok, assertions} when is_list(assertions) -> assertions
-      _ -> []
+  defp merge_test_case_assertions(test_case_params) do
+    case parse_test_case_assertions(test_case_params) do
+      {:ok, assertions} -> assertions
+      {:error, _message} -> []
     end
-  end
-
-  defp parse_visual_assertions(assertion_params) do
-    assertion_params = normalize_assertion_params(assertion_params)
-
-    assertion_indices =
-      assertion_params
-      |> Map.keys()
-      |> Enum.filter(&String.starts_with?(&1, "assertion_type_"))
-      |> Enum.map(fn "assertion_type_" <> idx -> String.to_integer(idx) end)
-      |> Enum.sort()
-
-    Enum.map(assertion_indices, fn idx ->
-      type = assertion_params["assertion_type_#{idx}"]
-
-      if type == "json_field" do
-        %{
-          "type" => type,
-          "field" => assertion_params["assertion_field_#{idx}"] || "",
-          "expected" => assertion_params["assertion_expected_#{idx}"] || ""
-        }
-      else
-        %{
-          "type" => type,
-          "value" => assertion_params["assertion_value_#{idx}"] || ""
-        }
-      end
-    end)
   end
 
   defp extract_variables(template) do
@@ -391,17 +353,10 @@ defmodule Aludel.Web.SuiteLive.New do
         end)
         |> Map.new()
 
-      assertions =
-        if test_case_params["assertions_json"] do
-          parse_assertions(test_case_params["assertions_json"])
-        else
-          parse_visual_assertions(Map.get(test_case_params, "assertions", %{}))
-        end
-
       %{
         id: id,
         variable_values: variable_values,
-        assertions: assertions
+        assertions: merge_test_case_assertions(test_case_params)
       }
     end)
   end
@@ -420,37 +375,4 @@ defmodule Aludel.Web.SuiteLive.New do
 
   defp prompt_variables(%{versions: [%{template: template} | _]}), do: extract_variables(template)
   defp prompt_variables(_selected_prompt), do: []
-
-  defp normalize_assertion_params(params) when is_map(params), do: params
-  defp normalize_assertion_params(params) when is_list(params), do: Map.new(params)
-  defp normalize_assertion_params(_params), do: %{}
-
-  defp validate_assertion_structure(assertions) do
-    valid_types = ["contains", "not_contains", "regex", "exact_match", "json_field"]
-
-    assertions
-    |> Enum.with_index(1)
-    |> Enum.reduce_while(:ok, fn {assertion, idx}, _acc ->
-      type = Map.get(assertion, "type")
-
-      cond do
-        type not in valid_types ->
-          {:halt,
-           {:error,
-            "Invalid assertion type at index #{idx}: #{inspect(type)}. Must be one of: #{Enum.join(valid_types, ", ")}"}}
-
-        type == "json_field" and
-            (not Map.has_key?(assertion, "field") or not Map.has_key?(assertion, "expected")) ->
-          {:halt,
-           {:error,
-            "Assertion at index #{idx}: json_field type requires 'field' and 'expected' fields"}}
-
-        type != "json_field" and not Map.has_key?(assertion, "value") ->
-          {:halt, {:error, "Assertion at index #{idx}: #{type} type requires 'value' field"}}
-
-        true ->
-          {:cont, :ok}
-      end
-    end)
-  end
 end
