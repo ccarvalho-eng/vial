@@ -37,25 +37,9 @@ defmodule Aludel.Evals.AssertionParser do
     assertions
     |> Enum.with_index(1)
     |> Enum.reduce_while({:ok, assertions}, fn {assertion, idx}, _acc ->
-      type = Map.get(assertion, "type")
-
-      cond do
-        type not in @valid_types ->
-          {:halt,
-           {:error,
-            "Invalid assertion type at index #{idx}: #{inspect(type)}. Must be one of: #{Enum.join(@valid_types, ", ")}"}}
-
-        type == "json_field" and
-            (not Map.has_key?(assertion, "field") or not Map.has_key?(assertion, "expected")) ->
-          {:halt,
-           {:error,
-            "Assertion at index #{idx}: json_field type requires 'field' and 'expected' fields"}}
-
-        type != "json_field" and not Map.has_key?(assertion, "value") ->
-          {:halt, {:error, "Assertion at index #{idx}: #{type} type requires 'value' field"}}
-
-        true ->
-          {:cont, {:ok, assertions}}
+      case validate_assertion(assertion, idx) do
+        :ok -> {:cont, {:ok, assertions}}
+        {:error, message} -> {:halt, {:error, message}}
       end
     end)
   end
@@ -133,4 +117,50 @@ defmodule Aludel.Evals.AssertionParser do
   defp normalize_assertion_params(params) when is_map(params), do: params
   defp normalize_assertion_params(params) when is_list(params), do: Map.new(params)
   defp normalize_assertion_params(_params), do: %{}
+
+  defp validate_assertion(assertion, idx) do
+    type = Map.get(assertion, "type")
+
+    cond do
+      type not in @valid_types ->
+        {:error,
+         "Invalid assertion type at index #{idx}: #{inspect(type)}. Must be one of: #{Enum.join(@valid_types, ", ")}"}
+
+      type == "json_field" ->
+        validate_json_field_assertion(assertion, idx)
+
+      true ->
+        validate_string_assertion(assertion, idx, type)
+    end
+  end
+
+  defp validate_json_field_assertion(assertion, idx) do
+    cond do
+      not Map.has_key?(assertion, "field") or not Map.has_key?(assertion, "expected") ->
+        {:error,
+         "Assertion at index #{idx}: json_field type requires 'field' and 'expected' fields"}
+
+      blank_string?(Map.get(assertion, "field")) ->
+        {:error, "Assertion at index #{idx}: json_field type requires a non-blank 'field' value"}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp validate_string_assertion(assertion, idx, type) do
+    cond do
+      not Map.has_key?(assertion, "value") ->
+        {:error, "Assertion at index #{idx}: #{type} type requires 'value' field"}
+
+      blank_string?(Map.get(assertion, "value")) ->
+        {:error, "Assertion at index #{idx}: #{type} type requires a non-blank 'value' field"}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp blank_string?(value) when is_binary(value), do: String.trim(value) == ""
+  defp blank_string?(_value), do: false
 end

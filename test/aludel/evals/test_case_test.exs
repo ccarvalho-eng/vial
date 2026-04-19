@@ -76,6 +76,22 @@ defmodule Aludel.Evals.TestCaseTest do
               []} =
                changeset.errors[:assertions]
     end
+
+    test "rejects assertions with blank string values" do
+      suite = suite_fixture()
+
+      changeset =
+        TestCase.changeset(%TestCase{}, %{
+          suite_id: suite.id,
+          variable_values: %{"name" => "John"},
+          assertions: [%{"type" => "contains", "value" => "   "}]
+        })
+
+      refute changeset.valid?
+
+      assert {"Assertion at index 1: contains type requires a non-blank 'value' field", []} =
+               changeset.errors[:assertions]
+    end
   end
 
   describe "associations" do

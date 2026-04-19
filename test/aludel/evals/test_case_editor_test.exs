@@ -4,22 +4,22 @@ defmodule Aludel.Evals.TestCaseEditorTest do
   alias Aludel.Evals.TestCaseEditor
 
   describe "create_test_case/2" do
-    test "creates a test case with prompt variables and default assertions" do
+    test "creates a test case with prompt variables and no persisted assertions" do
       suite = suite_fixture()
       prompt = prompt_fixture_with_version(%{template: "Hello {{ name }} from {{city}}"})
 
       assert {:ok, test_case} = TestCaseEditor.create_test_case(suite.id, prompt)
       assert test_case.variable_values == %{"name" => "", "city" => ""}
-      assert test_case.assertions == [%{"type" => "contains", "value" => ""}]
+      assert test_case.assertions == []
     end
 
-    test "creates a test case with empty variables when the prompt has no versions" do
+    test "creates a test case with empty variables and no persisted assertions when the prompt has no versions" do
       suite = suite_fixture()
       prompt = prompt_fixture()
 
       assert {:ok, test_case} = TestCaseEditor.create_test_case(suite.id, prompt)
       assert test_case.variable_values == %{}
-      assert test_case.assertions == [%{"type" => "contains", "value" => ""}]
+      assert test_case.assertions == []
     end
   end
 

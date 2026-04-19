@@ -9,7 +9,7 @@ defmodule Aludel.Evals.TestCaseEditor do
   alias Aludel.Evals.AssertionParser
   alias Aludel.Evals.TestCase
 
-  @default_assertions [%{"type" => "contains", "value" => ""}]
+  @default_assertions []
   @form_fields ~w(id variable_values assertions_json)a
   @form_types %{id: :string, variable_values: :map, assertions_json: :string}
 
