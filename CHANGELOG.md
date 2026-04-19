@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.19] - 2026-04-19
 
 ### Added
+- Copy actions for run and suite results
 - Provider pricing now supports built-in defaults with per-provider override support
 
 ### Changed
