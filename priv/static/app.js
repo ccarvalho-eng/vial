@@ -20539,6 +20539,59 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
     }
   };
 
+  // assets/js/hooks/copy_to_clipboard.js
+  async function writeClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+  var CopyToClipboard = {
+    mounted() {
+      this.defaultLabel = this.el.dataset.copyLabel || this.el.textContent.trim();
+      this.handleClick = async (event) => {
+        event.preventDefault();
+        const targetId = this.el.dataset.copyTarget;
+        const target = targetId ? document.getElementById(targetId) : null;
+        if (!target) {
+          this.showFeedback("Copy failed");
+          return;
+        }
+        try {
+          await writeClipboard(target.textContent || "");
+          this.showFeedback("Copied");
+        } catch (_error) {
+          this.showFeedback("Copy failed");
+        }
+      };
+      this.el.addEventListener("click", this.handleClick);
+    },
+    destroyed() {
+      if (this.feedbackTimer) {
+        clearTimeout(this.feedbackTimer);
+      }
+      this.el.removeEventListener("click", this.handleClick);
+    },
+    showFeedback(label) {
+      this.el.textContent = label;
+      if (this.feedbackTimer) {
+        clearTimeout(this.feedbackTimer);
+      }
+      this.feedbackTimer = setTimeout(() => {
+        this.el.textContent = this.defaultLabel;
+      }, 1500);
+    }
+  };
+
   // assets/js/hooks/custom_select.js
   var customSelectState = /* @__PURE__ */ new Map();
   var CustomSelect = {
@@ -21009,7 +21062,7 @@ removing illegal node: "${(childNode.outerHTML || childNode.nodeValue).trim()}"
   var liveSocket = new LiveSocket2(livePath, Socket, {
     transport: liveTran === "longpoll" ? LongPoll : WebSocket,
     params: { _csrf_token: csrfToken },
-    hooks: { AutoDismissFlash, EvolutionChart, AssertionTypeToggle, CustomSelect, ActivityChart, TagInput, StepperInput }
+    hooks: { AutoDismissFlash, EvolutionChart, AssertionTypeToggle, CopyToClipboard, CustomSelect, ActivityChart, TagInput, StepperInput }
   });
   import_topbar.default.config({ barColors: { 0: "#29d" }, shadowColor: "rgba(0, 0, 0, .3)" });
   window.addEventListener("phx:page-loading-start", (_info) => import_topbar.default.show(300));
