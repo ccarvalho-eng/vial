@@ -68,15 +68,43 @@
             <% end %>
 
             <div style="flex: 1; display: flex; flex-direction: column;">
-              <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
-                Output
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Output
+                </div>
+                <button
+                  :if={result.status == :error}
+                  id={"copy-run-error-#{result.id}"}
+                  type="button"
+                  phx-hook="CopyToClipboard"
+                  data-copy-target={"run-result-error-#{result.id}"}
+                  data-copy-label="Copy error"
+                  style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
+                >
+                  Copy error
+                </button>
+                <button
+                  :if={result.status != :error}
+                  id={"copy-run-output-#{result.id}"}
+                  type="button"
+                  phx-hook="CopyToClipboard"
+                  data-copy-target={"run-result-output-#{result.id}"}
+                  data-copy-label="Copy output"
+                  style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
+                >
+                  Copy output
+                </button>
               </div>
               <%= if result.status == :error do %>
                 <div style="background-color: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 4px; color: #dc2626; font-size: 13px;">
-                  <strong>Error:</strong> {result.error}
+                  <strong>Error:</strong>
+                  <span id={"run-result-error-#{result.id}"}>{result.error}</span>
                 </div>
               <% else %>
-                <pre style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; flex: 1;"><%= result.output %></pre>
+                <pre
+                  id={"run-result-output-#{result.id}"}
+                  style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; flex: 1;"
+                ><%= result.output %></pre>
               <% end %>
             </div>
           </div>

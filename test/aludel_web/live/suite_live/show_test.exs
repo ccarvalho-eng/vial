@@ -655,4 +655,46 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
     result = fun.()
     assert result
   end
+
+  describe "result copy actions" do
+    test "shows copy action for suite result outputs", %{conn: conn} do
+      prompt = prompt_fixture_with_version()
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      prompt = Aludel.Prompts.get_prompt_with_versions!(prompt.id)
+      version = hd(prompt.versions)
+      provider = provider_fixture(%{name: "OpenAI"})
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      _suite_run =
+        suite_run_fixture(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider.id,
+          passed: 1,
+          failed: 0,
+          results: [
+            %{
+              "test_case_id" => test_case.id,
+              "passed" => true,
+              "output" => "Structured output for copying",
+              "assertion_results" => [
+                %{"type" => "contains", "passed" => true, "value" => "Structured"}
+              ],
+              "cost_usd" => 0.001,
+              "latency_ms" => 250
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      assert has_element?(
+               view,
+               "#suite-result-output-#{test_case.id}",
+               "Structured output for copying"
+             )
+
+      assert has_element?(view, "#copy-suite-result-#{test_case.id}", "Copy output")
+    end
+  end
 end
