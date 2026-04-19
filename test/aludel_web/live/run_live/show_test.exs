@@ -158,6 +158,31 @@ defmodule Aludel.Web.RunLive.ShowTest do
       assert html =~ "API call failed"
     end
 
+    test "shows copy actions for successful outputs", %{conn: conn, run: run, result1: result1} do
+      {:ok, view, _html} = live(conn, "/runs/#{run.id}")
+
+      assert has_element?(view, "#run-result-output-#{result1.id}", "Hello from OpenAI")
+      assert has_element?(view, "#copy-run-output-#{result1.id}", "Copy output")
+    end
+
+    test "shows copy actions for failed errors", %{conn: conn} do
+      run = run_fixture(%{name: "Copy Error Run"})
+      provider = provider_fixture(%{name: "FailProvider"})
+
+      result =
+        run_result_fixture(%{
+          run_id: run.id,
+          provider_id: provider.id,
+          status: :error,
+          error: "API call failed"
+        })
+
+      {:ok, view, _html} = live(conn, "/runs/#{run.id}")
+
+      assert has_element?(view, "#run-result-error-#{result.id}", "API call failed")
+      assert has_element?(view, "#copy-run-error-#{result.id}", "Copy error")
+    end
+
     test "raises 404 for non-existent run", %{conn: conn} do
       fake_id = Ecto.UUID.generate()
 
