@@ -662,6 +662,46 @@ defmodule Aludel.EvalsTest do
       assert {:ok, suite_run} = Evals.execute_suite(suite, version, provider)
       assert suite_run.failed == 1
     end
+
+    test "json_field passes for exact string scalar matches" do
+      assert {:ok, suite_run} = execute_json_field_suite(~s({"status":"ok"}), "status", "ok")
+
+      assert suite_run.passed == 1
+      assert suite_run.failed == 0
+
+      assert [%{"assertion_results" => [%{"actual_value" => "ok", "passed" => true}]}] =
+               suite_run.results
+    end
+
+    test "json_field fails on number and string scalar mismatches" do
+      assert {:ok, suite_run} = execute_json_field_suite(~s({"count":1}), "count", "1")
+
+      assert suite_run.passed == 0
+      assert suite_run.failed == 1
+
+      assert [%{"assertion_results" => [%{"actual_value" => 1, "passed" => false}]}] =
+               suite_run.results
+    end
+
+    test "json_field fails on boolean and string scalar mismatches" do
+      assert {:ok, suite_run} = execute_json_field_suite(~s({"active":true}), "active", "true")
+
+      assert suite_run.passed == 0
+      assert suite_run.failed == 1
+
+      assert [%{"assertion_results" => [%{"actual_value" => true, "passed" => false}]}] =
+               suite_run.results
+    end
+
+    test "json_field fails on nil and string scalar mismatches" do
+      assert {:ok, suite_run} = execute_json_field_suite(~s({"note":null}), "note", "nil")
+
+      assert suite_run.passed == 0
+      assert suite_run.failed == 1
+
+      assert [%{"assertion_results" => [%{"actual_value" => nil, "passed" => false}]}] =
+               suite_run.results
+    end
   end
 
   describe "test_case_documents" do
@@ -800,5 +840,27 @@ defmodule Aludel.EvalsTest do
       input_tokens: input_tokens,
       output_tokens: output_tokens
     }
+  end
+
+  defp execute_json_field_suite(output, field, expected) do
+    mock_response = build_mock_response(output, 5, 10)
+
+    expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+      {:ok, mock_response}
+    end)
+
+    suite = suite_fixture()
+    prompt = prompt_fixture()
+    {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Return JSON")
+    provider = provider_fixture()
+
+    _test_case =
+      test_case_fixture(%{
+        suite_id: suite.id,
+        variable_values: %{},
+        assertions: [%{"type" => "json_field", "field" => field, "expected" => expected}]
+      })
+
+    Evals.execute_suite(suite, version, provider)
   end
 end

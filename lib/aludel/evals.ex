@@ -544,8 +544,8 @@ defmodule Aludel.Evals do
   end
 
   defp compare_json_values(actual, expected) do
-    # For scalars (string, number, boolean, nil), convert to string
-    to_string(actual) == to_string(expected)
+    # Scalars should preserve JSON semantics instead of coercing types.
+    actual == expected
   end
 
   defp repo, do: Aludel.Repo.get()
