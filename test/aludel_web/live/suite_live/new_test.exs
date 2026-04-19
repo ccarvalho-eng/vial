@@ -274,6 +274,45 @@ defmodule Aludel.Web.SuiteLive.NewTest do
       assert has_element?(view, "#flash-error", "Invalid assertion type")
     end
 
+    test "rejects blank assertion values in visual mode", %{conn: conn} do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      view
+      |> form("#suite-form", suite: %{name: "", prompt_id: prompt.id})
+      |> render_change()
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("add_assertion", %{"id" => test_case_id})
+
+      view
+      |> form("#suite-form",
+        suite: %{
+          "name" => "Test Suite",
+          "prompt_id" => prompt.id,
+          "test_cases" => %{
+            test_case_id => %{
+              "variable_values" => %{"name" => "Alice"},
+              "assertions" => %{
+                "assertion_type_0" => "contains",
+                "assertion_value_0" => "   "
+              }
+            }
+          }
+        }
+      )
+      |> render_submit()
+
+      assert has_element?(view, "#flash-error", "non-blank 'value' field")
+    end
+
     test "uses nested variable inputs after prompt selection", %{conn: conn} do
       prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
 
