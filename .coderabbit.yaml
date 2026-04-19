@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "lib/**/*.ex"
+      instructions: |
+        Review these Elixir and Phoenix changes against the repo's AGENTS.md guidance.
+        Focus on correctness, explicit data flow, and hidden coupling first.
+        Flag LiveView lifecycle issues, deprecated navigation APIs, incorrect stream usage, Ecto preload mistakes, changeset bugs, and logging of secrets or noisy duplicate logs.
+    - path: "test/**/*.exs"
+      instructions: |
+        Review tests as behavior-focused regression coverage.
+        Prefer stable assertions with LiveView test helpers and explicit DOM ids over brittle raw HTML checks.
+        Flag missing edge-case coverage and tests that mix multiple failure reasons.
+    - path: "priv/repo/migrations/**/*.exs"
+      instructions: |
+        Focus on migration safety and reversibility.
+        Flag destructive or tightly coupled schema changes, missing indexes or constraints, and changes that look unsafe for existing PostgreSQL data.
+    - path: ".github/workflows/**/*.{yml,yaml}"
+      instructions: |
+        Review GitHub Actions changes for correctness, least-privilege permissions, safe caching, and maintainability.
+  tools:
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
