@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.19] - 2026-04-19
+
+### Added
+- Provider pricing now supports built-in defaults with per-provider override support
+
+### Changed
+- Refined the provider pricing form and related provider management flow
+
+### Fixed
+- SuiteLive now recovers more safely after task crashes
+- JSON field assertions now compare scalar values with the correct type handling
+- Assertion validation now stays consistent between the visual and JSON editors
+
 ## [0.1.18] - 2026-04-12
 
 ### Fixed
