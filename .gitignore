@@ -54,3 +54,6 @@ assets/.DS_Store
 CLAUDE.md
 
 # Codex configuration
+
+# Dexter local state
+.dexter.db*
