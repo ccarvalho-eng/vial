@@ -665,7 +665,7 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       provider = provider_fixture(%{name: "OpenAI"})
       test_case = test_case_fixture(%{suite_id: suite.id})
 
-      _suite_run =
+      suite_run =
         suite_run_fixture(%{
           suite_id: suite.id,
           prompt_version_id: version.id,
@@ -690,11 +690,15 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
 
       assert has_element?(
                view,
-               "#suite-result-output-#{test_case.id}",
+               "#suite-result-output-#{suite_run.id}-#{test_case.id}",
                "Structured output for copying"
              )
 
-      assert has_element?(view, "#copy-suite-result-#{test_case.id}", "Copy output")
+      assert has_element?(
+               view,
+               "#copy-suite-result-#{suite_run.id}-#{test_case.id}",
+               "Copy output"
+             )
     end
   end
 end

@@ -637,10 +637,11 @@
                           </span>
                         </div>
                         <button
-                          id={"copy-suite-result-#{result["test_case_id"]}"}
+                          id={"copy-suite-result-#{suite_run.id}-#{result["test_case_id"]}"}
                           type="button"
                           phx-hook="CopyToClipboard"
-                          data-copy-target={"suite-result-output-#{result["test_case_id"]}"}
+                          phx-update="ignore"
+                          data-copy-target={"suite-result-output-#{suite_run.id}-#{result["test_case_id"]}"}
                           data-copy-label="Copy output"
                           style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
                         >
@@ -648,7 +649,7 @@
                         </button>
                       </div>
                       <pre
-                        id={"suite-result-output-#{result["test_case_id"]}"}
+                        id={"suite-result-output-#{suite_run.id}-#{result["test_case_id"]}"}
                         style="font-size: 12px; margin: 0; white-space: pre-wrap; color: var(--text-primary); line-height: 1.5;"
                       >{result["output"]}</pre>
                     </div>
