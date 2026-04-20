@@ -1,7 +1,6 @@
 defmodule Aludel.RunsTest do
   use Aludel.DataCase
 
-  import ExUnit.CaptureLog
   import Mox
 
   alias Aludel.Interfaces.HttpClientMock
@@ -117,6 +116,10 @@ defmodule Aludel.RunsTest do
       assert run.name == "Test Run"
       assert run.variable_values == %{"user" => "Alice", "topic" => "AI"}
       assert run.prompt_version_id == version.id
+      assert run.status == :pending
+      assert is_nil(run.started_at)
+      assert is_nil(run.completed_at)
+      assert is_nil(run.error_summary)
     end
 
     test "create_run/1 with invalid data returns error changeset" do
@@ -311,12 +314,18 @@ defmodule Aludel.RunsTest do
       assert {:ok, %Execution{} = execution} = Runs.execute_run(run, [provider])
       assert execution.status == :ok
 
+      assert execution.run.status == :completed
+      assert execution.run.started_at
+      assert execution.run.completed_at
+      assert is_nil(execution.run.error_summary)
       assert Ecto.assoc_loaded?(execution.run.run_results)
       assert length(execution.run.run_results) == 1
 
       result = hd(execution.run.run_results)
       assert result.provider_id == provider.id
       assert result.status == :completed
+      assert result.started_at
+      assert result.completed_at
       assert is_binary(result.output)
       assert result.input_tokens > 0
       assert result.output_tokens > 0
@@ -343,6 +352,9 @@ defmodule Aludel.RunsTest do
                Runs.execute_run(run, [provider1, provider2, provider3])
 
       assert execution.status == :ok
+      assert execution.run.status == :completed
+      assert execution.run.started_at
+      assert execution.run.completed_at
 
       assert Ecto.assoc_loaded?(execution.run.run_results)
       assert length(execution.run.run_results) == 3
@@ -355,6 +367,8 @@ defmodule Aludel.RunsTest do
 
       for result <- execution.run.run_results do
         assert result.status == :completed
+        assert result.started_at
+        assert result.completed_at
         assert is_binary(result.output)
       end
     end
@@ -416,7 +430,13 @@ defmodule Aludel.RunsTest do
       assert execution.status == :error
       assert length(execution.failures) == 1
       assert length(execution.run.run_results) == 1
+      assert execution.run.status == :failed
+      assert execution.run.started_at
+      assert execution.run.completed_at
+      assert execution.run.error_summary =~ provider.name
       assert hd(execution.run.run_results).status == :error
+      assert hd(execution.run.run_results).started_at
+      assert hd(execution.run.run_results).completed_at
     end
 
     test "marks execution as partially failed when some providers fail", %{run: run} do
@@ -436,50 +456,22 @@ defmodule Aludel.RunsTest do
       assert execution.status == :partial_failure
       assert length(execution.failures) == 1
       assert length(execution.run.run_results) == 2
+      assert execution.run.status == :partial_failure
+      assert execution.run.started_at
+      assert execution.run.completed_at
+      assert execution.run.error_summary =~ provider2.name
     end
 
-    test "logs warning when run result creation fails on success", %{
+    test "returns run_not_found when the run disappears before execution starts", %{
       run: run,
       provider: provider
     } do
-      mock_response = build_mock_response("Test output", 5, 10)
-
-      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
-        {:ok, mock_response}
-      end)
-
       run = Repo.preload(run, :prompt_version)
 
-      # Delete the run to cause create_run_result to fail
+      # Delete the run before execution can transition it to :running.
       Runs.delete_run(run)
 
-      log =
-        capture_log([level: :warning], fn ->
-          Runs.execute_run(run, [provider])
-        end)
-
-      assert log =~ "Failed to create run result for run #{run.id}"
-    end
-
-    test "logs warning when run result creation fails on error", %{
-      run: run,
-      provider: provider
-    } do
-      expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
-        {:error, "API timeout"}
-      end)
-
-      run = Repo.preload(run, :prompt_version)
-
-      # Delete the run to cause create_run_result to fail
-      Runs.delete_run(run)
-
-      log =
-        capture_log([level: :warning], fn ->
-          Runs.execute_run(run, [provider])
-        end)
-
-      assert log =~ "Failed to create run result for run #{run.id}"
+      assert {:error, :run_not_found} = Runs.execute_run(run, [provider])
     end
   end
 

@@ -16,7 +16,7 @@ defmodule Aludel.Runs.Run do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(prompt_version_id variable_values)a
-  @optional_fields ~w(name provider_ids)a
+  @optional_fields ~w(name provider_ids status started_at completed_at error_summary)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -25,6 +25,14 @@ defmodule Aludel.Runs.Run do
     field :name, :string
     field :variable_values, :map
     field :provider_ids, {:array, :string}, virtual: true, default: []
+
+    field :status, Ecto.Enum,
+      values: [:pending, :running, :completed, :partial_failure, :failed],
+      default: :pending
+
+    field :started_at, :utc_datetime
+    field :completed_at, :utc_datetime
+    field :error_summary, :string
 
     belongs_to(:prompt_version, PromptVersion)
     has_many(:run_results, RunResult)

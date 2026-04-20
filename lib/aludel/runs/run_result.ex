@@ -16,7 +16,7 @@ defmodule Aludel.Runs.RunResult do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(run_id provider_id status)a
-  @optional_fields ~w(output input_tokens output_tokens latency_ms cost_usd error)a
+  @optional_fields ~w(output input_tokens output_tokens latency_ms cost_usd error started_at completed_at)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -27,8 +27,10 @@ defmodule Aludel.Runs.RunResult do
     field :output_tokens, :integer
     field :latency_ms, :integer
     field :cost_usd, :float
-    field :status, Ecto.Enum, values: [:pending, :streaming, :completed, :error]
+    field :status, Ecto.Enum, values: [:pending, :running, :completed, :error]
     field :error, :string
+    field :started_at, :utc_datetime
+    field :completed_at, :utc_datetime
 
     belongs_to(:run, Run)
     belongs_to(:provider, Provider)

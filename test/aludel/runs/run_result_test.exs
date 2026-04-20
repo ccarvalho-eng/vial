@@ -61,7 +61,7 @@ defmodule Aludel.Runs.RunResultTest do
       assert changeset.valid?
     end
 
-    test "valid changeset with streaming status", %{
+    test "valid changeset with running status", %{
       run: run,
       provider: provider
     } do
@@ -74,10 +74,12 @@ defmodule Aludel.Runs.RunResultTest do
           output_tokens: 2,
           latency_ms: 200,
           cost_usd: 0.0005,
-          status: :streaming
+          status: :running,
+          started_at: ~U[2026-04-20 12:00:00Z]
         })
 
       assert changeset.valid?
+      assert changeset.changes.started_at == ~U[2026-04-20 12:00:00Z]
     end
 
     test "valid changeset with error status and error message", %{

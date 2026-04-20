@@ -1,6 +1,51 @@
 <Layouts.app flash={@flash} current_path={@current_path}>
   <div style="max-width: 1000px; margin: 0 auto;">
-    <h1>{@run.name || "Run #{String.slice(@run.id, 0..7)}"}</h1>
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px;">
+      <div>
+        <h1>{@run.name || "Run #{String.slice(@run.id, 0..7)}"}</h1>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+          <span>
+            Started: {if @run.started_at,
+              do: Calendar.strftime(@run.started_at, "%Y-%m-%d %H:%M:%S UTC"),
+              else: "not started"}
+          </span>
+          <span>
+            Completed: {if @run.completed_at,
+              do: Calendar.strftime(@run.completed_at, "%Y-%m-%d %H:%M:%S UTC"),
+              else: "in progress"}
+          </span>
+        </div>
+      </div>
+      <span style={
+        case @run.status do
+          :completed ->
+            "padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background-color: rgba(16, 185, 129, 0.12); color: #10b981;"
+
+          :partial_failure ->
+            "padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background-color: rgba(245, 158, 11, 0.12); color: #f59e0b;"
+
+          :failed ->
+            "padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background-color: rgba(220, 38, 38, 0.12); color: #dc2626;"
+
+          :running ->
+            "padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background-color: rgba(59, 130, 246, 0.12); color: #3b82f6;"
+
+          :pending ->
+            "padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background-color: rgba(107, 114, 128, 0.12); color: #6b7280;"
+        end
+      }>
+        {@run.status}
+      </span>
+    </div>
+
+    <div
+      :if={@run.error_summary}
+      class="aludel-card"
+      style="margin-bottom: 24px; border-color: rgba(220, 38, 38, 0.25);"
+    >
+      <h2 style="margin-bottom: 12px;">Execution Summary</h2>
+      <pre style="background-color: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 8px; color: #dc2626; font-size: 13px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word;"><%= @run.error_summary %></pre>
+    </div>
 
     <div style="margin-bottom: 32px;">
       <h2>Configuration</h2>
@@ -33,7 +78,21 @@
               <div>
                 <h3 style="margin: 0; font-size: 16px;">{result.provider.name}</h3>
               </div>
-              <span style={"padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; #{if result.status == :completed, do: "background-color: rgba(16, 185, 129, 0.1); color: #10b981;", else: "background-color: rgba(220, 38, 38, 0.1); color: #dc2626;"}"}>
+              <span style={
+                case result.status do
+                  :completed ->
+                    "padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background-color: rgba(16, 185, 129, 0.1); color: #10b981;"
+
+                  :error ->
+                    "padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background-color: rgba(220, 38, 38, 0.1); color: #dc2626;"
+
+                  :running ->
+                    "padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;"
+
+                  :pending ->
+                    "padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background-color: rgba(107, 114, 128, 0.1); color: #6b7280;"
+                end
+              }>
                 {result.status}
               </span>
             </div>
@@ -97,16 +156,31 @@
                   Copy output
                 </button>
               </div>
-              <%= if result.status == :error do %>
-                <div style="background-color: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 4px; color: #dc2626; font-size: 13px;">
-                  <strong>Error:</strong>
-                  <span id={"run-result-error-#{result.id}"}>{result.error}</span>
-                </div>
-              <% else %>
-                <pre
-                  id={"run-result-output-#{result.id}"}
-                  style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; flex: 1;"
-                ><%= result.output %></pre>
+              <%= cond do %>
+                <% result.status == :error -> %>
+                  <div style="background-color: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 4px; color: #dc2626; font-size: 13px;">
+                    <strong>Error:</strong>
+                    <span id={"run-result-error-#{result.id}"}>{result.error}</span>
+                  </div>
+                <% result.status == :pending -> %>
+                  <div
+                    id={"run-result-output-#{result.id}"}
+                    style="background-color: var(--bg-tertiary); border: 1px dashed var(--border); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);"
+                  >
+                    Awaiting execution
+                  </div>
+                <% result.status == :running -> %>
+                  <div
+                    id={"run-result-output-#{result.id}"}
+                    style="background-color: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.16); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; color: var(--text-primary);"
+                  >
+                    {result.output || "Running..."}
+                  </div>
+                <% true -> %>
+                  <pre
+                    id={"run-result-output-#{result.id}"}
+                    style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; flex: 1;"
+                  ><%= result.output %></pre>
               <% end %>
             </div>
           </div>

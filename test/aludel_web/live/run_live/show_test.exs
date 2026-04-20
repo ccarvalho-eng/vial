@@ -108,7 +108,7 @@ defmodule Aludel.Web.RunLive.ShowTest do
       assert html =~ "Streaming update from Cohere"
     end
 
-    test "handles streaming status updates", %{
+    test "handles running status updates", %{
       conn: conn,
       run: run
     } do
@@ -127,17 +127,19 @@ defmodule Aludel.Web.RunLive.ShowTest do
       {:ok, _updated_result} =
         Aludel.Runs.update_run_result(result3, %{
           output: "Partial",
-          status: :streaming
+          status: :running,
+          started_at: DateTime.utc_now()
         })
 
       Phoenix.PubSub.broadcast(
         Aludel.PubSub,
         "run:#{run.id}",
-        {:run_result_update, result3.id, :streaming, "Partial"}
+        {:run_result_update, result3.id, :running, "Partial"}
       )
 
       html = render(view)
       assert html =~ "Partial"
+      assert html =~ "running"
     end
 
     test "displays error status for failed results", %{conn: conn} do

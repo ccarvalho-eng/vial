@@ -37,9 +37,14 @@ defmodule Aludel.Runs.ExecutorTest do
 
       assert {:ok, %Execution{} = execution} = Executor.execute(run, [provider])
       assert execution.status == :ok
+      assert execution.run.status == :completed
+      assert execution.run.started_at
+      assert execution.run.completed_at
       assert execution.failures == []
       assert length(execution.provider_results) == 1
       assert hd(execution.provider_results).status == :completed
+      assert hd(execution.provider_results).started_at
+      assert hd(execution.provider_results).completed_at
     end
 
     test "rejects empty provider lists", %{run: run} do
@@ -66,6 +71,10 @@ defmodule Aludel.Runs.ExecutorTest do
 
       assert {:ok, %Execution{} = execution} = Executor.execute(run, [provider1, provider2])
       assert execution.status == :partial_failure
+      assert execution.run.status == :partial_failure
+      assert execution.run.started_at
+      assert execution.run.completed_at
+      assert execution.run.error_summary =~ provider2.name
       assert length(execution.failures) == 1
       assert length(execution.provider_results) == 2
     end
@@ -89,6 +98,10 @@ defmodule Aludel.Runs.ExecutorTest do
 
       assert {:ok, %Execution{} = execution} = Executor.execute(run, [provider])
       assert execution.status == :error
+      assert execution.run.status == :failed
+      assert execution.run.started_at
+      assert execution.run.completed_at
+      assert execution.run.error_summary =~ provider.name
 
       assert [%{provider_id: provider_id, provider_name: provider_name, reason: reason}] =
                execution.failures
@@ -103,6 +116,8 @@ defmodule Aludel.Runs.ExecutorTest do
 
       assert [result] = execution.provider_results
       assert result.status == :error
+      assert result.started_at
+      assert result.completed_at
       assert result.error =~ "task_exit"
       assert result.error =~ "boom"
     end
