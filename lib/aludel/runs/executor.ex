@@ -394,11 +394,14 @@ defmodule Aludel.Runs.Executor do
         {:error, reason}
 
       {_run_id, _reason} ->
+        transition_timestamp = now()
+
         _ =
           run
           |> Run.execution_changeset(%{
             status: :failed,
-            completed_at: now(),
+            started_at: run.started_at || transition_timestamp,
+            completed_at: transition_timestamp,
             error_summary: inspect(reason)
           })
           |> repo().update()

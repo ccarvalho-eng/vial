@@ -89,8 +89,10 @@ defmodule Aludel.Runs.RunTest do
       refute Map.has_key?(changeset.changes, :completed_at)
       refute Map.has_key?(changeset.changes, :error_summary)
     end
+  end
 
-    test "execution_changeset casts lifecycle fields" do
+  describe "execution_changeset/2" do
+    test "casts lifecycle fields" do
       changeset =
         Run.execution_changeset(%Run{}, %{
           status: :running,
