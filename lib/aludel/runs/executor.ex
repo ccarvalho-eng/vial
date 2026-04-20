@@ -410,7 +410,11 @@ defmodule Aludel.Runs.Executor do
               broadcast_run_update(updated_run.id, updated_run.status)
               :ok
 
-            {:error, _changeset} ->
+            {:error, changeset} ->
+              Logger.warning("Failed to persist :failed status for run #{run.id}",
+                reason: inspect(changeset.errors)
+              )
+
               :error
           end
 
