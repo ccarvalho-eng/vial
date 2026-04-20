@@ -9,6 +9,8 @@ defmodule Aludel.Repo.Migrations.AddExecutionStateToRunsAndRunResults do
       add :error_summary, :text
     end
 
+    create index(:runs, [:status])
+
     alter table(:run_results) do
       add :started_at, :utc_datetime
       add :completed_at, :utc_datetime

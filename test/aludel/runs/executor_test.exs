@@ -4,8 +4,7 @@ defmodule Aludel.Runs.ExecutorTest do
   import Mox
 
   alias Aludel.Interfaces.HttpClientMock
-  alias Aludel.Runs.Execution
-  alias Aludel.Runs.Executor
+  alias Aludel.Runs.{Execution, Executor, Run}
 
   import Aludel.PromptsFixtures
   import Aludel.ProvidersFixtures
@@ -52,10 +51,29 @@ defmodule Aludel.Runs.ExecutorTest do
     end
 
     test "rejects runs with missing template variables", %{run: run} do
-      run = %{run | variable_values: %{}}
+      {:ok, run} =
+        Aludel.Runs.update_run(run, %{
+          variable_values: %{}
+        })
 
       assert {:error, {:missing_variables, ["user"]}} =
                Executor.execute(run, [provider_fixture()])
+    end
+
+    test "marks the run failed after transition-time validation errors", %{run: run} do
+      {:ok, run} =
+        Aludel.Runs.update_run(run, %{
+          variable_values: %{}
+        })
+
+      assert {:error, {:missing_variables, ["user"]}} =
+               Executor.execute(run, [provider_fixture()])
+
+      persisted_run = Aludel.Runs.get_run!(run.id)
+      assert persisted_run.status == :failed
+      assert persisted_run.started_at
+      assert persisted_run.completed_at
+      assert persisted_run.error_summary =~ "missing_variables"
     end
 
     test "returns a partial failure when provider outcomes are mixed", %{run: run} do
@@ -77,6 +95,33 @@ defmodule Aludel.Runs.ExecutorTest do
       assert execution.run.error_summary =~ provider2.name
       assert length(execution.failures) == 1
       assert length(execution.provider_results) == 2
+    end
+
+    test "supports duplicate providers without pending-result key collisions", %{run: run} do
+      provider =
+        provider_fixture(%{name: "Duplicated Provider", model: "duplicate-provider-model"})
+
+      expect(HttpClientMock, :request, 2, fn "openai:duplicate-provider-model", _prompt, _opts ->
+        {:ok, build_mock_response("Hello Alice", 5, 10)}
+      end)
+
+      assert {:ok, %Execution{} = execution} = Executor.execute(run, [provider, provider])
+      assert execution.status == :ok
+      assert execution.run.status == :completed
+      assert length(execution.provider_results) == 2
+      assert Enum.all?(execution.provider_results, &(&1.provider_id == provider.id))
+    end
+
+    test "rejects runs that already left the pending state", %{run: run} do
+      {:ok, _run} =
+        run
+        |> Run.execution_changeset(%{
+          status: :running,
+          started_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+
+      assert {:error, :run_not_found} = Executor.execute(run, [provider_fixture()])
     end
 
     test "persists task exits in concurrent execution", %{run: run} do

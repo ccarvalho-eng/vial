@@ -3,6 +3,8 @@ defmodule Aludel.Runs.Executor do
   Owns run launch and provider execution under explicit supervision.
   """
 
+  import Ecto.Query, only: [from: 2]
+
   require Logger
 
   alias Aludel.LLM
@@ -56,22 +58,36 @@ defmodule Aludel.Runs.Executor do
   def execute(%Run{} = run, providers) when is_list(providers) do
     run = preload_prompt_version(run)
 
-    with {:ok, run} <- mark_run_running(run),
-         :ok <- validate_variable_values(run.prompt_version.variables, run.variable_values),
-         rendered_prompt <- render_template(run.prompt_version.template, run.variable_values),
-         {:ok, pending_results} <- create_pending_results(run, providers),
-         provider_outcomes <-
-           execute_providers(run, Enum.zip(providers, pending_results), rendered_prompt),
-         failures = collect_failures(provider_outcomes),
-         {:ok, updated_run} <- complete_run(run, length(providers), failures) do
-      {:ok,
-       %Execution{
-         failures: failures,
-         provider_results: updated_run.run_results,
-         run: updated_run,
-         status: execution_status(length(providers), length(failures))
-       }}
-    else
+    case mark_run_running(run) do
+      {:ok, running_run} ->
+        with :ok <-
+               validate_variable_values(
+                 running_run.prompt_version.variables,
+                 running_run.variable_values
+               ),
+             rendered_prompt <-
+               render_template(running_run.prompt_version.template, running_run.variable_values),
+             {:ok, pending_results} <- create_pending_results(running_run, providers),
+             provider_outcomes <-
+               execute_providers(
+                 running_run,
+                 Enum.zip(providers, pending_results),
+                 rendered_prompt
+               ),
+             failures = collect_failures(provider_outcomes),
+             {:ok, updated_run} <- complete_run(running_run, length(providers), failures) do
+          {:ok,
+           %Execution{
+             failures: failures,
+             provider_results: updated_run.run_results,
+             run: updated_run,
+             status: execution_status(length(providers), length(failures))
+           }}
+        else
+          {:error, reason} ->
+            fail_run(running_run, reason)
+        end
+
       {:error, reason} ->
         fail_run(run, reason)
     end
@@ -252,33 +268,37 @@ defmodule Aludel.Runs.Executor do
   end
 
   defp mark_run_running(%Run{} = run) do
-    run
-    |> Run.changeset(%{
-      status: :running,
-      started_at: now(),
-      completed_at: nil,
-      error_summary: nil
-    })
-    |> repo().update(stale_error_field: :id)
+    transition_timestamp = now()
+
+    from(r in Run, where: r.id == ^run.id and r.status == :pending)
+    |> repo().update_all(
+      set: [
+        status: :running,
+        started_at: transition_timestamp,
+        completed_at: nil,
+        error_summary: nil
+      ]
+    )
     |> case do
-      {:ok, updated_run} = result ->
-        broadcast_run_update(updated_run.id, updated_run.status)
-        result
+      {1, _} ->
+        with {:ok, updated_run} <- reload_run(run.id) do
+          broadcast_run_update(updated_run.id, updated_run.status)
+          {:ok, updated_run}
+        end
 
-      {:error, %Changeset{errors: [id: {"is stale", _details}]}} ->
+      {0, _} ->
         {:error, :run_not_found}
-
-      error ->
-        error
     end
   end
 
   defp create_pending_results(%Run{} = run, providers) do
     multi =
-      Enum.reduce(providers, Multi.new(), fn provider, multi ->
+      providers
+      |> Enum.with_index()
+      |> Enum.reduce(Multi.new(), fn {provider, index}, multi ->
         Multi.insert(
           multi,
-          {:run_result, provider.id},
+          {:run_result, index},
           RunResult.changeset(%RunResult{}, %{
             run_id: run.id,
             provider_id: provider.id,
@@ -290,8 +310,10 @@ defmodule Aludel.Runs.Executor do
     case repo().transaction(multi) do
       {:ok, results} ->
         pending_results =
-          Enum.map(providers, fn provider ->
-            run_result = Map.fetch!(results, {:run_result, provider.id})
+          providers
+          |> Enum.with_index()
+          |> Enum.map(fn {_provider, index} ->
+            run_result = Map.fetch!(results, {:run_result, index})
             broadcast_update(run.id, run_result.id, :pending, nil)
             run_result
           end)
@@ -347,7 +369,7 @@ defmodule Aludel.Runs.Executor do
     final_status = run_status(provider_count, length(failures))
 
     run
-    |> Run.changeset(%{
+    |> Run.execution_changeset(%{
       status: final_status,
       completed_at: now(),
       error_summary: error_summary(failures)
@@ -374,7 +396,7 @@ defmodule Aludel.Runs.Executor do
       {_run_id, _reason} ->
         _ =
           run
-          |> Run.changeset(%{
+          |> Run.execution_changeset(%{
             status: :failed,
             completed_at: now(),
             error_summary: inspect(reason)

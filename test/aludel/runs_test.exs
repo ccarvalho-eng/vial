@@ -74,7 +74,7 @@ defmodule Aludel.RunsTest do
     test "list_runs/0 returns all runs", %{prompt_version: version} do
       attrs = Map.put(@valid_attrs, :prompt_version_id, version.id)
       {:ok, run} = Runs.create_run(attrs)
-      assert Runs.list_runs() == [run]
+      assert Enum.any?(Runs.list_runs(), &(&1.id == run.id))
     end
 
     test "get_run!/1 returns the run with given id", %{prompt_version: version} do

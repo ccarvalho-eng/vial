@@ -16,7 +16,8 @@ defmodule Aludel.Runs.Run do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(prompt_version_id variable_values)a
-  @optional_fields ~w(name provider_ids status started_at completed_at error_summary)a
+  @optional_fields ~w(name provider_ids)a
+  @execution_fields ~w(status started_at completed_at error_summary)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -50,5 +51,14 @@ defmodule Aludel.Runs.Run do
     run
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+  end
+
+  @doc """
+  Changeset for executor-owned lifecycle transitions.
+  """
+  @spec execution_changeset(t(), map()) :: Changeset.t()
+  def execution_changeset(run, attrs) do
+    run
+    |> cast(attrs, @execution_fields)
   end
 end
