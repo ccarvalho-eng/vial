@@ -18,8 +18,6 @@ Aludel gives teams a clean way to evaluate prompt and model behavior without inv
 - Run evaluation suites with assertions and document attachments.
 - Use it inside an existing Phoenix app or run it standalone.
 
-[![Aludel dashboard screenshot](https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/dashboard-screenshot.png)](https://raw.githubusercontent.com/ccarvalho-eng/aludel/main/assets/images/dashboard-screenshot.png)
-
 ## Why Aludel
 
 Most teams evaluating LLM behavior end up with some combination of scripts, spreadsheets, and ad hoc dashboards. Aludel brings that work into one place with a UI that is practical enough for day-to-day iteration.
