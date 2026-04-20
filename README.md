@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img width="85" alt="aludel" src="https://github.com/user-attachments/assets/a181b327-3bb6-41c0-b5c9-c8bfb10dd3f5" />
+  <img width="70" alt="aludel" src="https://github.com/user-attachments/assets/a181b327-3bb6-41c0-b5c9-c8bfb10dd3f5" />
 
   <h1>Aludel</h1>
   
