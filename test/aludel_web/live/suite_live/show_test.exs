@@ -6,6 +6,9 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
   import Aludel.EvalsFixtures
   import Aludel.PromptsFixtures
   import Aludel.ProvidersFixtures
+  import Mox
+
+  alias Aludel.Interfaces.HttpClientMock
 
   test "displays suite details", %{conn: conn} do
     prompt = prompt_fixture(%{name: "Test Prompt"})
@@ -698,6 +701,82 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
                view,
                "#copy-suite-result-#{suite_run.id}-#{test_case.id}",
                "Copy output"
+             )
+    end
+  end
+
+  describe "retry test case result" do
+    test "retries a single result and refreshes the rendered output", %{conn: conn} do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      prompt = Aludel.Prompts.get_prompt_with_versions!(prompt.id)
+      version = hd(prompt.versions)
+
+      provider =
+        provider_fixture(%{
+          name: "OpenAI",
+          pricing: %{"input" => 1000.0, "output" => 2000.0}
+        })
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          variable_values: %{"name" => "Alice"},
+          assertions: [%{"type" => "contains", "value" => "Hello"}]
+        })
+
+      suite_run =
+        suite_run_fixture(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider.id,
+          passed: 0,
+          failed: 1,
+          results: [
+            %{
+              "test_case_id" => test_case.id,
+              "passed" => false,
+              "output" => "Rate limit exceeded",
+              "assertion_results" => [],
+              "cost_usd" => nil,
+              "latency_ms" => nil
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      Mox.allow(HttpClientMock, self(), view.pid)
+
+      expect(HttpClientMock, :request, fn _model, prompt, _opts ->
+        assert prompt == "Hello Alice"
+
+        {:ok, %{content: "Hello Alice", input_tokens: 5, output_tokens: 10}}
+      end)
+
+      assert has_element?(
+               view,
+               "#retry-suite-result-#{suite_run.id}-#{test_case.id}",
+               "Retry"
+             )
+
+      html =
+        view
+        |> element("#retry-suite-result-#{suite_run.id}-#{test_case.id}")
+        |> render_click()
+
+      assert html =~ "Test case retried successfully"
+
+      assert has_element?(
+               view,
+               "#suite-result-output-#{suite_run.id}-#{test_case.id}",
+               "Hello Alice"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-retry-meta-#{suite_run.id}-#{test_case.id}",
+               "Retry #1"
              )
     end
   end

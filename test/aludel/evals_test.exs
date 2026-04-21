@@ -385,6 +385,92 @@ defmodule Aludel.EvalsTest do
       assert result.total_passed == 15
       assert result.total_failed == 5
     end
+
+    test "retry_suite_run_test_case/2 replaces the existing result and recalculates aggregates" do
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Hello {{name}}")
+      suite = suite_fixture(%{prompt_id: prompt.id})
+
+      provider =
+        provider_fixture(%{
+          pricing: %{"input" => 1000.0, "output" => 2000.0}
+        })
+
+      passing_test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          variable_values: %{"name" => "Bob"},
+          assertions: [%{"type" => "contains", "value" => "Hello"}]
+        })
+
+      retried_test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          variable_values: %{"name" => "Alice"},
+          assertions: [%{"type" => "contains", "value" => "Hello"}]
+        })
+
+      suite_run =
+        suite_run_fixture(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider.id,
+          passed: 1,
+          failed: 1,
+          avg_cost_usd: Decimal.new("0.003"),
+          avg_latency_ms: 140,
+          results: [
+            %{
+              "test_case_id" => passing_test_case.id,
+              "passed" => true,
+              "output" => "Hello Bob",
+              "assertion_results" => [
+                %{"type" => "contains", "passed" => true, "value" => "Hello"}
+              ],
+              "cost_usd" => 0.003,
+              "latency_ms" => 140
+            },
+            %{
+              "test_case_id" => retried_test_case.id,
+              "passed" => false,
+              "output" => "Rate limit exceeded",
+              "assertion_results" => [],
+              "cost_usd" => nil,
+              "latency_ms" => nil
+            }
+          ]
+        })
+
+      expect(HttpClientMock, :request, fn _model, prompt, _opts ->
+        assert prompt == "Hello Alice"
+
+        {:ok, build_mock_response("Hello Alice", 5, 10)}
+      end)
+
+      assert {:ok, updated_suite_run} =
+               Evals.retry_suite_run_test_case(suite_run, retried_test_case.id)
+
+      retried_result =
+        Enum.find(updated_suite_run.results, fn result ->
+          result["test_case_id"] == retried_test_case.id
+        end)
+
+      assert retried_result["passed"] == true
+      assert retried_result["output"] == "Hello Alice"
+      assert retried_result["retry_count"] == 1
+      assert is_binary(retried_result["retried_at"])
+      assert updated_suite_run.passed == 2
+      assert updated_suite_run.failed == 0
+      assert Decimal.compare(updated_suite_run.avg_cost_usd, Decimal.new("0")) == :gt
+      assert updated_suite_run.avg_latency_ms >= 0
+
+      reloaded_suite_run = Evals.get_suite_run!(suite_run.id)
+
+      assert Enum.any?(reloaded_suite_run.results, fn result ->
+               result["test_case_id"] == retried_test_case.id and
+                 result["retry_count"] == 1 and result["output"] == "Hello Alice"
+             end)
+    end
   end
 
   describe "execute_suite/3" do

@@ -366,6 +366,22 @@ defmodule Aludel.Web.SuiteLive.Show do
     end
   end
 
+  @impl Phoenix.LiveView
+  def handle_event(
+        "retry_suite_result",
+        %{"suite-run-id" => suite_run_id, "test-case-id" => test_case_id},
+        socket
+      ) do
+    socket =
+      if socket.assigns.running do
+        put_flash(socket, :error, "Suite is already running")
+      else
+        retry_suite_result(socket, suite_run_id, test_case_id)
+      end
+
+    {:noreply, socket}
+  end
+
   defp handle_test_case_uploads(socket, test_case) do
     socket
     |> consume_uploaded_entries(:documents, fn %{path: path}, entry ->
@@ -492,6 +508,53 @@ defmodule Aludel.Web.SuiteLive.Show do
     end)
   end
 
+  defp retry_count(%{"retry_count" => count}) when is_integer(count), do: count
+
+  defp retry_count(%{"retry_count" => count}) when is_binary(count) do
+    case Integer.parse(count) do
+      {parsed, ""} -> parsed
+      _ -> 0
+    end
+  end
+
+  defp retry_count(_result), do: 0
+
+  defp retried_at(%{"retried_at" => retried_at}) when is_binary(retried_at) do
+    case DateTime.from_iso8601(retried_at) do
+      {:ok, datetime, _offset} -> datetime
+      _ -> nil
+    end
+  end
+
+  defp retried_at(_result), do: nil
+
+  defp retry_suite_result(socket, suite_run_id, test_case_id) do
+    with {:ok, suite_run} <- fetch_loaded_suite_run(socket.assigns.suite_runs, suite_run_id),
+         {:ok, updated_suite_run} <- Evals.retry_suite_run_test_case(suite_run, test_case_id) do
+      updated_suite_run = Evals.reload_suite_run_with_associations(updated_suite_run)
+
+      socket
+      |> assign(:suite_runs, replace_suite_run(socket.assigns.suite_runs, updated_suite_run))
+      |> put_flash(:info, "Test case retried successfully")
+    else
+      {:error, reason} ->
+        put_flash(socket, :error, retry_result_error_message(reason))
+    end
+  end
+
+  defp fetch_loaded_suite_run(suite_runs, suite_run_id) do
+    case Enum.find(suite_runs, &(&1.id == suite_run_id)) do
+      nil -> {:error, :suite_run_not_found}
+      suite_run -> {:ok, suite_run}
+    end
+  end
+
+  defp replace_suite_run(suite_runs, updated_suite_run) do
+    Enum.map(suite_runs, fn suite_run ->
+      if suite_run.id == updated_suite_run.id, do: updated_suite_run, else: suite_run
+    end)
+  end
+
   defp clear_run_task_state(socket) do
     case socket.assigns.run_task_monitor_ref do
       nil ->
@@ -536,6 +599,26 @@ defmodule Aludel.Web.SuiteLive.Show do
     do: "Failed to execute suite: #{format_execution_error_detail(detail)}"
 
   defp suite_execution_error_message(_reason), do: "Failed to execute suite"
+
+  defp retry_result_error_message(:test_case_result_not_found),
+    do: "Failed to retry test case: existing result not found"
+
+  defp retry_result_error_message(:suite_run_not_found),
+    do: "Failed to retry test case: suite run not found"
+
+  defp retry_result_error_message(:test_case_not_found),
+    do: "Failed to retry test case: test case not found"
+
+  defp retry_result_error_message(:prompt_version_not_found),
+    do: "Failed to retry test case: prompt version not found"
+
+  defp retry_result_error_message(:provider_not_found),
+    do: "Failed to retry test case: provider not found"
+
+  defp retry_result_error_message({:retry_failed, detail}),
+    do: "Failed to retry test case: #{format_execution_error_detail(detail)}"
+
+  defp retry_result_error_message(_reason), do: "Failed to retry test case"
 
   defp format_execution_error_detail(detail) when is_binary(detail), do: detail
   defp format_execution_error_detail(detail), do: inspect(detail)

@@ -631,22 +631,49 @@
                     <% end %>
                     <div style={"padding: 14px; background: #{if result["passed"], do: "rgba(16, 185, 129, 0.05)", else: "rgba(248, 81, 73, 0.05)"}"}>
                       <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                          <span style={"font-weight: 600; font-size: 13px; color: #{if result["passed"], do: "#10b981", else: "#f85149"}"}>
-                            {if result["passed"], do: "✓ Output", else: "✗ Output"}
-                          </span>
+                        <div style="display: flex; flex-direction: column; align-items: start; gap: 4px;">
+                          <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style={"font-weight: 600; font-size: 13px; color: #{if result["passed"], do: "#10b981", else: "#f85149"}"}>
+                              {if result["passed"], do: "✓ Output", else: "✗ Output"}
+                            </span>
+                          </div>
+                          <%= if retry_count(result) > 0 do %>
+                            <div
+                              id={"suite-result-retry-meta-#{suite_run.id}-#{result["test_case_id"]}"}
+                              style="font-size: 11px; color: var(--text-muted);"
+                            >
+                              {"Retry ##{retry_count(result)}"}
+                              <%= if retried_at_time = retried_at(result) do %>
+                                <span>{" • #{relative_time(retried_at_time)}"}</span>
+                              <% end %>
+                            </div>
+                          <% end %>
                         </div>
-                        <button
-                          id={"copy-suite-result-#{suite_run.id}-#{result["test_case_id"]}"}
-                          type="button"
-                          phx-hook="CopyToClipboard"
-                          phx-update="ignore"
-                          data-copy-target={"suite-result-output-#{suite_run.id}-#{result["test_case_id"]}"}
-                          data-copy-label="Copy output"
-                          style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
-                        >
-                          Copy output
-                        </button>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <button
+                            id={"retry-suite-result-#{suite_run.id}-#{result["test_case_id"]}"}
+                            type="button"
+                            phx-click="retry_suite_result"
+                            phx-value-suite-run-id={suite_run.id}
+                            phx-value-test-case-id={result["test_case_id"]}
+                            phx-disable-with="Retrying..."
+                            disabled={@running}
+                            style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
+                          >
+                            Retry
+                          </button>
+                          <button
+                            id={"copy-suite-result-#{suite_run.id}-#{result["test_case_id"]}"}
+                            type="button"
+                            phx-hook="CopyToClipboard"
+                            phx-update="ignore"
+                            data-copy-target={"suite-result-output-#{suite_run.id}-#{result["test_case_id"]}"}
+                            data-copy-label="Copy output"
+                            style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
+                          >
+                            Copy output
+                          </button>
+                        </div>
                       </div>
                       <pre
                         id={"suite-result-output-#{suite_run.id}-#{result["test_case_id"]}"}
