@@ -1046,7 +1046,7 @@ defmodule Aludel.EvalsTest do
       assert suite_run.passed + suite_run.failed > 0
     end
 
-    test "loads externally stored documents before calling the LLM" do
+    test "loads externally stored documents before calling the LLM in document order" do
       root = temp_storage_root()
       configure_storage(adapter: Aludel.Interfaces.Storage.Adapters.Local, root: root)
 
@@ -1056,9 +1056,18 @@ defmodule Aludel.EvalsTest do
       {:ok, _doc} =
         Aludel.Evals.create_test_case_document(%{
           test_case_id: test_case.id,
-          filename: "test.png",
+          filename: "first.png",
           content_type: "image/png",
           data: <<9, 8, 7>>,
+          size_bytes: 3
+        })
+
+      {:ok, _doc} =
+        Aludel.Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "second.png",
+          content_type: "image/png",
+          data: <<6, 5, 4>>,
           size_bytes: 3
         })
 
@@ -1072,7 +1081,10 @@ defmodule Aludel.EvalsTest do
         })
 
       expect(HttpClientMock, :request, fn _model, _prompt, opts ->
-        assert [%{data: <<9, 8, 7>>, content_type: "image/png"}] =
+        assert [
+                 %{data: <<9, 8, 7>>, content_type: "image/png"},
+                 %{data: <<6, 5, 4>>, content_type: "image/png"}
+               ] =
                  Keyword.fetch!(opts, :documents)
 
         {:ok, build_mock_response("loaded", 5, 10)}
@@ -1131,7 +1143,9 @@ defmodule Aludel.EvalsTest do
   end
 
   defp temp_storage_root do
-    Path.join(System.tmp_dir!(), "aludel-storage-#{System.unique_integer([:positive])}")
+    root = Path.join(System.tmp_dir!(), "aludel-storage-#{Ecto.UUID.generate()}")
+    File.mkdir_p!(root)
+    root
   end
 
   defp execute_json_field_suite(output, field, expected) do

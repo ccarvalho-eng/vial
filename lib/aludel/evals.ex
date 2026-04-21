@@ -437,15 +437,19 @@ defmodule Aludel.Evals do
 
   defp load_document_inputs(documents) do
     documents
-    |> Enum.reduce_while({:ok, []}, fn document, {:ok, loaded_documents} ->
-      case Storage.read(document) do
-        {:ok, data} ->
-          input = %{data: data, content_type: document.content_type}
-          {:cont, {:ok, [input | loaded_documents]}}
+    |> Task.async_stream(fn document -> {document, Storage.read(document)} end,
+      timeout: :infinity
+    )
+    |> Enum.reduce_while({:ok, []}, fn
+      {:ok, {document, {:ok, data}}}, {:ok, loaded_documents} ->
+        input = %{data: data, content_type: document.content_type}
+        {:cont, {:ok, [input | loaded_documents]}}
 
-        {:error, reason} ->
-          {:halt, {:error, {:document_storage_error, document.filename, reason}}}
-      end
+      {:ok, {document, {:error, reason}}}, _acc ->
+        {:halt, {:error, {:document_storage_error, document.filename, reason}}}
+
+      {:exit, reason}, _acc ->
+        exit(reason)
     end)
     |> case do
       {:ok, loaded_documents} -> {:ok, Enum.reverse(loaded_documents)}
