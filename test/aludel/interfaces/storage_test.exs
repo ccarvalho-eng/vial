@@ -29,6 +29,11 @@ defmodule Aludel.StorageTest do
     assert {:error, :missing_document_data} = Storage.read(%TestCaseDocument{})
   end
 
+  test "storage_key/2 normalizes dot-only filenames" do
+    assert Storage.storage_key("doc-id", "..") == "test_case_documents/doc-id/unnamed_file"
+    assert Storage.storage_key("doc-id", ".") == "test_case_documents/doc-id/unnamed_file"
+  end
+
   test "read/1 uses backend-specific config for the persisted adapter" do
     configure_storage(
       adapter: Local,
@@ -50,6 +55,17 @@ defmodule Aludel.StorageTest do
                storage_key: "test_case_documents/doc/test.txt",
                storage_backend: Atom.to_string(StorageMock)
              })
+  end
+
+  test "local path_for/2 expands keys under the configured root" do
+    assert Local.path_for("nested/file.txt", root: "/tmp/aludel-storage-root") ==
+             "/tmp/aludel-storage-root/nested/file.txt"
+  end
+
+  test "local path_for/2 rejects paths outside the configured root" do
+    assert_raise ArgumentError, "invalid storage key path", fn ->
+      Local.path_for("../escape.txt", root: "/tmp/aludel-storage-root")
+    end
   end
 
   defp configure_storage(config) do

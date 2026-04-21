@@ -41,8 +41,17 @@ defmodule Aludel.Interfaces.Storage.Adapters.Local do
 
   @spec path_for(String.t(), keyword()) :: String.t()
   def path_for(key, config) do
-    config
-    |> Keyword.get(:root, @default_root)
-    |> Path.expand(key)
+    root =
+      config
+      |> Keyword.get(:root, @default_root)
+      |> Path.expand()
+
+    path = Path.expand(key, root)
+
+    if path == root or String.starts_with?(path, root <> "/") do
+      path
+    else
+      raise ArgumentError, "invalid storage key path"
+    end
   end
 end

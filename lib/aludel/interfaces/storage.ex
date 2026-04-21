@@ -140,8 +140,15 @@ defmodule Aludel.Storage do
   defp resolve_system_values(value), do: value
 
   defp sanitize_filename(filename) do
-    filename
-    |> Path.basename()
-    |> String.replace(~r/[^a-zA-Z0-9._-]+/u, "_")
+    sanitized =
+      filename
+      |> Path.basename()
+      |> String.replace(~r/[^a-zA-Z0-9._-]+/u, "_")
+
+    if sanitized == "" or String.match?(sanitized, ~r/^\.+$/) do
+      "unnamed_file"
+    else
+      sanitized
+    end
   end
 end
