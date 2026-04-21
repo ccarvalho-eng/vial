@@ -323,14 +323,16 @@ defmodule Aludel.Evals do
     suite = repo().preload(suite, test_cases: :documents)
 
     results = Enum.map(suite.test_cases, &execute_test_case(&1, version, provider))
+    summary = summarize_suite_results(results)
 
-    create_suite_run(%{
-      suite_id: suite.id,
-      prompt_version_id: version.id,
-      provider_id: provider.id,
-      results: results
-    })
-    |> merge_suite_run_summary(results)
+    create_suite_run(
+      Map.merge(summary, %{
+        suite_id: suite.id,
+        prompt_version_id: version.id,
+        provider_id: provider.id,
+        results: results
+      })
+    )
   end
 
   @doc """
@@ -523,22 +525,14 @@ defmodule Aludel.Evals do
     end)
   end
 
-  defp merge_suite_run_summary({:ok, suite_run}, results) do
-    suite_run
-    |> SuiteRun.changeset(Map.put(summarize_suite_results(results), :results, results))
-    |> repo().update()
-  end
-
-  defp merge_suite_run_summary(error, _results), do: error
-
   defp summarize_suite_results(results) do
     metrics =
       Enum.reduce(results, %{total_cost: Decimal.new("0"), total_latency: 0, successful: 0}, fn
         %{"cost_usd" => cost, "latency_ms" => latency}, acc
-        when is_number(cost) and is_integer(latency) ->
+        when is_number(cost) and is_number(latency) ->
           %{
             total_cost: Decimal.add(acc.total_cost, decimal_from_number(cost)),
-            total_latency: acc.total_latency + latency,
+            total_latency: acc.total_latency + round(latency),
             successful: acc.successful + 1
           }
 

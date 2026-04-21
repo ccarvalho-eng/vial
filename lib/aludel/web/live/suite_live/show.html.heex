@@ -643,8 +643,8 @@
                               style="font-size: 11px; color: var(--text-muted);"
                             >
                               {"Retry ##{retry_count(result)}"}
-                              <%= if retried_at = retried_at(result) do %>
-                                <span>{" • #{relative_time(retried_at)}"}</span>
+                              <%= if retried_at_time = retried_at(result) do %>
+                                <span>{" • #{relative_time(retried_at_time)}"}</span>
                               <% end %>
                             </div>
                           <% end %>
