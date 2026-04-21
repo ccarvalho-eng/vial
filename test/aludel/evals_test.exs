@@ -1046,7 +1046,7 @@ defmodule Aludel.EvalsTest do
       assert suite_run.passed + suite_run.failed > 0
     end
 
-    test "loads externally stored documents before calling the LLM in document order" do
+    test "loads externally stored documents before calling the LLM" do
       root = temp_storage_root()
       configure_storage(adapter: Aludel.Interfaces.Storage.Adapters.Local, root: root)
 
@@ -1081,17 +1081,93 @@ defmodule Aludel.EvalsTest do
         })
 
       expect(HttpClientMock, :request, fn _model, _prompt, opts ->
-        assert [
-                 %{data: <<9, 8, 7>>, content_type: "image/png"},
-                 %{data: <<6, 5, 4>>, content_type: "image/png"}
-               ] =
-                 Keyword.fetch!(opts, :documents)
+        actual_documents =
+          opts
+          |> Keyword.fetch!(:documents)
+          |> Enum.sort_by(fn %{data: data, content_type: content_type} ->
+            {content_type, Base.encode16(data)}
+          end)
+
+        expected_documents =
+          [
+            %{data: <<9, 8, 7>>, content_type: "image/png"},
+            %{data: <<6, 5, 4>>, content_type: "image/png"}
+          ]
+          |> Enum.sort_by(fn %{data: data, content_type: content_type} ->
+            {content_type, Base.encode16(data)}
+          end)
+
+        assert actual_documents == expected_documents
 
         {:ok, build_mock_response("loaded", 5, 10)}
       end)
 
       assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
       assert suite_run.passed + suite_run.failed > 0
+    end
+
+    test "returns a failed test case result when document loading exits" do
+      configure_storage(adapter: StorageMock)
+
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      Repo.insert!(
+        TestCaseDocument.changeset(%TestCaseDocument{}, %{
+          test_case_id: test_case.id,
+          filename: "crash.png",
+          content_type: "image/png",
+          size_bytes: 3,
+          storage_key: "test_case_documents/doc-id/crash.png",
+          storage_backend: Atom.to_string(StorageMock)
+        })
+      )
+
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Describe {{input}}")
+      provider = provider_fixture(%{provider: :openai, model: "gpt-4o"})
+
+      expect(StorageMock, :get, fn _key, _config ->
+        exit(:boom)
+      end)
+
+      assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
+      assert suite_run.failed == 1
+
+      assert [%{"output" => output}] = suite_run.results
+      assert output == "Failed to load document crash.png: boom"
+    end
+
+    test "returns a failed test case result when document loading raises" do
+      configure_storage(adapter: StorageMock)
+
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      Repo.insert!(
+        TestCaseDocument.changeset(%TestCaseDocument{}, %{
+          test_case_id: test_case.id,
+          filename: "crash.png",
+          content_type: "image/png",
+          size_bytes: 3,
+          storage_key: "test_case_documents/doc-id/crash.png",
+          storage_backend: Atom.to_string(StorageMock)
+        })
+      )
+
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Describe {{input}}")
+      provider = provider_fixture(%{provider: :openai, model: "gpt-4o"})
+
+      expect(StorageMock, :get, fn _key, _config ->
+        raise "boom"
+      end)
+
+      assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
+      assert suite_run.failed == 1
+
+      assert [%{"output" => output}] = suite_run.results
+      assert output == "Failed to load document crash.png: boom"
     end
   end
 

@@ -437,24 +437,39 @@ defmodule Aludel.Evals do
 
   defp load_document_inputs(documents) do
     documents
-    |> Task.async_stream(fn document -> {document, Storage.read(document)} end,
-      timeout: :infinity
-    )
+    |> Task.async_stream(&load_document_input/1, timeout: :infinity)
     |> Enum.reduce_while({:ok, []}, fn
-      {:ok, {document, {:ok, data}}}, {:ok, loaded_documents} ->
-        input = %{data: data, content_type: document.content_type}
+      {:ok, {:ok, input}}, {:ok, loaded_documents} ->
         {:cont, {:ok, [input | loaded_documents]}}
 
-      {:ok, {document, {:error, reason}}}, _acc ->
-        {:halt, {:error, {:document_storage_error, document.filename, reason}}}
+      {:ok, {:error, reason}}, _acc ->
+        {:halt, {:error, reason}}
 
       {:exit, reason}, _acc ->
-        exit(reason)
+        {:halt, {:error, {:document_storage_error, :unknown_document, reason}}}
     end)
     |> case do
       {:ok, loaded_documents} -> {:ok, Enum.reverse(loaded_documents)}
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp load_document_input(document) do
+    case safe_storage_read(document) do
+      {:ok, data} ->
+        {:ok, %{data: data, content_type: document.content_type}}
+
+      {:error, reason} ->
+        {:error, {:document_storage_error, document.filename, reason}}
+    end
+  end
+
+  defp safe_storage_read(document) do
+    Storage.read(document)
+  rescue
+    error -> {:error, Exception.message(error)}
+  catch
+    :exit, reason -> {:error, reason}
   end
 
   defp build_assertion_results(assertions, output) do
