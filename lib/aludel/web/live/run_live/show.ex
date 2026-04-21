@@ -45,26 +45,15 @@ defmodule Aludel.Web.RunLive.Show do
         socket
       ) do
     updated_result = Runs.get_run_result!(result_id)
-    run_results = merge_run_result(socket.assigns.run_results, updated_result)
-    run = %{socket.assigns.run | run_results: run_results}
+    run = Runs.get_run!(updated_result.run_id)
 
-    {:noreply, assign(socket, run: run, run_results: run_results)}
+    {:noreply, assign(socket, run: run, run_results: run.run_results)}
   end
 
-  defp merge_run_result(run_results, updated_result) do
-    {updated_run_results, found_match?} =
-      Enum.map_reduce(run_results, false, fn run_result, found_match? ->
-        if run_result.id == updated_result.id do
-          {updated_result, true}
-        else
-          {run_result, found_match?}
-        end
-      end)
+  @impl Phoenix.LiveView
+  def handle_info({:run_update, _status}, socket) do
+    run = Runs.get_run!(socket.assigns.run.id)
 
-    if found_match? do
-      updated_run_results
-    else
-      updated_run_results ++ [updated_result]
-    end
+    {:noreply, assign(socket, run: run, run_results: run.run_results)}
   end
 end
