@@ -1,5 +1,5 @@
 defmodule Aludel.StorageTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   import Mox
 
@@ -23,6 +23,11 @@ defmodule Aludel.StorageTest do
              Storage.delete("test_case_documents/doc/test.txt",
                storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Unknown"
              )
+  end
+
+  test "get/2 rejects modules that are not storage adapters" do
+    assert {:error, :unknown_storage_backend} =
+             Storage.get("test_case_documents/doc/test.txt", storage_backend: "Elixir.String")
   end
 
   test "read/1 returns an error when storage metadata is missing" do
@@ -55,6 +60,24 @@ defmodule Aludel.StorageTest do
                storage_key: "test_case_documents/doc/test.txt",
                storage_backend: Atom.to_string(StorageMock)
              })
+  end
+
+  test "get/2 ignores invalid config overrides" do
+    configure_storage(
+      adapter: Local,
+      backends: [{StorageMock, [bucket: "documents-bucket"]}]
+    )
+
+    expect(StorageMock, :get, fn "test_case_documents/doc/test.txt", config ->
+      assert config[:bucket] == "documents-bucket"
+      {:ok, "payload"}
+    end)
+
+    assert {:ok, "payload"} =
+             Storage.get("test_case_documents/doc/test.txt",
+               storage_backend: Atom.to_string(StorageMock),
+               config: :invalid_override
+             )
   end
 
   test "local path_for/2 expands keys under the configured root" do

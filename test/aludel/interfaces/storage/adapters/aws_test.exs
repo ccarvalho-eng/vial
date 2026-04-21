@@ -49,4 +49,24 @@ defmodule Aludel.Interfaces.Storage.Adapters.AWSTest do
     assert {:error, :missing_bucket} = AWS.get("docs/sample.pdf", [])
     assert {:error, :missing_bucket} = AWS.delete("docs/sample.pdf", [])
   end
+
+  test "returns an error when bucket is empty" do
+    config = [bucket: ""]
+
+    assert {:error, :missing_bucket} =
+             AWS.put("docs/sample.pdf", "body", "application/pdf", config)
+
+    assert {:error, :missing_bucket} = AWS.get("docs/sample.pdf", config)
+    assert {:error, :missing_bucket} = AWS.delete("docs/sample.pdf", config)
+  end
+
+  test "returns an error when bucket is not a binary" do
+    config = [bucket: 123]
+
+    assert {:error, :missing_bucket} =
+             AWS.put("docs/sample.pdf", "body", "application/pdf", config)
+
+    assert {:error, :missing_bucket} = AWS.get("docs/sample.pdf", config)
+    assert {:error, :missing_bucket} = AWS.delete("docs/sample.pdf", config)
+  end
 end

@@ -58,12 +58,11 @@ defmodule Aludel.Interfaces.Storage.Adapters.AWS.ExAwsClient do
 
   defp common_request_config(config) do
     [:region, :access_key_id, :secret_access_key, :security_token]
-    |> Enum.reduce([], fn key, acc ->
+    |> Enum.flat_map(fn key ->
       case Keyword.fetch(config, key) do
-        {:ok, value} -> [{key, value} | acc]
-        :error -> acc
+        {:ok, value} -> [{key, value}]
+        :error -> []
       end
     end)
-    |> Enum.reverse()
   end
 end

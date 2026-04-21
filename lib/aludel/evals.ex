@@ -12,7 +12,6 @@ defmodule Aludel.Evals do
   alias Aludel.Storage
   alias Ecto.Association.NotLoaded
   alias Ecto.Changeset
-  alias Ecto.Multi
 
   # Suite functions
 
@@ -374,24 +373,28 @@ defmodule Aludel.Evals do
   @spec delete_test_case_document(TestCaseDocument.t()) ::
           {:ok, TestCaseDocument.t()} | {:error, Changeset.t()}
   def delete_test_case_document(%TestCaseDocument{} = document) do
-    Multi.new()
-    |> Multi.delete(:document, document)
-    |> Multi.run(:storage, fn _repo, _changes ->
-      case Storage.delete(document.storage_key, storage_backend: document.storage_backend) do
-        :ok -> {:ok, :deleted}
-        {:error, reason} -> {:error, reason}
+    repo().transaction(fn ->
+      with {:ok, deleted_document} <- repo().delete(document),
+           :ok <- Storage.delete(document.storage_key, storage_backend: document.storage_backend) do
+        deleted_document
+      else
+        {:error, %Changeset{} = changeset} ->
+          repo().rollback({:document, changeset})
+
+        {:error, reason} ->
+          changeset = add_storage_error(Changeset.change(document), reason)
+          repo().rollback({:storage, changeset})
       end
     end)
-    |> repo().transaction()
     |> case do
-      {:ok, %{document: deleted_document}} ->
+      {:ok, deleted_document} ->
         {:ok, deleted_document}
 
-      {:error, :document, changeset, _changes} ->
+      {:error, {:document, changeset}} ->
         {:error, changeset}
 
-      {:error, :storage, reason, _changes} ->
-        {:error, add_storage_error(Changeset.change(document), reason)}
+      {:error, {:storage, changeset}} ->
+        {:error, changeset}
     end
   end
 

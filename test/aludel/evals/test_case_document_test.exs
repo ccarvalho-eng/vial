@@ -167,7 +167,7 @@ defmodule Aludel.Evals.TestCaseDocumentTest do
           data: "content",
           size_bytes: 7,
           storage_key: "documents/test.txt",
-          storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+          storage_backend: "local"
         })
 
       refute changeset.valid?
@@ -188,7 +188,7 @@ defmodule Aludel.Evals.TestCaseDocumentTest do
           content_type: "text/plain",
           size_bytes: 19,
           storage_key: "test_case_documents/doc-id/test_input.txt",
-          storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+          storage_backend: "local"
         })
 
       assert changeset.valid?
@@ -205,7 +205,7 @@ defmodule Aludel.Evals.TestCaseDocumentTest do
           data: "sample file content",
           size_bytes: 19,
           storage_key: "test_case_documents/doc-id/test_input.txt",
-          storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+          storage_backend: "local"
         })
 
       refute changeset.valid?
@@ -221,7 +221,7 @@ defmodule Aludel.Evals.TestCaseDocumentTest do
           filename: "test_input.txt",
           content_type: "text/plain",
           size_bytes: 19,
-          storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+          storage_backend: "local"
         })
 
       refute changeset.valid?

@@ -106,7 +106,7 @@ defmodule Aludel.Evals.TestCaseTest do
           content_type: "application/pdf",
           size_bytes: 100,
           storage_key: "test_case_documents/test-case/test.pdf",
-          storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+          storage_backend: "local"
         })
         |> Repo.insert()
 

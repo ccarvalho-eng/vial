@@ -6,13 +6,26 @@ defmodule Aludel.Storage do
   """
 
   alias Aludel.Evals.TestCaseDocument
+  alias Aludel.Interfaces.Storage.Adapters.AWS
+  alias Aludel.Interfaces.Storage.Adapters.GCS
   alias Aludel.Interfaces.Storage.Adapters.Local
 
   @type config :: keyword()
   @type error_reason :: term()
 
   @default_adapter Local
+  @backend_names %{
+    Local => "local",
+    AWS => "aws",
+    GCS => "gcs"
+  }
+  @backend_modules Map.new(@backend_names, fn {module, backend_name} -> {backend_name, module} end)
+  @storage_callbacks [put: 4, get: 2, delete: 2]
 
+  @doc """
+  Persists document contents through the configured adapter and returns the
+  adapter-specific storage key to save with the document row.
+  """
   @spec put(String.t(), binary(), String.t()) :: {:ok, String.t()} | {:error, error_reason()}
   def put(key, data, content_type) do
     adapter().put(key, data, content_type, config())
@@ -41,18 +54,7 @@ defmodule Aludel.Storage do
   def read(%TestCaseDocument{}), do: {:error, :missing_document_data}
 
   @spec adapter() :: module()
-  def adapter do
-    case config() do
-      adapter when is_atom(adapter) and not is_nil(adapter) ->
-        adapter
-
-      config when is_list(config) ->
-        Keyword.get(config, :adapter, @default_adapter)
-
-      _ ->
-        @default_adapter
-    end
-  end
+  def adapter, do: Keyword.get(config(), :adapter, @default_adapter)
 
   @spec config() :: config()
   def config do
@@ -62,7 +64,9 @@ defmodule Aludel.Storage do
   end
 
   @spec backend_name(module()) :: String.t()
-  def backend_name(adapter \\ adapter()), do: Atom.to_string(adapter)
+  def backend_name(storage_adapter \\ adapter()) do
+    Map.get(@backend_names, storage_adapter, Atom.to_string(storage_adapter))
+  end
 
   @spec storage_key(Ecto.UUID.t(), String.t()) :: String.t()
   def storage_key(document_id, filename) do
@@ -73,15 +77,13 @@ defmodule Aludel.Storage do
   def resolve_backend(nil), do: {:ok, adapter()}
 
   def resolve_backend(backend) when is_binary(backend) do
-    module = String.to_existing_atom(backend)
+    case Map.get(@backend_modules, backend) do
+      nil ->
+        resolve_dynamic_backend(backend)
 
-    if Code.ensure_loaded?(module) do
-      {:ok, module}
-    else
-      {:error, :unknown_storage_backend}
+      storage_adapter ->
+        {:ok, storage_adapter}
     end
-  rescue
-    ArgumentError -> {:error, :unknown_storage_backend}
   end
 
   defp adapter_for(opts) do
@@ -99,6 +101,7 @@ defmodule Aludel.Storage do
     case Keyword.get(opts, :config) do
       nil -> base_config
       override when is_list(override) -> Keyword.merge(base_config, override)
+      _override -> base_config
     end
   end
 
@@ -138,6 +141,25 @@ defmodule Aludel.Storage do
   end
 
   defp resolve_system_values(value), do: value
+
+  defp resolve_dynamic_backend(backend) do
+    module = String.to_existing_atom(backend)
+
+    if storage_adapter_module?(module) do
+      {:ok, module}
+    else
+      {:error, :unknown_storage_backend}
+    end
+  rescue
+    ArgumentError -> {:error, :unknown_storage_backend}
+  end
+
+  defp storage_adapter_module?(module) do
+    Code.ensure_loaded?(module) and
+      Enum.all?(@storage_callbacks, fn {name, arity} ->
+        function_exported?(module, name, arity)
+      end)
+  end
 
   defp sanitize_filename(filename) do
     sanitized =

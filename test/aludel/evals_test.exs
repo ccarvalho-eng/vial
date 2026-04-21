@@ -820,7 +820,7 @@ defmodule Aludel.EvalsTest do
                  content_type: "application/pdf",
                  size_bytes: 3,
                  storage_key: "test_case_documents/doc-id/doc.pdf",
-                 storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+                 storage_backend: "local"
                })
 
       assert "can't be blank" in errors_on(changeset).data
@@ -896,7 +896,7 @@ defmodule Aludel.EvalsTest do
                })
 
       assert document.data == nil
-      assert document.storage_backend == "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+      assert document.storage_backend == "local"
       assert is_binary(document.storage_key)
 
       assert File.read!(Local.path_for(document.storage_key)) ==
