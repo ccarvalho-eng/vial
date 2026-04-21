@@ -5,7 +5,7 @@ defmodule Aludel.Test.Repo.Migrations.AddStorageFieldsToTestCaseDocuments do
     alter table(:test_case_documents) do
       add :storage_key, :string
       add :storage_backend, :string
-      modify :data, :binary, null: true
+      remove :data
     end
 
     create unique_index(:test_case_documents, [:storage_backend, :storage_key],
@@ -16,7 +16,7 @@ defmodule Aludel.Test.Repo.Migrations.AddStorageFieldsToTestCaseDocuments do
     create constraint(
              :test_case_documents,
              :test_case_documents_external_storage_required,
-             check: "data IS NULL AND storage_key IS NOT NULL AND storage_backend IS NOT NULL"
+             check: "storage_key IS NOT NULL AND storage_backend IS NOT NULL"
            )
   end
 end

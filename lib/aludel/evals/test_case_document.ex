@@ -44,7 +44,7 @@ defmodule Aludel.Evals.TestCaseDocument do
   schema "test_case_documents" do
     field :filename, :string
     field :content_type, :string
-    field :data, :binary
+    field :data, :binary, virtual: true
     field :storage_key, :string
     field :storage_backend, :string
     field :size_bytes, :integer
