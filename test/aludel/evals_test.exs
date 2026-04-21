@@ -9,6 +9,8 @@ defmodule Aludel.EvalsTest do
   alias Aludel.Evals.SuiteRun
   alias Aludel.Evals.TestCaseDocument
   alias Aludel.Interfaces.HttpClientMock
+  alias Aludel.Interfaces.Storage.Adapters.Local
+  alias Aludel.Interfaces.StorageMock
 
   setup :set_mox_from_context
   setup :verify_on_exit!
@@ -808,6 +810,24 @@ defmodule Aludel.EvalsTest do
       assert document.content_type == "application/pdf"
     end
 
+    test "create_test_case_document/1 rejects pre-externalized document attrs" do
+      test_case = test_case_fixture()
+
+      assert {:error, changeset} =
+               Evals.create_test_case_document(%{
+                 test_case_id: test_case.id,
+                 filename: "doc.pdf",
+                 content_type: "application/pdf",
+                 size_bytes: 3,
+                 storage_key: "test_case_documents/doc-id/doc.pdf",
+                 storage_backend: "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+               })
+
+      assert "can't be blank" in errors_on(changeset).data
+      assert "must be blank for uploaded documents" in errors_on(changeset).storage_key
+      assert "must be blank for uploaded documents" in errors_on(changeset).storage_backend
+    end
+
     test "delete_test_case_document/1 deletes a document" do
       test_case = test_case_fixture()
 
@@ -860,6 +880,136 @@ defmodule Aludel.EvalsTest do
       assert "application/pdf" in types
       assert "image/png" in types
     end
+
+    test "create_test_case_document/1 stores document outside the database when external storage is configured" do
+      root = temp_storage_root()
+      configure_storage(adapter: Aludel.Interfaces.Storage.Adapters.Local, root: root)
+      test_case = test_case_fixture()
+
+      assert {:ok, document} =
+               Evals.create_test_case_document(%{
+                 test_case_id: test_case.id,
+                 filename: "diagram.png",
+                 content_type: "image/png",
+                 data: <<1, 2, 3, 4>>,
+                 size_bytes: 4
+               })
+
+      assert document.data == nil
+      assert document.storage_backend == "Elixir.Aludel.Interfaces.Storage.Adapters.Local"
+      assert is_binary(document.storage_key)
+
+      assert File.read!(Local.path_for(document.storage_key)) ==
+               <<1, 2, 3, 4>>
+    end
+
+    test "create_test_case_document/1 surfaces upload failures and does not insert a row" do
+      configure_storage(adapter: StorageMock)
+      test_case = test_case_fixture()
+
+      expect(StorageMock, :put, fn _key, _data, _content_type, _config ->
+        {:error, :storage_unavailable}
+      end)
+
+      assert {:error, changeset} =
+               Evals.create_test_case_document(%{
+                 test_case_id: test_case.id,
+                 filename: "diagram.png",
+                 content_type: "image/png",
+                 data: <<1, 2, 3, 4>>,
+                 size_bytes: 4
+               })
+
+      assert "storage_unavailable" in errors_on(changeset).data
+      assert Repo.aggregate(TestCaseDocument, :count, :id) == 0
+    end
+
+    test "create_test_case_document/1 deletes the uploaded file when insert fails" do
+      configure_storage(adapter: StorageMock)
+      test_case = test_case_fixture()
+      storage_key = "test_case_documents/shared/diagram.png"
+
+      Repo.insert!(
+        TestCaseDocument.changeset(%TestCaseDocument{}, %{
+          test_case_id: test_case.id,
+          filename: "existing.png",
+          content_type: "image/png",
+          size_bytes: 4,
+          storage_key: storage_key,
+          storage_backend: Atom.to_string(StorageMock)
+        })
+      )
+
+      expect(StorageMock, :put, fn _key, _data, _content_type, _config ->
+        {:ok, storage_key}
+      end)
+
+      expect(StorageMock, :delete, fn ^storage_key, config ->
+        assert config == []
+        :ok
+      end)
+
+      assert {:error, changeset} =
+               Evals.create_test_case_document(%{
+                 test_case_id: test_case.id,
+                 filename: "diagram.png",
+                 content_type: "image/png",
+                 data: <<1, 2, 3, 4>>,
+                 size_bytes: 4
+               })
+
+      assert "has already been taken" in errors_on(changeset).storage_key
+      assert Repo.aggregate(TestCaseDocument, :count, :id) == 1
+    end
+
+    test "delete_test_case_document/1 removes externally stored files" do
+      root = temp_storage_root()
+      configure_storage(adapter: Aludel.Interfaces.Storage.Adapters.Local, root: root)
+      test_case = test_case_fixture()
+
+      assert {:ok, document} =
+               Evals.create_test_case_document(%{
+                 test_case_id: test_case.id,
+                 filename: "diagram.png",
+                 content_type: "image/png",
+                 data: <<1, 2, 3, 4>>,
+                 size_bytes: 4
+               })
+
+      path = Local.path_for(document.storage_key)
+
+      assert File.exists?(path)
+      assert {:ok, _deleted} = Evals.delete_test_case_document(document)
+      refute File.exists?(path)
+    end
+
+    test "delete_test_case_document/1 rolls back when external deletion fails" do
+      configure_storage(adapter: StorageMock)
+      test_case = test_case_fixture()
+
+      expect(StorageMock, :put, fn key, _data, _content_type, _config ->
+        {:ok, key}
+      end)
+
+      assert {:ok, document} =
+               Evals.create_test_case_document(%{
+                 test_case_id: test_case.id,
+                 filename: "diagram.png",
+                 content_type: "image/png",
+                 data: <<1, 2, 3, 4>>,
+                 size_bytes: 4
+               })
+
+      expect(StorageMock, :delete, fn key, config ->
+        assert key == document.storage_key
+        assert config == []
+        {:error, :permission_denied}
+      end)
+
+      assert {:error, changeset} = Evals.delete_test_case_document(document)
+      assert "permission_denied" in errors_on(changeset).data
+      assert Repo.get(TestCaseDocument, document.id)
+    end
   end
 
   describe "execute_suite with documents" do
@@ -884,6 +1034,49 @@ defmodule Aludel.EvalsTest do
           provider: :openai,
           model: "gpt-4o"
         })
+
+      expect(HttpClientMock, :request, fn _model, _prompt, opts ->
+        assert [%{data: <<1, 2, 3>>, content_type: "image/png"}] =
+                 Keyword.fetch!(opts, :documents)
+
+        {:ok, build_mock_response("described", 5, 10)}
+      end)
+
+      assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
+      assert suite_run.passed + suite_run.failed > 0
+    end
+
+    test "loads externally stored documents before calling the LLM" do
+      root = temp_storage_root()
+      configure_storage(adapter: Aludel.Interfaces.Storage.Adapters.Local, root: root)
+
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      {:ok, _doc} =
+        Aludel.Evals.create_test_case_document(%{
+          test_case_id: test_case.id,
+          filename: "test.png",
+          content_type: "image/png",
+          data: <<9, 8, 7>>,
+          size_bytes: 3
+        })
+
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Describe {{input}}")
+
+      provider =
+        provider_fixture(%{
+          provider: :openai,
+          model: "gpt-4o"
+        })
+
+      expect(HttpClientMock, :request, fn _model, _prompt, opts ->
+        assert [%{data: <<9, 8, 7>>, content_type: "image/png"}] =
+                 Keyword.fetch!(opts, :documents)
+
+        {:ok, build_mock_response("loaded", 5, 10)}
+      end)
 
       assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
       assert suite_run.passed + suite_run.failed > 0
@@ -926,6 +1119,19 @@ defmodule Aludel.EvalsTest do
       input_tokens: input_tokens,
       output_tokens: output_tokens
     }
+  end
+
+  defp configure_storage(config) do
+    original_config = Application.get_env(:aludel, Aludel.Storage, [])
+    Application.put_env(:aludel, Aludel.Storage, config)
+
+    on_exit(fn ->
+      Application.put_env(:aludel, Aludel.Storage, original_config)
+    end)
+  end
+
+  defp temp_storage_root do
+    Path.join(System.tmp_dir!(), "aludel-storage-#{System.unique_integer([:positive])}")
   end
 
   defp execute_json_field_suite(output, field, expected) do

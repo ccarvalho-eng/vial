@@ -9,8 +9,10 @@ defmodule Aludel.Evals do
   alias Aludel.LLM
   alias Aludel.Prompts.PromptVersion
   alias Aludel.Providers.Provider
+  alias Aludel.Storage
   alias Ecto.Association.NotLoaded
   alias Ecto.Changeset
+  alias Ecto.Multi
 
   # Suite functions
 
@@ -356,9 +358,14 @@ defmodule Aludel.Evals do
   @spec create_test_case_document(map()) ::
           {:ok, TestCaseDocument.t()} | {:error, Changeset.t()}
   def create_test_case_document(attrs \\ %{}) do
-    %TestCaseDocument{}
-    |> TestCaseDocument.changeset(attrs)
-    |> repo().insert()
+    document = %TestCaseDocument{id: Ecto.UUID.generate()}
+    changeset = TestCaseDocument.create_changeset(document, attrs)
+
+    if changeset.valid? do
+      persist_document_externally(changeset)
+    else
+      {:error, changeset}
+    end
   end
 
   @doc """
@@ -367,7 +374,25 @@ defmodule Aludel.Evals do
   @spec delete_test_case_document(TestCaseDocument.t()) ::
           {:ok, TestCaseDocument.t()} | {:error, Changeset.t()}
   def delete_test_case_document(%TestCaseDocument{} = document) do
-    repo().delete(document)
+    Multi.new()
+    |> Multi.delete(:document, document)
+    |> Multi.run(:storage, fn _repo, _changes ->
+      case Storage.delete(document.storage_key, storage_backend: document.storage_backend) do
+        :ok -> {:ok, :deleted}
+        {:error, reason} -> {:error, reason}
+      end
+    end)
+    |> repo().transaction()
+    |> case do
+      {:ok, %{document: deleted_document}} ->
+        {:ok, deleted_document}
+
+      {:error, :document, changeset, _changes} ->
+        {:error, changeset}
+
+      {:error, :storage, reason, _changes} ->
+        {:error, add_storage_error(Changeset.change(document), reason)}
+    end
   end
 
   @doc """
@@ -385,13 +410,18 @@ defmodule Aludel.Evals do
   defp execute_test_case(test_case, version, provider) do
     test_case = ensure_documents_loaded(test_case)
     rendered_prompt = render_template(version.template, test_case.variable_values)
-    opts = llm_call_opts(test_case.documents)
 
-    case LLM.call(provider, rendered_prompt, opts) do
-      {:ok, result} ->
-        assertion_results = build_assertion_results(test_case.assertions, result.output)
-        passed = Enum.all?(assertion_results, & &1["passed"])
-        successful_test_case_result(test_case.id, result, passed, assertion_results)
+    case load_document_inputs(test_case.documents) do
+      {:ok, documents} ->
+        case LLM.call(provider, rendered_prompt, llm_call_opts(documents)) do
+          {:ok, result} ->
+            assertion_results = build_assertion_results(test_case.assertions, result.output)
+            passed = Enum.all?(assertion_results, & &1["passed"])
+            successful_test_case_result(test_case.id, result, passed, assertion_results)
+
+          {:error, reason} ->
+            failed_test_case_result(test_case.id, reason)
+        end
 
       {:error, reason} ->
         failed_test_case_result(test_case.id, reason)
@@ -399,12 +429,25 @@ defmodule Aludel.Evals do
   end
 
   defp llm_call_opts(documents) do
-    documents =
-      Enum.map(documents, fn doc ->
-        %{data: doc.data, content_type: doc.content_type}
-      end)
-
     if documents != [], do: [documents: documents], else: []
+  end
+
+  defp load_document_inputs(documents) do
+    documents
+    |> Enum.reduce_while({:ok, []}, fn document, {:ok, loaded_documents} ->
+      case Storage.read(document) do
+        {:ok, data} ->
+          input = %{data: data, content_type: document.content_type}
+          {:cont, {:ok, [input | loaded_documents]}}
+
+        {:error, reason} ->
+          {:halt, {:error, {:document_storage_error, document.filename, reason}}}
+      end
+    end)
+    |> case do
+      {:ok, loaded_documents} -> {:ok, Enum.reverse(loaded_documents)}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp build_assertion_results(assertions, output) do
@@ -466,6 +509,9 @@ defmodule Aludel.Evals do
   defp error_message({:invalid_request, msg}), do: "Invalid request: #{msg}"
   defp error_message({:api_error, status, msg}), do: "API error (#{status}): #{msg}"
   defp error_message({:network_error, err}), do: "Network error: #{inspect(err)}"
+
+  defp error_message({:document_storage_error, filename, reason}),
+    do: "Failed to load document #{filename}: #{format_storage_reason(reason)}"
 
   defp fetch_suite_run_result(%SuiteRun{results: results}, test_case_id) do
     case Enum.find(results, &(&1["test_case_id"] == test_case_id)) do
@@ -642,4 +688,53 @@ defmodule Aludel.Evals do
   end
 
   defp repo, do: Aludel.Repo.get()
+
+  defp persist_document_externally(changeset) do
+    document = Changeset.apply_changes(changeset)
+    storage_key = Storage.storage_key(document.id, document.filename)
+    storage_backend = Storage.backend_name()
+
+    case Storage.put(storage_key, document.data, document.content_type) do
+      {:ok, persisted_key} ->
+        attrs =
+          document_attrs(document)
+          |> Map.put(:data, nil)
+          |> Map.put(:storage_key, persisted_key)
+          |> Map.put(:storage_backend, storage_backend)
+
+        insert_changeset = TestCaseDocument.changeset(%TestCaseDocument{id: document.id}, attrs)
+
+        case repo().insert(insert_changeset) do
+          {:ok, stored_document} ->
+            {:ok, stored_document}
+
+          {:error, insert_changeset} ->
+            _ = Storage.delete(persisted_key, storage_backend: storage_backend)
+            {:error, insert_changeset}
+        end
+
+      {:error, reason} ->
+        {:error, add_storage_error(changeset, reason)}
+    end
+  end
+
+  defp document_attrs(document) do
+    %{
+      test_case_id: document.test_case_id,
+      filename: document.filename,
+      content_type: document.content_type,
+      data: document.data,
+      size_bytes: document.size_bytes,
+      storage_key: document.storage_key,
+      storage_backend: document.storage_backend
+    }
+  end
+
+  defp add_storage_error(changeset, reason) do
+    Changeset.add_error(changeset, :data, format_storage_reason(reason))
+  end
+
+  defp format_storage_reason(reason) when is_binary(reason), do: reason
+  defp format_storage_reason(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp format_storage_reason(reason), do: inspect(reason)
 end

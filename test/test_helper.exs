@@ -70,4 +70,16 @@ Mox.defmock(Aludel.Interfaces.HttpClientMock,
   for: Aludel.Interfaces.Adapters.Http
 )
 
+Mox.defmock(Aludel.Interfaces.Storage.Adapters.AWS.ClientMock,
+  for: Aludel.Interfaces.Storage.Adapters.AWS.Client
+)
+
+Mox.defmock(Aludel.Interfaces.Storage.Adapters.GCS.ClientMock,
+  for: Aludel.Interfaces.Storage.Adapters.GCS.Client
+)
+
+Mox.defmock(Aludel.Interfaces.StorageMock,
+  for: Aludel.Interfaces.Storage.Behaviour
+)
+
 ExUnit.start()
