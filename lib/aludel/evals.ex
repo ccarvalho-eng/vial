@@ -268,6 +268,41 @@ defmodule Aludel.Evals do
   end
 
   @doc """
+  Retries a single test case result within an existing suite run.
+
+  The existing embedded result is replaced in-place and the suite run
+  aggregates are recalculated from the updated result set.
+  """
+  @spec retry_suite_run_test_case(SuiteRun.t(), binary()) ::
+          {:ok, SuiteRun.t()} | {:error, term()}
+  def retry_suite_run_test_case(%SuiteRun{} = suite_run, test_case_id)
+      when is_binary(test_case_id) do
+    with {:ok, existing_result} <- fetch_suite_run_result(suite_run, test_case_id),
+         {:ok, test_case} <- fetch_suite_test_case(suite_run.suite_id, test_case_id),
+         {:ok, version} <- fetch_prompt_version(suite_run.prompt_version_id),
+         {:ok, provider} <- fetch_provider(suite_run.provider_id) do
+      retried_result =
+        test_case
+        |> execute_test_case(version, provider)
+        |> merge_retry_metadata(existing_result)
+
+      updated_results = replace_suite_run_result(suite_run.results, test_case_id, retried_result)
+
+      suite_run
+      |> SuiteRun.changeset(
+        Map.put(summarize_suite_results(updated_results), :results, updated_results)
+      )
+      |> repo().update()
+    end
+  rescue
+    error ->
+      {:error, {:retry_failed, Exception.message(error)}}
+  catch
+    kind, reason ->
+      {:error, {:retry_failed, {kind, reason}}}
+  end
+
+  @doc """
   Executes a test suite against a prompt version and provider.
 
   Runs all test cases for the suite, evaluating their assertions
@@ -287,58 +322,15 @@ defmodule Aludel.Evals do
   def execute_suite(%Suite{} = suite, %PromptVersion{} = version, %Provider{} = provider) do
     suite = repo().preload(suite, test_cases: :documents)
 
-    {results, metrics} =
-      Enum.map_reduce(
-        suite.test_cases,
-        %{total_cost: Decimal.new("0"), total_latency: 0, successful: 0},
-        fn test_case, acc ->
-          result = execute_test_case(test_case, version, provider)
-
-          new_acc =
-            case result do
-              %{"cost_usd" => cost, "latency_ms" => latency}
-              when not is_nil(cost) and not is_nil(latency) ->
-                %{
-                  total_cost: Decimal.add(acc.total_cost, Decimal.from_float(cost)),
-                  total_latency: acc.total_latency + latency,
-                  successful: acc.successful + 1
-                }
-
-              _ ->
-                acc
-            end
-
-          {result, new_acc}
-        end
-      )
-
-    passed = Enum.count(results, & &1["passed"])
-    failed = Enum.count(results, &(!&1["passed"]))
-
-    avg_cost_usd =
-      if metrics.successful > 0 do
-        Decimal.div(metrics.total_cost, metrics.successful)
-      else
-        nil
-      end
-
-    avg_latency_ms =
-      if metrics.successful > 0 do
-        round(metrics.total_latency / metrics.successful)
-      else
-        nil
-      end
+    results = Enum.map(suite.test_cases, &execute_test_case(&1, version, provider))
 
     create_suite_run(%{
       suite_id: suite.id,
       prompt_version_id: version.id,
       provider_id: provider.id,
-      results: results,
-      passed: passed,
-      failed: failed,
-      avg_cost_usd: avg_cost_usd,
-      avg_latency_ms: avg_latency_ms
+      results: results
     })
+    |> merge_suite_run_summary(results)
   end
 
   @doc """
@@ -472,6 +464,113 @@ defmodule Aludel.Evals do
   defp error_message({:invalid_request, msg}), do: "Invalid request: #{msg}"
   defp error_message({:api_error, status, msg}), do: "API error (#{status}): #{msg}"
   defp error_message({:network_error, err}), do: "Network error: #{inspect(err)}"
+
+  defp fetch_suite_run_result(%SuiteRun{results: results}, test_case_id) do
+    case Enum.find(results, &(&1["test_case_id"] == test_case_id)) do
+      nil -> {:error, :test_case_result_not_found}
+      result -> {:ok, result}
+    end
+  end
+
+  defp fetch_suite_test_case(suite_id, test_case_id) do
+    query =
+      from tc in TestCase,
+        where: tc.id == ^test_case_id and tc.suite_id == ^suite_id
+
+    case repo().one(query) do
+      nil -> {:error, :test_case_not_found}
+      test_case -> {:ok, repo().preload(test_case, :documents)}
+    end
+  end
+
+  defp fetch_prompt_version(version_id) do
+    case repo().get(PromptVersion, version_id) do
+      nil -> {:error, :prompt_version_not_found}
+      version -> {:ok, version}
+    end
+  end
+
+  defp fetch_provider(provider_id) do
+    case repo().get(Provider, provider_id) do
+      nil -> {:error, :provider_not_found}
+      provider -> {:ok, provider}
+    end
+  end
+
+  defp merge_retry_metadata(result, existing_result) do
+    retry_count = parse_retry_count(existing_result["retry_count"])
+
+    Map.merge(result, %{
+      "retry_count" => retry_count + 1,
+      "retried_at" => DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+    })
+  end
+
+  defp parse_retry_count(count) when is_integer(count), do: count
+
+  defp parse_retry_count(count) when is_binary(count) do
+    case Integer.parse(count) do
+      {parsed, ""} -> parsed
+      _ -> 0
+    end
+  end
+
+  defp parse_retry_count(_count), do: 0
+
+  defp replace_suite_run_result(results, test_case_id, replacement) do
+    Enum.map(results, fn result ->
+      if result["test_case_id"] == test_case_id, do: replacement, else: result
+    end)
+  end
+
+  defp merge_suite_run_summary({:ok, suite_run}, results) do
+    suite_run
+    |> SuiteRun.changeset(Map.put(summarize_suite_results(results), :results, results))
+    |> repo().update()
+  end
+
+  defp merge_suite_run_summary(error, _results), do: error
+
+  defp summarize_suite_results(results) do
+    metrics =
+      Enum.reduce(results, %{total_cost: Decimal.new("0"), total_latency: 0, successful: 0}, fn
+        %{"cost_usd" => cost, "latency_ms" => latency}, acc
+        when is_number(cost) and is_integer(latency) ->
+          %{
+            total_cost: Decimal.add(acc.total_cost, decimal_from_number(cost)),
+            total_latency: acc.total_latency + latency,
+            successful: acc.successful + 1
+          }
+
+        _, acc ->
+          acc
+      end)
+
+    passed = Enum.count(results, &(&1["passed"] == true))
+    failed = length(results) - passed
+
+    %{
+      passed: passed,
+      failed: failed,
+      avg_cost_usd: average_cost(metrics),
+      avg_latency_ms: average_latency(metrics)
+    }
+  end
+
+  defp decimal_from_number(number) when is_float(number), do: Decimal.from_float(number)
+  defp decimal_from_number(number) when is_integer(number), do: Decimal.new(number)
+
+  defp average_cost(%{successful: successful}) when successful < 1, do: nil
+
+  defp average_cost(%{total_cost: total_cost, successful: successful}) do
+    Decimal.div(total_cost, successful)
+  end
+
+  defp average_latency(%{successful: successful}) when successful < 1, do: nil
+
+  defp average_latency(%{total_latency: total_latency, successful: successful}) do
+    round(total_latency / successful)
+  end
 
   defp ensure_documents_loaded(%TestCase{documents: %NotLoaded{}} = test_case) do
     repo().preload(test_case, :documents)
