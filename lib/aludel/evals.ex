@@ -13,6 +13,8 @@ defmodule Aludel.Evals do
   alias Ecto.Association.NotLoaded
   alias Ecto.Changeset
 
+  @default_document_load_timeout_ms 120_000
+
   # Suite functions
 
   @doc """
@@ -437,7 +439,10 @@ defmodule Aludel.Evals do
 
   defp load_document_inputs(documents) do
     documents
-    |> Task.async_stream(&load_document_input/1, timeout: :infinity)
+    |> Task.async_stream(&load_document_input/1,
+      timeout: document_load_timeout_ms(),
+      on_timeout: :kill_task
+    )
     |> Enum.reduce_while({:ok, []}, fn
       {:ok, {:ok, input}}, {:ok, loaded_documents} ->
         {:cont, {:ok, [input | loaded_documents]}}
@@ -707,6 +712,12 @@ defmodule Aludel.Evals do
   defp compare_json_values(actual, expected) do
     # Scalars should preserve JSON semantics instead of coercing types.
     actual == expected
+  end
+
+  defp document_load_timeout_ms do
+    :aludel
+    |> Application.get_env(:evals, [])
+    |> Keyword.get(:document_load_timeout_ms, @default_document_load_timeout_ms)
   end
 
   defp repo, do: Aludel.Repo.get()

@@ -5,7 +5,6 @@ defmodule Aludel.Test.Repo.Migrations.AddStorageFieldsToTestCaseDocuments do
     alter table(:test_case_documents) do
       add :storage_key, :string
       add :storage_backend, :string
-      remove :data, :binary
     end
 
     create unique_index(:test_case_documents, [:storage_backend, :storage_key],

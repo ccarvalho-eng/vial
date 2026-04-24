@@ -1138,6 +1138,41 @@ defmodule Aludel.EvalsTest do
       assert output == "Failed to load document crash.png: boom"
     end
 
+    test "returns a failed test case result when document loading times out" do
+      configure_storage(adapter: StorageMock)
+      configure_evals(document_load_timeout_ms: 1)
+
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      Repo.insert!(
+        TestCaseDocument.changeset(%TestCaseDocument{}, %{
+          test_case_id: test_case.id,
+          filename: "slow.png",
+          content_type: "image/png",
+          size_bytes: 3,
+          storage_key: "test_case_documents/doc-id/slow.png",
+          storage_backend: Atom.to_string(StorageMock)
+        })
+      )
+
+      prompt = prompt_fixture()
+      {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Describe {{input}}")
+      provider = provider_fixture(%{provider: :openai, model: "gpt-4o"})
+
+      expect(StorageMock, :get, fn _key, _config ->
+        Process.sleep(25)
+        {:ok, <<1, 2, 3>>}
+      end)
+
+      assert {:ok, suite_run} = Aludel.Evals.execute_suite(suite, version, provider)
+      assert suite_run.failed == 1
+
+      assert [%{"output" => output}] = suite_run.results
+      assert output =~ "Failed to load document unknown_document:"
+      assert output =~ "timeout"
+    end
+
     test "returns a failed test case result when document loading raises" do
       configure_storage(adapter: StorageMock)
 
@@ -1215,6 +1250,15 @@ defmodule Aludel.EvalsTest do
 
     on_exit(fn ->
       Application.put_env(:aludel, Aludel.Storage, original_config)
+    end)
+  end
+
+  defp configure_evals(config) do
+    original_config = Application.get_env(:aludel, :evals, [])
+    Application.put_env(:aludel, :evals, config)
+
+    on_exit(fn ->
+      Application.put_env(:aludel, :evals, original_config)
     end)
   end
 

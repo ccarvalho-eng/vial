@@ -15,6 +15,8 @@ config :aludel, :llm,
   max_concurrency: 3,
   request_timeout_ms: 120_000
 
+config :aludel, :evals, document_load_timeout_ms: 120_000
+
 config :ex_aws,
   json_codec: Jason
 

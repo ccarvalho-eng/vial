@@ -26,10 +26,7 @@ config :aludel, :llm,
 
 config :aludel, Aludel.Storage,
   adapter: Aludel.Interfaces.Storage.Adapters.Local,
-  backends: [
-    {Aludel.Interfaces.Storage.Adapters.Local,
-     [root: System.get_env("ALUDEL_LOCAL_STORAGE_ROOT")]}
-  ]
+  backends: [{Aludel.Interfaces.Storage.Adapters.Local, []}]
 
 # ## SSL Support
 #

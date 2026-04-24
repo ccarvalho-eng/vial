@@ -139,12 +139,7 @@ Uploaded test case documents go through `Aludel.Storage`.
 
 ### Development storage
 
-By default, development stores uploaded documents on the local filesystem.
-You can override the storage root with:
-
-```bash
-export ALUDEL_LOCAL_STORAGE_ROOT=/absolute/path/to/aludel-storage
-```
+Development stores uploaded documents on the local filesystem.
 
 ### Production storage
 
