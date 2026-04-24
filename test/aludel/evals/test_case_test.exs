@@ -104,14 +104,25 @@ defmodule Aludel.Evals.TestCaseTest do
           test_case_id: test_case.id,
           filename: "test.pdf",
           content_type: "application/pdf",
-          data: <<1, 2, 3>>,
-          size_bytes: 100
+          size_bytes: 100,
+          storage_key: "test_case_documents/test-case/test.pdf",
+          storage_backend: "local"
         })
         |> Repo.insert()
 
       loaded = Repo.preload(test_case, :documents)
-      assert [%TestCaseDocument{id: doc_id}] = loaded.documents
+
+      assert [
+               %TestCaseDocument{
+                 id: doc_id,
+                 storage_key: storage_key,
+                 storage_backend: storage_backend
+               }
+             ] = loaded.documents
+
       assert doc_id == doc.id
+      assert storage_key == doc.storage_key
+      assert storage_backend == doc.storage_backend
     end
   end
 end

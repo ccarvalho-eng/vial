@@ -44,6 +44,81 @@ if config_env() == :prod do
     anthropic_api_key: System.get_env("ANTHROPIC_API_KEY"),
     google_api_key: System.get_env("GOOGLE_API_KEY")
 
+  storage_backend =
+    System.get_env("ALUDEL_STORAGE_BACKEND") ||
+      raise """
+      environment variable ALUDEL_STORAGE_BACKEND is missing.
+      Supported values are: aws, gcs
+      """
+
+  storage_config =
+    case storage_backend do
+      "aws" ->
+        aws_s3_bucket =
+          System.get_env("AWS_S3_BUCKET") ||
+            raise """
+            environment variable AWS_S3_BUCKET is missing.
+            """
+
+        aws_region =
+          System.get_env("AWS_REGION") ||
+            raise """
+            environment variable AWS_REGION is missing.
+            """
+
+        aws_access_key_id =
+          System.get_env("AWS_ACCESS_KEY_ID") ||
+            raise """
+            environment variable AWS_ACCESS_KEY_ID is missing.
+            """
+
+        aws_secret_access_key =
+          System.get_env("AWS_SECRET_ACCESS_KEY") ||
+            raise """
+            environment variable AWS_SECRET_ACCESS_KEY is missing.
+            """
+
+        [
+          adapter: Aludel.Interfaces.Storage.Adapters.AWS,
+          backends: [
+            {Aludel.Interfaces.Storage.Adapters.AWS,
+             [
+               bucket: aws_s3_bucket,
+               region: aws_region,
+               access_key_id: aws_access_key_id,
+               secret_access_key: aws_secret_access_key
+             ]}
+          ]
+        ]
+
+      "gcs" ->
+        gcs_bucket =
+          System.get_env("GCS_BUCKET") ||
+            raise """
+            environment variable GCS_BUCKET is missing.
+            """
+
+        [
+          adapter: Aludel.Interfaces.Storage.Adapters.GCS,
+          backends: [
+            {Aludel.Interfaces.Storage.Adapters.GCS,
+             [
+               bucket: gcs_bucket,
+               goth: Aludel.Goth,
+               user_project: System.get_env("GCS_USER_PROJECT")
+             ]}
+          ]
+        ]
+
+      other ->
+        raise """
+        Unsupported ALUDEL_STORAGE_BACKEND=#{inspect(other)}.
+        Supported values are: aws, gcs
+        """
+    end
+
+  config :aludel, Aludel.Storage, storage_config
+
   config :aludel, Aludel.Web.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [

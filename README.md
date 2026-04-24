@@ -130,6 +130,48 @@ config :aludel, :llm,
 
 Ollama runs locally and does not require an API key.
 
+## Document Storage
+
+Uploaded test case documents go through `Aludel.Storage`.
+
+- Development uses the local filesystem adapter from `config/dev.exs`.
+- Production uses `config/runtime.exs` and requires `ALUDEL_STORAGE_BACKEND`.
+
+### Development storage
+
+Development stores uploaded documents on the local filesystem.
+
+### Production storage
+
+Set `ALUDEL_STORAGE_BACKEND` to `aws` or `gcs`.
+
+For AWS S3:
+
+```bash
+export ALUDEL_STORAGE_BACKEND=aws
+export AWS_S3_BUCKET=aludel-uploads
+export AWS_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+```
+
+For Google Cloud Storage:
+
+```bash
+export ALUDEL_STORAGE_BACKEND=gcs
+export GCS_BUCKET=aludel-uploads
+export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+```
+
+If your GCS bucket requires requester-pays access, also set:
+
+```bash
+export GCS_USER_PROJECT=your-billing-project-id
+```
+
+The GCS adapter uses `Goth` with standard Google application credentials.
+`GOOGLE_APPLICATION_CREDENTIALS_JSON` also works if you prefer inline JSON.
+
 ## Documentation
 
 The README is intentionally optimized for first contact. For deeper setup, usage, and contribution details:

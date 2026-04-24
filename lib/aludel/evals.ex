@@ -9,8 +9,11 @@ defmodule Aludel.Evals do
   alias Aludel.LLM
   alias Aludel.Prompts.PromptVersion
   alias Aludel.Providers.Provider
+  alias Aludel.Storage
   alias Ecto.Association.NotLoaded
   alias Ecto.Changeset
+
+  @default_document_load_timeout_ms 120_000
 
   # Suite functions
 
@@ -356,9 +359,14 @@ defmodule Aludel.Evals do
   @spec create_test_case_document(map()) ::
           {:ok, TestCaseDocument.t()} | {:error, Changeset.t()}
   def create_test_case_document(attrs \\ %{}) do
-    %TestCaseDocument{}
-    |> TestCaseDocument.changeset(attrs)
-    |> repo().insert()
+    document = %TestCaseDocument{id: Ecto.UUID.generate()}
+    changeset = TestCaseDocument.create_changeset(document, attrs)
+
+    if changeset.valid? do
+      persist_document_externally(changeset)
+    else
+      {:error, changeset}
+    end
   end
 
   @doc """
@@ -367,7 +375,29 @@ defmodule Aludel.Evals do
   @spec delete_test_case_document(TestCaseDocument.t()) ::
           {:ok, TestCaseDocument.t()} | {:error, Changeset.t()}
   def delete_test_case_document(%TestCaseDocument{} = document) do
-    repo().delete(document)
+    repo().transaction(fn ->
+      with {:ok, deleted_document} <- repo().delete(document),
+           :ok <- Storage.delete(document.storage_key, storage_backend: document.storage_backend) do
+        deleted_document
+      else
+        {:error, %Changeset{} = changeset} ->
+          repo().rollback({:document, changeset})
+
+        {:error, reason} ->
+          changeset = add_storage_error(Changeset.change(document), reason)
+          repo().rollback({:storage, changeset})
+      end
+    end)
+    |> case do
+      {:ok, deleted_document} ->
+        {:ok, deleted_document}
+
+      {:error, {:document, changeset}} ->
+        {:error, changeset}
+
+      {:error, {:storage, changeset}} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -385,13 +415,18 @@ defmodule Aludel.Evals do
   defp execute_test_case(test_case, version, provider) do
     test_case = ensure_documents_loaded(test_case)
     rendered_prompt = render_template(version.template, test_case.variable_values)
-    opts = llm_call_opts(test_case.documents)
 
-    case LLM.call(provider, rendered_prompt, opts) do
-      {:ok, result} ->
-        assertion_results = build_assertion_results(test_case.assertions, result.output)
-        passed = Enum.all?(assertion_results, & &1["passed"])
-        successful_test_case_result(test_case.id, result, passed, assertion_results)
+    case load_document_inputs(test_case.documents) do
+      {:ok, documents} ->
+        case LLM.call(provider, rendered_prompt, llm_call_opts(documents)) do
+          {:ok, result} ->
+            assertion_results = build_assertion_results(test_case.assertions, result.output)
+            passed = Enum.all?(assertion_results, & &1["passed"])
+            successful_test_case_result(test_case.id, result, passed, assertion_results)
+
+          {:error, reason} ->
+            failed_test_case_result(test_case.id, reason)
+        end
 
       {:error, reason} ->
         failed_test_case_result(test_case.id, reason)
@@ -399,12 +434,47 @@ defmodule Aludel.Evals do
   end
 
   defp llm_call_opts(documents) do
-    documents =
-      Enum.map(documents, fn doc ->
-        %{data: doc.data, content_type: doc.content_type}
-      end)
-
     if documents != [], do: [documents: documents], else: []
+  end
+
+  defp load_document_inputs(documents) do
+    documents
+    |> Task.async_stream(&load_document_input/1,
+      timeout: document_load_timeout_ms(),
+      on_timeout: :kill_task
+    )
+    |> Enum.reduce_while({:ok, []}, fn
+      {:ok, {:ok, input}}, {:ok, loaded_documents} ->
+        {:cont, {:ok, [input | loaded_documents]}}
+
+      {:ok, {:error, reason}}, _acc ->
+        {:halt, {:error, reason}}
+
+      {:exit, reason}, _acc ->
+        {:halt, {:error, {:document_storage_error, :unknown_document, reason}}}
+    end)
+    |> case do
+      {:ok, loaded_documents} -> {:ok, Enum.reverse(loaded_documents)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp load_document_input(document) do
+    case safe_storage_read(document) do
+      {:ok, data} ->
+        {:ok, %{data: data, content_type: document.content_type}}
+
+      {:error, reason} ->
+        {:error, {:document_storage_error, document.filename, reason}}
+    end
+  end
+
+  defp safe_storage_read(document) do
+    Storage.read(document)
+  rescue
+    error -> {:error, Exception.message(error)}
+  catch
+    :exit, reason -> {:error, reason}
   end
 
   defp build_assertion_results(assertions, output) do
@@ -466,6 +536,9 @@ defmodule Aludel.Evals do
   defp error_message({:invalid_request, msg}), do: "Invalid request: #{msg}"
   defp error_message({:api_error, status, msg}), do: "API error (#{status}): #{msg}"
   defp error_message({:network_error, err}), do: "Network error: #{inspect(err)}"
+
+  defp error_message({:document_storage_error, filename, reason}),
+    do: "Failed to load document #{filename}: #{format_storage_reason(reason)}"
 
   defp fetch_suite_run_result(%SuiteRun{results: results}, test_case_id) do
     case Enum.find(results, &(&1["test_case_id"] == test_case_id)) do
@@ -641,5 +714,60 @@ defmodule Aludel.Evals do
     actual == expected
   end
 
+  defp document_load_timeout_ms do
+    :aludel
+    |> Application.get_env(:evals, [])
+    |> Keyword.get(:document_load_timeout_ms, @default_document_load_timeout_ms)
+  end
+
   defp repo, do: Aludel.Repo.get()
+
+  defp persist_document_externally(changeset) do
+    document = Changeset.apply_changes(changeset)
+    storage_key = Storage.storage_key(document.id, document.filename)
+    storage_backend = Storage.backend_name()
+
+    case Storage.put(storage_key, document.data, document.content_type) do
+      {:ok, persisted_key} ->
+        attrs =
+          document_attrs(document)
+          |> Map.put(:data, nil)
+          |> Map.put(:storage_key, persisted_key)
+          |> Map.put(:storage_backend, storage_backend)
+
+        insert_changeset = TestCaseDocument.changeset(%TestCaseDocument{id: document.id}, attrs)
+
+        case repo().insert(insert_changeset) do
+          {:ok, stored_document} ->
+            {:ok, stored_document}
+
+          {:error, insert_changeset} ->
+            _ = Storage.delete(persisted_key, storage_backend: storage_backend)
+            {:error, insert_changeset}
+        end
+
+      {:error, reason} ->
+        {:error, add_storage_error(changeset, reason)}
+    end
+  end
+
+  defp document_attrs(document) do
+    %{
+      test_case_id: document.test_case_id,
+      filename: document.filename,
+      content_type: document.content_type,
+      data: document.data,
+      size_bytes: document.size_bytes,
+      storage_key: document.storage_key,
+      storage_backend: document.storage_backend
+    }
+  end
+
+  defp add_storage_error(changeset, reason) do
+    Changeset.add_error(changeset, :data, format_storage_reason(reason))
+  end
+
+  defp format_storage_reason(reason) when is_binary(reason), do: reason
+  defp format_storage_reason(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp format_storage_reason(reason), do: inspect(reason)
 end
