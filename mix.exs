@@ -93,6 +93,7 @@ defmodule Aludel.MixProject do
       {:req_llm, "~> 1.0"},
       {:ex_aws, "~> 2.6"},
       {:ex_aws_s3, "~> 2.5"},
+      {:sweet_xml, "~> 0.7"},
       {:goth, "~> 1.4"},
       {:google_api_storage, "~> 0.46"},
       {:telemetry_metrics, "~> 1.0"},

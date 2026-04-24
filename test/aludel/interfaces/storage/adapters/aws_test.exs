@@ -44,6 +44,10 @@ defmodule Aludel.Interfaces.Storage.Adapters.AWSTest do
     assert :ok = AWS.delete("docs/sample.pdf", config)
   end
 
+  test "loads the XML parser dependency required by ExAws.S3" do
+    assert Code.ensure_loaded?(SweetXml)
+  end
+
   test "returns an error when bucket is missing" do
     assert {:error, :missing_bucket} = AWS.put("docs/sample.pdf", "body", "application/pdf", [])
     assert {:error, :missing_bucket} = AWS.get("docs/sample.pdf", [])

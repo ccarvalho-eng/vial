@@ -24,6 +24,13 @@ config :aludel, :llm,
   anthropic_api_key: System.get_env("ANTHROPIC_API_KEY"),
   google_api_key: System.get_env("GOOGLE_API_KEY")
 
+config :aludel, Aludel.Storage,
+  adapter: Aludel.Interfaces.Storage.Adapters.Local,
+  backends: [
+    {Aludel.Interfaces.Storage.Adapters.Local,
+     [root: System.get_env("ALUDEL_LOCAL_STORAGE_ROOT")]}
+  ]
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

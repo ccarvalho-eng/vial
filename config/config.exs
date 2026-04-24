@@ -15,8 +15,6 @@ config :aludel, :llm,
   max_concurrency: 3,
   request_timeout_ms: 120_000
 
-config :aludel, Aludel.Storage, adapter: Aludel.Interfaces.Storage.Adapters.Local
-
 config :ex_aws,
   json_codec: Jason
 
