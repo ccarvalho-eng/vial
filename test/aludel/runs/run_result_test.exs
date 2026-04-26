@@ -187,5 +187,35 @@ defmodule Aludel.Runs.RunResultTest do
       assert changeset.valid?
       refute Map.has_key?(changeset.changes, :error)
     end
+
+    test "accepts callback metadata", %{run: run, provider: provider} do
+      metadata = %{"trace_id" => "trace-123", "host" => "embedded-app"}
+
+      changeset =
+        RunResult.changeset(%RunResult{}, %{
+          run_id: run.id,
+          provider_id: provider.id,
+          output: "Hello world",
+          status: :completed,
+          metadata: metadata
+        })
+
+      assert changeset.valid?
+      assert changeset.changes.metadata == metadata
+    end
+
+    test "rejects metadata that cannot be encoded as JSON", %{run: run, provider: provider} do
+      changeset =
+        RunResult.changeset(%RunResult{}, %{
+          run_id: run.id,
+          provider_id: provider.id,
+          output: "Hello world",
+          status: :completed,
+          metadata: %{"pid" => self()}
+        })
+
+      refute changeset.valid?
+      assert %{metadata: ["must be JSON-encodable"]} = errors_on(changeset)
+    end
   end
 end

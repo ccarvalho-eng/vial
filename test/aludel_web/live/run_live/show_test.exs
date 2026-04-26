@@ -160,6 +160,47 @@ defmodule Aludel.Web.RunLive.ShowTest do
       assert html =~ "API call failed"
     end
 
+    test "renders missing metrics as N/A and shows callback metadata", %{conn: conn} do
+      run = run_fixture(%{name: "Callback Run"})
+      provider = provider_fixture(%{name: "Callback Provider"})
+
+      result =
+        run_result_fixture(%{
+          run_id: run.id,
+          provider_id: provider.id,
+          output: "Callback output",
+          status: :completed,
+          input_tokens: nil,
+          output_tokens: nil,
+          latency_ms: nil,
+          cost_usd: nil,
+          metadata: %{
+            "trace_id" => "trace-123",
+            "job_id" => "job-456"
+          }
+        })
+
+      {:ok, view, _html} = live(conn, "/runs/#{run.id}")
+
+      assert has_element?(view, "#run-result-token-usage-#{result.id}", "N/A / N/A")
+      assert has_element?(view, "#run-result-latency-#{result.id}", "N/A")
+      assert has_element?(view, "#run-result-cost-#{result.id}", "N/A")
+      assert has_element?(view, "#run-result-metadata-#{result.id}")
+      assert has_element?(view, "#run-result-metadata-#{result.id} summary", "Callback metadata")
+
+      assert has_element?(
+               view,
+               "#run-result-metadata-#{result.id} pre",
+               "\"trace_id\": \"trace-123\""
+             )
+
+      assert has_element?(
+               view,
+               "#run-result-metadata-#{result.id} pre",
+               "\"job_id\": \"job-456\""
+             )
+    end
+
     test "shows copy actions for successful outputs", %{conn: conn, run: run, result1: result1} do
       {:ok, view, _html} = live(conn, "/runs/#{run.id}")
 

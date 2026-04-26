@@ -16,7 +16,7 @@ defmodule Aludel.Runs.RunResult do
   @type t :: %__MODULE__{}
 
   @required_fields ~w(run_id provider_id status)a
-  @optional_fields ~w(output input_tokens output_tokens latency_ms cost_usd error started_at completed_at)a
+  @optional_fields ~w(output input_tokens output_tokens latency_ms cost_usd metadata error started_at completed_at)a
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -27,6 +27,7 @@ defmodule Aludel.Runs.RunResult do
     field :output_tokens, :integer
     field :latency_ms, :integer
     field :cost_usd, :float
+    field :metadata, :map
     field :status, Ecto.Enum, values: [:pending, :running, :completed, :error]
     field :error, :string
     field :started_at, :utc_datetime
@@ -48,7 +49,15 @@ defmodule Aludel.Runs.RunResult do
     run_result
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_change(:metadata, &validate_json_encodable_metadata/2)
     |> foreign_key_constraint(:run_id)
     |> foreign_key_constraint(:provider_id)
+  end
+
+  defp validate_json_encodable_metadata(:metadata, metadata) do
+    case Jason.encode(metadata) do
+      {:ok, _encoded_metadata} -> []
+      {:error, _reason} -> [metadata: "must be JSON-encodable"]
+    end
   end
 end
