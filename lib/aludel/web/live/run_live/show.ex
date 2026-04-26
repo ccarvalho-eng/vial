@@ -56,4 +56,25 @@ defmodule Aludel.Web.RunLive.Show do
 
     {:noreply, assign(socket, run: run, run_results: run.run_results)}
   end
+
+  defp format_token_usage(result) do
+    [format_optional_integer(result.input_tokens), format_optional_integer(result.output_tokens)]
+    |> Enum.join(" / ")
+  end
+
+  defp format_optional_integer(nil), do: "N/A"
+  defp format_optional_integer(value), do: Integer.to_string(value)
+
+  defp format_latency(nil), do: "N/A"
+  defp format_latency(value), do: "#{value} ms"
+
+  defp format_cost(nil), do: "N/A"
+  defp format_cost(value), do: "$#{:erlang.float_to_binary(value, decimals: 4)}"
+
+  defp show_result_metadata?(%{metadata: metadata}) when is_map(metadata),
+    do: map_size(metadata) > 0
+
+  defp show_result_metadata?(_result), do: false
+
+  defp format_result_metadata(metadata), do: Jason.encode!(metadata, pretty: true)
 end

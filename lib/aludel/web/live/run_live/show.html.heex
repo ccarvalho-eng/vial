@@ -104,7 +104,7 @@
                     Tokens
                   </div>
                   <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
-                    {result.input_tokens} / {result.output_tokens}
+                    {format_token_usage(result)}
                   </div>
                 </div>
                 <div>
@@ -112,7 +112,7 @@
                     Latency
                   </div>
                   <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
-                    {result.latency_ms} ms
+                    {format_latency(result.latency_ms)}
                   </div>
                 </div>
                 <div>
@@ -120,7 +120,7 @@
                     Cost
                   </div>
                   <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
-                    ${:erlang.float_to_binary(result.cost_usd, decimals: 4)}
+                    {format_cost(result.cost_usd)}
                   </div>
                 </div>
               </div>
@@ -182,6 +182,17 @@
                     style="background-color: var(--bg-tertiary); border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; white-space: pre-wrap; word-wrap: break-word; flex: 1;"
                   ><%= result.output %></pre>
               <% end %>
+
+              <details
+                :if={show_result_metadata?(result)}
+                id={"run-result-metadata-#{result.id}"}
+                style="margin-top: 12px; border: 1px solid var(--border); border-radius: 8px; background-color: var(--bg-secondary);"
+              >
+                <summary style="cursor: pointer; padding: 10px 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Callback metadata
+                </summary>
+                <pre style="margin: 0; padding: 0 12px 12px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: var(--text-primary);"><%= format_result_metadata(result.metadata) %></pre>
+              </details>
             </div>
           </div>
         <% end %>
