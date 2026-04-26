@@ -49,7 +49,15 @@ defmodule Aludel.Runs.RunResult do
     run_result
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_change(:metadata, &validate_json_encodable_metadata/2)
     |> foreign_key_constraint(:run_id)
     |> foreign_key_constraint(:provider_id)
+  end
+
+  defp validate_json_encodable_metadata(:metadata, metadata) do
+    case Jason.encode(metadata) do
+      {:ok, _encoded_metadata} -> []
+      {:error, _reason} -> [metadata: "must be JSON-encodable"]
+    end
   end
 end

@@ -76,5 +76,13 @@ defmodule Aludel.Web.RunLive.Show do
 
   defp show_result_metadata?(_result), do: false
 
-  defp format_result_metadata(metadata), do: Jason.encode!(metadata, pretty: true)
+  defp format_result_metadata(metadata) do
+    case Jason.encode(metadata, pretty: true) do
+      {:ok, encoded_metadata} ->
+        encoded_metadata
+
+      {:error, _reason} ->
+        inspect(metadata, pretty: true, limit: :infinity, printable_limit: :infinity)
+    end
+  end
 end

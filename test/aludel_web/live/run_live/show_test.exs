@@ -180,10 +180,11 @@ defmodule Aludel.Web.RunLive.ShowTest do
           }
         })
 
-      {:ok, view, html} = live(conn, "/runs/#{run.id}")
+      {:ok, view, _html} = live(conn, "/runs/#{run.id}")
 
-      assert html =~ "N/A / N/A"
-      assert html =~ "N/A"
+      assert has_element?(view, "#run-result-token-usage-#{result.id}", "N/A / N/A")
+      assert has_element?(view, "#run-result-latency-#{result.id}", "N/A")
+      assert has_element?(view, "#run-result-cost-#{result.id}", "N/A")
       assert has_element?(view, "#run-result-metadata-#{result.id}")
       assert has_element?(view, "#run-result-metadata-#{result.id} summary", "Callback metadata")
 

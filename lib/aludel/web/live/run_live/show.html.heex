@@ -103,7 +103,10 @@
                   <div style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
                     Tokens
                   </div>
-                  <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
+                  <div
+                    id={"run-result-token-usage-#{result.id}"}
+                    style="font-size: 13px; font-weight: 500; color: var(--text-primary);"
+                  >
                     {format_token_usage(result)}
                   </div>
                 </div>
@@ -111,7 +114,10 @@
                   <div style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
                     Latency
                   </div>
-                  <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
+                  <div
+                    id={"run-result-latency-#{result.id}"}
+                    style="font-size: 13px; font-weight: 500; color: var(--text-primary);"
+                  >
                     {format_latency(result.latency_ms)}
                   </div>
                 </div>
@@ -119,7 +125,10 @@
                   <div style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
                     Cost
                   </div>
-                  <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);">
+                  <div
+                    id={"run-result-cost-#{result.id}"}
+                    style="font-size: 13px; font-weight: 500; color: var(--text-primary);"
+                  >
                     {format_cost(result.cost_usd)}
                   </div>
                 </div>
