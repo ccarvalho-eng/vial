@@ -702,6 +702,12 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
                "#copy-suite-result-#{suite_run.id}-#{test_case.id}",
                "Copy output"
              )
+
+      assert has_element?(
+               view,
+               "#export-suite-run-#{suite_run.id}[href='/suites/runs/#{suite_run.id}/export']",
+               "Export JSON"
+             )
     end
   end
 

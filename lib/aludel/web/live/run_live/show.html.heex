@@ -140,30 +140,40 @@
                 <div style="font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
                   Output
                 </div>
-                <button
-                  :if={result.status == :error}
-                  id={"copy-run-error-#{result.id}"}
-                  type="button"
-                  phx-hook="CopyToClipboard"
-                  phx-update="ignore"
-                  data-copy-target={"run-result-error-#{result.id}"}
-                  data-copy-label="Copy error"
-                  style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
-                >
-                  Copy error
-                </button>
-                <button
-                  :if={result.status != :error}
-                  id={"copy-run-output-#{result.id}"}
-                  type="button"
-                  phx-hook="CopyToClipboard"
-                  phx-update="ignore"
-                  data-copy-target={"run-result-output-#{result.id}"}
-                  data-copy-label="Copy output"
-                  style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
-                >
-                  Copy output
-                </button>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <a
+                    id={"export-run-result-#{result.id}"}
+                    href={aludel_path("runs/results/#{result.id}/export")}
+                    download
+                    style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background-color 0.2s ease, color 0.2s ease;"
+                  >
+                    Export JSON
+                  </a>
+                  <button
+                    :if={result.status == :error}
+                    id={"copy-run-error-#{result.id}"}
+                    type="button"
+                    phx-hook="CopyToClipboard"
+                    phx-update="ignore"
+                    data-copy-target={"run-result-error-#{result.id}"}
+                    data-copy-label="Copy error"
+                    style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
+                  >
+                    Copy error
+                  </button>
+                  <button
+                    :if={result.status != :error}
+                    id={"copy-run-output-#{result.id}"}
+                    type="button"
+                    phx-hook="CopyToClipboard"
+                    phx-update="ignore"
+                    data-copy-target={"run-result-output-#{result.id}"}
+                    data-copy-label="Copy output"
+                    style="border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;"
+                  >
+                    Copy output
+                  </button>
+                </div>
               </div>
               <%= cond do %>
                 <% result.status == :error -> %>
