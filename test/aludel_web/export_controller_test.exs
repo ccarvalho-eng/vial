@@ -28,6 +28,9 @@ defmodule Aludel.Web.ExportControllerTest do
 
       assert [content_type] = get_resp_header(conn, "content-type")
       assert content_type =~ "application/json"
+      assert get_resp_header(conn, "cache-control") == ["no-store, max-age=0"]
+      assert get_resp_header(conn, "pragma") == ["no-cache"]
+      assert get_resp_header(conn, "expires") == ["0"]
 
       assert get_resp_header(conn, "content-disposition") == [
                "attachment; filename=\"run-result-#{result.id}.json\""
@@ -85,6 +88,9 @@ defmodule Aludel.Web.ExportControllerTest do
 
       assert [content_type] = get_resp_header(conn, "content-type")
       assert content_type =~ "application/json"
+      assert get_resp_header(conn, "cache-control") == ["no-store, max-age=0"]
+      assert get_resp_header(conn, "pragma") == ["no-cache"]
+      assert get_resp_header(conn, "expires") == ["0"]
 
       assert get_resp_header(conn, "content-disposition") == [
                "attachment; filename=\"suite-run-#{suite_run.id}.json\""

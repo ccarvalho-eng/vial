@@ -28,10 +28,16 @@ defmodule Aludel.Web.ExportController do
   end
 
   defp send_json_download(conn, payload, filename) do
+    encoded_payload = Jason.encode!(payload, pretty: true)
+
     conn
-    |> put_resp_content_type("application/json")
-    |> put_resp_header("content-disposition", ~s(attachment; filename="#{filename}"))
-    |> send_resp(200, Jason.encode!(payload, pretty: true))
+    |> put_resp_header("cache-control", "no-store, max-age=0")
+    |> put_resp_header("pragma", "no-cache")
+    |> put_resp_header("expires", "0")
+    |> send_download({:binary, encoded_payload},
+      filename: filename,
+      content_type: "application/json"
+    )
   end
 
   defp serialize_run_result_export(result) do
