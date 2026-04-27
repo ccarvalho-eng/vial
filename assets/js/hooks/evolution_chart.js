@@ -342,7 +342,7 @@ export const EvolutionChart = {
       if (chart) chart.destroy()
     })
     this.charts = {}
-  }
+  },
 
   buildScoreDatasets(chartData, viewMode) {
     if (viewMode === 'overall') {
