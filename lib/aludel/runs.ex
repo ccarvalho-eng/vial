@@ -133,6 +133,19 @@ defmodule Aludel.Runs do
   end
 
   @doc """
+  Gets a run result by ID for export.
+
+  Preloads the parent run, prompt, and provider so the payload can
+  be serialized without additional lookups.
+  """
+  @spec get_run_result_for_export!(binary()) :: RunResult.t()
+  def get_run_result_for_export!(id) do
+    RunResult
+    |> repo().get!(id)
+    |> repo().preload([:provider, run: [prompt_version: :prompt]])
+  end
+
+  @doc """
   Updates an existing run result.
   """
   @spec update_run_result(RunResult.t(), map()) ::

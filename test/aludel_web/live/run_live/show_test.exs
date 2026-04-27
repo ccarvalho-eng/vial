@@ -206,6 +206,12 @@ defmodule Aludel.Web.RunLive.ShowTest do
 
       assert has_element?(view, "#run-result-output-#{result1.id}", "Hello from OpenAI")
       assert has_element?(view, "#copy-run-output-#{result1.id}", "Copy output")
+
+      assert has_element?(
+               view,
+               "#export-run-result-#{result1.id}[href='/runs/results/#{result1.id}/export']",
+               "Export JSON"
+             )
     end
 
     test "shows copy actions for failed errors", %{conn: conn} do

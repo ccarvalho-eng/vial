@@ -67,10 +67,12 @@ defmodule Aludel.Web.Router do
           live "/prompts/:id", Aludel.Web.PromptLive.Show, :show, route_opts
 
           live "/runs/new", Aludel.Web.RunLive.New, :new, route_opts
+          get "/runs/results/:id/export", Aludel.Web.ExportController, :run_result
           live "/runs/:id", Aludel.Web.RunLive.Show, :show, route_opts
 
           live "/suites", Aludel.Web.SuiteLive.Index, :index, route_opts
           live "/suites/new", Aludel.Web.SuiteLive.New, :new, route_opts
+          get "/suites/runs/:id/export", Aludel.Web.ExportController, :suite_run
           live "/suites/:id", Aludel.Web.SuiteLive.Show, :show, route_opts
 
           live "/providers", Aludel.Web.ProviderLive.Index, :index, route_opts

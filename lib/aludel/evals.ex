@@ -243,6 +243,19 @@ defmodule Aludel.Evals do
   end
 
   @doc """
+  Gets a suite run by ID for export.
+
+  Preloads the suite, prompt version, and provider so the export
+  payload can be built without leaking Repo access to the web layer.
+  """
+  @spec get_suite_run_for_export!(binary()) :: SuiteRun.t()
+  def get_suite_run_for_export!(id) do
+    SuiteRun
+    |> repo().get!(id)
+    |> repo().preload([:suite, :prompt_version, :provider])
+  end
+
+  @doc """
   Reloads a suite run with associations preloaded.
   """
   @spec reload_suite_run_with_associations(SuiteRun.t()) :: SuiteRun.t()
