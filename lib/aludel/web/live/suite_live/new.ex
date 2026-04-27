@@ -37,6 +37,10 @@ defmodule Aludel.Web.SuiteLive.New do
      |> assign(:form, to_form(changeset))
      |> assign(:selected_prompt, selected_prompt)
      |> assign(
+       :test_case_form_params,
+       merge_test_case_form_params(suite_params, socket.assigns.test_cases, selected_prompt)
+     )
+     |> assign(
        :test_cases,
        merge_test_cases_from_params(suite_params, socket.assigns.test_cases, selected_prompt)
      )}
@@ -62,13 +66,22 @@ defmodule Aludel.Web.SuiteLive.New do
     }
 
     test_cases = socket.assigns.test_cases ++ [new_test_case]
-    {:noreply, assign(socket, :test_cases, test_cases)}
+
+    {:noreply,
+     socket
+     |> assign(:test_cases, test_cases)
+     |> put_test_case_form_params(new_test_case)}
   end
 
   @impl Phoenix.LiveView
   def handle_event("remove_test_case", %{"id" => id}, socket) do
     test_cases = Enum.reject(socket.assigns.test_cases, fn tc -> tc.id == id end)
-    {:noreply, assign(socket, :test_cases, test_cases)}
+
+    {:noreply,
+     socket
+     |> assign(:test_cases, test_cases)
+     |> assign(:test_case_form_params, Map.delete(socket.assigns.test_case_form_params, id))
+     |> assign(:assertion_edit_mode, Map.delete(socket.assigns.assertion_edit_mode, id))}
   end
 
   @impl Phoenix.LiveView
@@ -91,7 +104,7 @@ defmodule Aludel.Web.SuiteLive.New do
         end
       end)
 
-    {:noreply, assign(socket, :test_cases, test_cases)}
+    {:noreply, sync_test_case_form_params(socket, test_cases, id)}
   end
 
   @impl Phoenix.LiveView
@@ -108,7 +121,7 @@ defmodule Aludel.Web.SuiteLive.New do
         end
       end)
 
-    {:noreply, assign(socket, :test_cases, test_cases)}
+    {:noreply, sync_test_case_form_params(socket, test_cases, id)}
   end
 
   @impl Phoenix.LiveView
@@ -133,6 +146,7 @@ defmodule Aludel.Web.SuiteLive.New do
     |> assign(:test_cases, [])
     |> assign(:selected_prompt, nil)
     |> assign(:assertion_edit_mode, %{})
+    |> assign(:test_case_form_params, %{})
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
@@ -168,6 +182,7 @@ defmodule Aludel.Web.SuiteLive.New do
     |> assign(:test_cases, test_cases)
     |> assign(:selected_prompt, selected_prompt)
     |> assign(:assertion_edit_mode, %{})
+    |> assign(:test_case_form_params, build_test_case_form_params_map(test_cases))
   end
 
   defp save_suite(socket, :new, suite_params) do
@@ -304,10 +319,18 @@ defmodule Aludel.Web.SuiteLive.New do
   end
 
   defp merge_test_case_assertions(test_case_params) do
-    case parse_test_case_assertions(test_case_params) do
+    case preview_test_case_assertions(test_case_params) do
       {:ok, assertions} -> assertions
       {:error, _message} -> []
     end
+  end
+
+  defp preview_test_case_assertions(%{"assertions_json" => assertions_json}) do
+    AssertionParser.parse(:json, %{"assertions_json" => assertions_json})
+  end
+
+  defp preview_test_case_assertions(test_case_params) do
+    AssertionParser.preview_visual(test_case_params)
   end
 
   defp extract_variables(template) do
@@ -371,6 +394,153 @@ defmodule Aludel.Web.SuiteLive.New do
 
   defp merge_test_cases_from_params(_suite_params, current_test_cases, selected_prompt) do
     sync_test_case_variables(current_test_cases, selected_prompt)
+  end
+
+  defp merge_test_case_form_params(
+         %{"test_cases" => test_cases_params},
+         _current_test_cases,
+         selected_prompt
+       )
+       when is_map(test_cases_params) and map_size(test_cases_params) > 0 do
+    variables = prompt_variables(selected_prompt)
+
+    Map.new(test_cases_params, fn {id, test_case_params} ->
+      variable_values =
+        variables
+        |> Enum.map(fn var ->
+          {var, get_in(test_case_params, ["variable_values", var]) || ""}
+        end)
+        |> Map.new()
+
+      assertion_params =
+        test_case_params
+        |> Map.get("assertions", %{})
+        |> normalize_form_assertion_params()
+
+      assertions = merge_test_case_assertions(test_case_params)
+
+      form_params =
+        %{"variable_values" => variable_values}
+        |> Map.merge(AssertionParser.build_form_params(assertions))
+        |> Map.put("assertions", assertion_params)
+        |> maybe_put_assertions_json_param(test_case_params)
+
+      {id, form_params}
+    end)
+  end
+
+  defp merge_test_case_form_params(
+         %{"test_cases" => _test_cases_params},
+         current_test_cases,
+         selected_prompt
+       ) do
+    current_test_cases
+    |> sync_test_case_variables(selected_prompt)
+    |> build_test_case_form_params_map()
+  end
+
+  defp merge_test_case_form_params(_suite_params, current_test_cases, selected_prompt) do
+    current_test_cases
+    |> sync_test_case_variables(selected_prompt)
+    |> build_test_case_form_params_map()
+  end
+
+  defp build_test_case_form_params_map(test_cases) do
+    Map.new(test_cases, fn test_case ->
+      {test_case.id, build_test_case_form_params(test_case)}
+    end)
+  end
+
+  defp build_test_case_form_params(test_case) do
+    %{
+      "variable_values" => test_case[:variable_values] || %{}
+    }
+    |> Map.merge(AssertionParser.build_form_params(test_case[:assertions] || []))
+  end
+
+  defp put_test_case_form_params(socket, test_case) do
+    assign(
+      socket,
+      :test_case_form_params,
+      Map.put(
+        socket.assigns.test_case_form_params,
+        test_case.id,
+        build_test_case_form_params(test_case)
+      )
+    )
+  end
+
+  defp sync_test_case_form_params(socket, test_cases, id) do
+    updated_test_case = Enum.find(test_cases, &(&1.id == id))
+
+    socket
+    |> assign(:test_cases, test_cases)
+    |> put_test_case_form_params(updated_test_case)
+  end
+
+  defp maybe_put_assertions_json_param(form_params, %{"assertions_json" => assertions_json}) do
+    Map.put(form_params, "assertions_json", assertions_json || "")
+  end
+
+  defp maybe_put_assertions_json_param(form_params, _test_case_params), do: form_params
+
+  defp normalize_form_assertion_params(params) when is_map(params), do: params
+  defp normalize_form_assertion_params(params) when is_list(params), do: Map.new(params)
+  defp normalize_form_assertion_params(_params), do: %{}
+
+  defp current_assertion_type(test_case_id, idx, form_params, assertion) do
+    assertion_form_value(test_case_id, idx, "type", form_params) || assertion["type"] ||
+      "contains"
+  end
+
+  defp assertion_text_value(test_case_id, idx, field_name, assertion_key, form_params, assertion) do
+    case assertion_form_value(test_case_id, idx, field_name, form_params) ||
+           assertion[assertion_key] do
+      value when is_binary(value) -> value
+      _other -> ""
+    end
+  end
+
+  defp assertion_expected_json_value(test_case_id, idx, form_params, assertion) do
+    case assertion_form_value(test_case_id, idx, "expected_json", form_params) do
+      nil ->
+        if is_map(assertion["expected"]) or is_list(assertion["expected"]) do
+          Jason.encode!(assertion["expected"], pretty: true)
+        else
+          ""
+        end
+
+      value ->
+        value
+    end
+  end
+
+  defp assertion_threshold_value(test_case_id, idx, form_params, assertion) do
+    case assertion_form_value(test_case_id, idx, "threshold", form_params) do
+      nil ->
+        if is_number(assertion["threshold"]), do: to_string(assertion["threshold"]), else: ""
+
+      value ->
+        value
+    end
+  end
+
+  defp assertion_form_value(test_case_id, idx, field_name, form_params) do
+    form_params
+    |> Map.get(test_case_id, %{})
+    |> Map.get("assertions", %{})
+    |> normalize_form_assertion_params()
+    |> Map.get("assertion_#{field_name}_#{idx}")
+  end
+
+  defp test_case_assertions_json_value(test_case, form_params) do
+    case Map.get(form_params, test_case.id, %{}) do
+      %{"assertions_json" => assertions_json} ->
+        assertions_json
+
+      _other ->
+        if test_case[:assertions], do: Jason.encode!(test_case.assertions, pretty: true), else: ""
+    end
   end
 
   defp prompt_variables(%{versions: [%{template: template} | _]}), do: extract_variables(template)

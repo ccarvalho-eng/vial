@@ -172,14 +172,14 @@ defmodule Aludel.Web.SuiteLive.Show do
   @impl Phoenix.LiveView
   def handle_event("add_assertion", %{"id" => _id}, socket) do
     new_assertions = socket.assigns.editing_assertions ++ [%{"type" => "contains", "value" => ""}]
-    {:noreply, assign(socket, :editing_assertions, new_assertions)}
+    {:noreply, sync_editing_assertions(socket, new_assertions)}
   end
 
   @impl Phoenix.LiveView
   def handle_event("remove_assertion", %{"index" => index_str, "id" => _id}, socket) do
     index = String.to_integer(index_str)
     new_assertions = List.delete_at(socket.assigns.editing_assertions, index)
-    {:noreply, assign(socket, :editing_assertions, new_assertions)}
+    {:noreply, sync_editing_assertions(socket, new_assertions)}
   end
 
   @impl Phoenix.LiveView
@@ -233,6 +233,7 @@ defmodule Aludel.Web.SuiteLive.Show do
   @impl Phoenix.LiveView
   def handle_event("validate_test_case", %{"test_case" => test_case_params}, socket) do
     edit_mode = Map.get(socket.assigns.assertion_edit_mode, test_case_params["id"], :visual)
+    test_case_params = sanitize_test_case_params(test_case_params, edit_mode, socket)
 
     socket =
       socket
@@ -240,7 +241,7 @@ defmodule Aludel.Web.SuiteLive.Show do
 
     socket =
       if edit_mode == :visual do
-        case AssertionParser.parse(:visual, test_case_params) do
+        case AssertionParser.preview_visual(test_case_params) do
           {:ok, assertions} ->
             socket
             |> assign(:editing_assertions, assertions)
@@ -281,6 +282,7 @@ defmodule Aludel.Web.SuiteLive.Show do
     id = test_case_params["id"]
     test_case = Evals.get_test_case!(id)
     edit_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
+    test_case_params = sanitize_test_case_params(test_case_params, edit_mode, socket)
 
     case TestCaseEditor.update_test_case(test_case, test_case_params, edit_mode) do
       {:ok, _test_case} ->
@@ -300,6 +302,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       {:error, message} when is_binary(message) ->
         {:noreply,
          socket
+         |> sync_preview_assertions(edit_mode, test_case_params)
          |> assign(
            :test_case_form,
            to_form(
@@ -576,6 +579,107 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   defp display_value(value) when is_map(value) or is_list(value), do: Jason.encode!(value)
   defp display_value(value), do: to_string(value)
+
+  defp sync_editing_assertions(socket, assertions) do
+    form_params =
+      (socket.assigns.editing_test_case_params || %{})
+      |> Map.take(["id", "variable_values"])
+      |> Map.merge(AssertionParser.build_form_params(assertions))
+
+    socket
+    |> assign(:editing_assertions, assertions)
+    |> assign(:editing_test_case_params, form_params)
+    |> assign(:test_case_form, to_form(TestCaseEditor.change_form(form_params), as: :test_case))
+  end
+
+  defp sync_preview_assertions(socket, :visual, test_case_params) do
+    case AssertionParser.preview_visual(test_case_params) do
+      {:ok, assertions} -> assign(socket, :editing_assertions, assertions)
+      {:error, _preview_error} -> socket
+    end
+  end
+
+  defp sync_preview_assertions(socket, _edit_mode, _test_case_params), do: socket
+
+  defp sanitize_test_case_params(test_case_params, :visual, socket) do
+    allowed_indices =
+      (socket.assigns.editing_assertions || [])
+      |> Enum.with_index()
+      |> Enum.map(fn {_assertion, idx} -> idx end)
+      |> MapSet.new()
+
+    assertion_params =
+      test_case_params
+      |> Map.get("assertions", %{})
+      |> normalize_assertion_params()
+      |> Enum.filter(fn {key, _value} -> keep_assertion_param?(key, allowed_indices) end)
+      |> Map.new()
+
+    Map.put(test_case_params, "assertions", assertion_params)
+  end
+
+  defp sanitize_test_case_params(test_case_params, _edit_mode, _socket), do: test_case_params
+
+  defp normalize_assertion_params(params) when is_map(params), do: params
+  defp normalize_assertion_params(params) when is_list(params), do: Map.new(params)
+  defp normalize_assertion_params(_params), do: %{}
+
+  defp keep_assertion_param?(key, allowed_indices) when is_binary(key) do
+    case Regex.run(~r/_(\d+)$/, key, capture: :all_but_first) do
+      [idx] ->
+        case Integer.parse(idx) do
+          {parsed_idx, ""} -> MapSet.member?(allowed_indices, parsed_idx)
+          _ -> true
+        end
+
+      _ ->
+        true
+    end
+  end
+
+  defp assertion_type_value(assertion, test_case_params, idx) do
+    assertion_form_value(test_case_params, idx, "type") || assertion["type"] || "contains"
+  end
+
+  defp assertion_text_value(assertion, test_case_params, idx, field_name, assertion_key) do
+    case assertion_form_value(test_case_params, idx, field_name) || assertion[assertion_key] do
+      value when is_binary(value) -> value
+      _other -> ""
+    end
+  end
+
+  defp assertion_expected_json_value(assertion, test_case_params, idx) do
+    case assertion_form_value(test_case_params, idx, "expected_json") do
+      nil ->
+        if is_map(assertion["expected"]) or is_list(assertion["expected"]) do
+          Jason.encode!(assertion["expected"], pretty: true)
+        else
+          ""
+        end
+
+      value ->
+        value
+    end
+  end
+
+  defp assertion_threshold_value(assertion, test_case_params, idx) do
+    case assertion_form_value(test_case_params, idx, "threshold") do
+      nil ->
+        if is_number(assertion["threshold"]), do: to_string(assertion["threshold"]), else: ""
+
+      value ->
+        value
+    end
+  end
+
+  defp assertion_form_value(nil, _idx, _field_name), do: nil
+
+  defp assertion_form_value(test_case_params, idx, field_name) do
+    test_case_params
+    |> Map.get("assertions", %{})
+    |> normalize_assertion_params()
+    |> Map.get("assertion_#{field_name}_#{idx}")
+  end
 
   defp retry_count(%{"retry_count" => count}) when is_integer(count), do: count
 

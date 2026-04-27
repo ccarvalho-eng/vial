@@ -32,11 +32,19 @@ defmodule Aludel.Evals.AssertionParser do
     params
     |> Map.get("assertions", %{})
     |> normalize_assertion_params()
-    |> parse_visual_assertions()
+    |> parse_visual_assertions(:strict)
     |> case do
       {:ok, assertions} -> validate(assertions)
       {:error, _message} = error -> error
     end
+  end
+
+  @spec preview_visual(map()) :: {:ok, [map()]} | {:error, String.t()}
+  def preview_visual(params) do
+    params
+    |> Map.get("assertions", %{})
+    |> normalize_assertion_params()
+    |> parse_visual_assertions(:preview)
   end
 
   @spec validate([map()]) :: {:ok, [map()]} | {:error, String.t()}
@@ -59,10 +67,10 @@ defmodule Aludel.Evals.AssertionParser do
     }
   end
 
-  defp parse_visual_assertions(assertion_params) do
+  defp parse_visual_assertions(assertion_params, mode) do
     with {:ok, assertion_indices} <- parse_assertion_indices(assertion_params) do
       assertion_indices
-      |> Enum.reduce_while({:ok, []}, &collect_visual_assertion(assertion_params, &1, &2))
+      |> Enum.reduce_while({:ok, []}, &collect_visual_assertion(assertion_params, &1, &2, mode))
       |> case do
         {:ok, assertions} -> {:ok, Enum.reverse(assertions)}
         {:error, _message} = error -> error
@@ -99,7 +107,7 @@ defmodule Aludel.Evals.AssertionParser do
     Map.put(params, "assertion_value_#{idx}", assertion["value"] || "")
   end
 
-  defp build_visual_assertion(assertion_params, idx) do
+  defp build_visual_assertion(assertion_params, idx, :strict) do
     type = Map.get(assertion_params, "assertion_type_#{idx}")
 
     case type do
@@ -123,6 +131,37 @@ defmodule Aludel.Evals.AssertionParser do
            %{"type" => type, "expected" => expected}
            |> maybe_put_threshold(threshold)}
         end
+
+      _other ->
+        {:ok,
+         %{
+           "type" => type,
+           "value" => Map.get(assertion_params, "assertion_value_#{idx}", "")
+         }}
+    end
+  end
+
+  defp build_visual_assertion(assertion_params, idx, :preview) do
+    type = Map.get(assertion_params, "assertion_type_#{idx}")
+
+    case type do
+      "json_field" ->
+        {:ok,
+         %{
+           "type" => type,
+           "field" => Map.get(assertion_params, "assertion_field_#{idx}", ""),
+           "expected" => Map.get(assertion_params, "assertion_expected_#{idx}", "")
+         }}
+
+      "json_deep_compare" ->
+        {:ok,
+         %{"type" => type}
+         |> maybe_put_preview_expected(
+           Map.get(assertion_params, "assertion_expected_json_#{idx}", "")
+         )
+         |> maybe_put_preview_threshold(
+           Map.get(assertion_params, "assertion_threshold_#{idx}", "")
+         )}
 
       _other ->
         {:ok,
@@ -265,8 +304,8 @@ defmodule Aludel.Evals.AssertionParser do
      "Assertion at index #{idx}: json_deep_compare type requires a threshold between 0 and 100"}
   end
 
-  defp collect_visual_assertion(assertion_params, idx, {:ok, assertions}) do
-    case build_visual_assertion(assertion_params, idx) do
+  defp collect_visual_assertion(assertion_params, idx, {:ok, assertions}, mode) do
+    case build_visual_assertion(assertion_params, idx, mode) do
       {:ok, assertion} -> {:cont, {:ok, [assertion | assertions]}}
       {:error, _message} = error -> {:halt, error}
     end
@@ -274,6 +313,27 @@ defmodule Aludel.Evals.AssertionParser do
 
   defp maybe_put_threshold(assertion, nil), do: assertion
   defp maybe_put_threshold(assertion, threshold), do: Map.put(assertion, "threshold", threshold)
+
+  defp maybe_put_preview_expected(assertion, value) when is_binary(value) do
+    case Jason.decode(value) do
+      {:ok, decoded} when is_map(decoded) or is_list(decoded) ->
+        Map.put(assertion, "expected", decoded)
+
+      _other ->
+        assertion
+    end
+  end
+
+  defp maybe_put_preview_expected(assertion, _value), do: assertion
+
+  defp maybe_put_preview_threshold(assertion, value) when is_binary(value) do
+    case Float.parse(String.trim(value)) do
+      {threshold, ""} -> Map.put(assertion, "threshold", threshold)
+      _other -> assertion
+    end
+  end
+
+  defp maybe_put_preview_threshold(assertion, _value), do: assertion
 
   defp valid_threshold?(nil), do: true
   defp valid_threshold?(value) when is_integer(value), do: value >= 0 and value <= 100

@@ -224,4 +224,46 @@ defmodule Aludel.Evals.AssertionParserTest do
       assert expected_json =~ "\"status\": \"ok\""
     end
   end
+
+  describe "preview_visual/1" do
+    test "keeps json_field assertions in draft mode when required inputs are blank" do
+      params = %{
+        "assertions" => %{
+          "assertion_type_0" => "json_field",
+          "assertion_field_0" => "",
+          "assertion_expected_0" => ""
+        }
+      }
+
+      assert {:ok,
+              [
+                %{
+                  "type" => "json_field",
+                  "field" => "",
+                  "expected" => ""
+                }
+              ]} = AssertionParser.preview_visual(params)
+    end
+
+    test "switches away from deep compare inputs in draft mode" do
+      params = %{
+        "assertions" => %{
+          "assertion_type_0" => "json_field",
+          "assertion_field_0" => "status",
+          "assertion_expected_0" => "ok",
+          "assertion_expected_json_0" => ~s({"status":"ok"}),
+          "assertion_threshold_0" => "80.0"
+        }
+      }
+
+      assert {:ok,
+              [
+                %{
+                  "type" => "json_field",
+                  "field" => "status",
+                  "expected" => "ok"
+                }
+              ]} = AssertionParser.preview_visual(params)
+    end
+  end
 end

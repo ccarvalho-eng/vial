@@ -137,6 +137,13 @@
                   </div>
                   <%= if Map.get(@assertion_edit_mode, test_case.id, :visual) == :visual do %>
                     <%= for {assertion, idx} <- Enum.with_index(test_case[:assertions] || []) do %>
+                      <% current_type =
+                        current_assertion_type(
+                          test_case.id,
+                          idx,
+                          @test_case_form_params,
+                          assertion
+                        ) %>
                       <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-tertiary);">
                         <div style="display: grid; grid-template-columns: minmax(0, 1fr) 38px; gap: 8px;">
                           <div style="min-width: 0;">
@@ -147,13 +154,14 @@
                               id={"assertion-type-#{test_case.id}-#{idx}"}
                               data-index={idx}
                               data-test-case-id={test_case.id}
-                              value={assertion["type"]}
+                              value={current_type}
                               options={[
                                 {"contains", "contains"},
                                 {"not contains", "not_contains"},
                                 {"regex", "regex"},
                                 {"exact", "exact_match"},
-                                {"json field", "json_field"}
+                                {"json field", "json_field"},
+                                {"json deep compare", "json_deep_compare"}
                               ]}
                               class="w-full select text-[13px]"
                             />
@@ -169,55 +177,131 @@
                             ✕
                           </button>
                         </div>
-                        <%!-- JSON field inputs --%>
-                        <div
-                          id={"json-fields-#{test_case.id}-#{idx}"}
-                          style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
-                        >
-                          <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 11px; color: var(--text-muted);">
-                              Field path (e.g., "user.name"):
-                            </label>
-                            <.input
-                              type="text"
-                              name={"suite[test_cases][#{test_case.id}][assertions][assertion_field_#{idx}]"}
-                              value={assertion["field"] || ""}
-                              placeholder="invoice_number"
-                              id={"test_case_#{test_case.id}_assertion_field_#{idx}"}
-                              class="input text-[13px]"
-                            />
-                          </div>
-                          <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 11px; color: var(--text-muted);">
-                              Expected value:
-                            </label>
-                            <.input
-                              type="text"
-                              name={"suite[test_cases][#{test_case.id}][assertions][assertion_expected_#{idx}]"}
-                              value={assertion["expected"] || ""}
-                              placeholder="INV-001"
-                              id={"test_case_#{test_case.id}_assertion_expected_#{idx}"}
-                              class="input text-[13px]"
-                            />
-                          </div>
-                        </div>
-                        <%!-- Regular assertion value input --%>
-                        <div
-                          id={"value-field-#{test_case.id}-#{idx}"}
-                          style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
-                        >
-                          <label style="font-size: 11px; color: var(--text-muted);">
-                            Value to match:
-                          </label>
-                          <.input
-                            type="text"
-                            name={"suite[test_cases][#{test_case.id}][assertions][assertion_value_#{idx}]"}
-                            value={assertion["value"] || ""}
-                            placeholder="text to find"
-                            id={"test_case_#{test_case.id}_assertion_value_#{idx}"}
-                            class="input text-[13px]"
-                          />
-                        </div>
+                        <%= cond do %>
+                          <% current_type == "json_field" -> %>
+                            <div
+                              id={"json-fields-#{test_case.id}-#{idx}"}
+                              style="display: flex; flex-direction: column; gap: 6px;"
+                            >
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Field path (e.g., "user.name"):
+                                </label>
+                                <.input
+                                  type="text"
+                                  name={"suite[test_cases][#{test_case.id}][assertions][assertion_field_#{idx}]"}
+                                  value={
+                                    assertion_text_value(
+                                      test_case.id,
+                                      idx,
+                                      "field",
+                                      "field",
+                                      @test_case_form_params,
+                                      assertion
+                                    )
+                                  }
+                                  placeholder="invoice_number"
+                                  id={"test_case_#{test_case.id}_assertion_field_#{idx}"}
+                                  class="input text-[13px]"
+                                />
+                              </div>
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Expected value:
+                                </label>
+                                <.input
+                                  type="text"
+                                  name={"suite[test_cases][#{test_case.id}][assertions][assertion_expected_#{idx}]"}
+                                  value={
+                                    assertion_text_value(
+                                      test_case.id,
+                                      idx,
+                                      "expected",
+                                      "expected",
+                                      @test_case_form_params,
+                                      assertion
+                                    )
+                                  }
+                                  placeholder="INV-001"
+                                  id={"test_case_#{test_case.id}_assertion_expected_#{idx}"}
+                                  class="input text-[13px]"
+                                />
+                              </div>
+                            </div>
+                          <% current_type == "json_deep_compare" -> %>
+                            <div
+                              id={"deep-compare-fields-#{test_case.id}-#{idx}"}
+                              style="display: flex; flex-direction: column; gap: 6px;"
+                            >
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Expected JSON:
+                                </label>
+                                <.input
+                                  type="textarea"
+                                  name={"suite[test_cases][#{test_case.id}][assertions][assertion_expected_json_#{idx}]"}
+                                  value={
+                                    assertion_expected_json_value(
+                                      test_case.id,
+                                      idx,
+                                      @test_case_form_params,
+                                      assertion
+                                    )
+                                  }
+                                  placeholder={~s({"status":"ok","count":2})}
+                                  id={"test_case_#{test_case.id}_assertion_expected_json_#{idx}"}
+                                  rows="6"
+                                  class="json-editor w-full textarea"
+                                />
+                              </div>
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Pass threshold (optional, defaults to 100):
+                                </label>
+                                <.input
+                                  type="text"
+                                  name={"suite[test_cases][#{test_case.id}][assertions][assertion_threshold_#{idx}]"}
+                                  value={
+                                    assertion_threshold_value(
+                                      test_case.id,
+                                      idx,
+                                      @test_case_form_params,
+                                      assertion
+                                    )
+                                  }
+                                  placeholder="80.0"
+                                  id={"test_case_#{test_case.id}_assertion_threshold_#{idx}"}
+                                  class="input text-[13px]"
+                                />
+                              </div>
+                            </div>
+                          <% true -> %>
+                            <div
+                              id={"value-field-#{test_case.id}-#{idx}"}
+                              style="display: flex; flex-direction: column; gap: 4px;"
+                            >
+                              <label style="font-size: 11px; color: var(--text-muted);">
+                                Value to match:
+                              </label>
+                              <.input
+                                type="text"
+                                name={"suite[test_cases][#{test_case.id}][assertions][assertion_value_#{idx}]"}
+                                value={
+                                  assertion_text_value(
+                                    test_case.id,
+                                    idx,
+                                    "value",
+                                    "value",
+                                    @test_case_form_params,
+                                    assertion
+                                  )
+                                }
+                                placeholder="text to find"
+                                id={"test_case_#{test_case.id}_assertion_value_#{idx}"}
+                                class="input text-[13px]"
+                              />
+                            </div>
+                        <% end %>
                       </div>
                     <% end %>
                   <% else %>
@@ -226,16 +310,12 @@
                       name={"suite[test_cases][#{test_case.id}][assertions_json]"}
                       id={"test_case_#{test_case.id}_assertions"}
                       rows="6"
-                      value={
-                        if test_case[:assertions],
-                          do: Jason.encode!(test_case.assertions, pretty: true),
-                          else: ""
-                      }
+                      value={test_case_assertions_json_value(test_case, @test_case_form_params)}
                       placeholder='[{"type": "contains", "value": "expected text"}]'
                       class="json-editor"
                     />
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                      Types: contains, not_contains, regex, exact_match, json_field
+                      Types: contains, not_contains, regex, exact_match, json_field, json_deep_compare
                     </div>
                   <% end %>
                 </div>

@@ -108,6 +108,99 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
       assert has_element?(view, "[phx-click='add_assertion'][phx-value-id='#{test_case_id}']")
     end
+
+    test "renders deep compare controls without value input", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("add_assertion", %{"id" => test_case_id})
+
+      view
+      |> render_change("validate", %{
+        "suite" => %{
+          "test_cases" => %{
+            test_case_id => %{
+              "assertions" => %{
+                "assertion_type_0" => "json_deep_compare"
+              }
+            }
+          }
+        }
+      })
+
+      view
+      |> render_change("validate", %{
+        "suite" => %{
+          "test_cases" => %{
+            test_case_id => %{
+              "assertions" => %{
+                "assertion_type_0" => "json_deep_compare",
+                "assertion_expected_json_0" => ~s({"status":"ok"}),
+                "assertion_threshold_0" => "80.0"
+              }
+            }
+          }
+        }
+      })
+
+      assert has_element?(view, "#deep-compare-fields-#{test_case_id}-0")
+      assert has_element?(view, "#test_case_#{test_case_id}_assertion_expected_json_0")
+      assert has_element?(view, "#test_case_#{test_case_id}_assertion_threshold_0[value='80.0']")
+      refute has_element?(view, "#value-field-#{test_case_id}-0")
+    end
+
+    test "switches from deep compare to json_field controls", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("add_assertion", %{"id" => test_case_id})
+
+      view
+      |> render_change("validate", %{
+        "suite" => %{
+          "test_cases" => %{
+            test_case_id => %{
+              "assertions" => %{
+                "assertion_type_0" => "json_deep_compare"
+              }
+            }
+          }
+        }
+      })
+
+      view
+      |> render_change("validate", %{
+        "suite" => %{
+          "test_cases" => %{
+            test_case_id => %{
+              "assertions" => %{
+                "assertion_type_0" => "json_field",
+                "assertion_field_0" => "status",
+                "assertion_expected_0" => "ok"
+              }
+            }
+          }
+        }
+      })
+
+      assert has_element?(view, "#json-fields-#{test_case_id}-0")
+      assert has_element?(view, "#test_case_#{test_case_id}_assertion_field_0[value='status']")
+      assert has_element?(view, "#test_case_#{test_case_id}_assertion_expected_0[value='ok']")
+      refute has_element?(view, "#deep-compare-fields-#{test_case_id}-0")
+      refute has_element?(view, "#value-field-#{test_case_id}-0")
+    end
   end
 
   describe "suite creation" do
@@ -159,6 +252,84 @@ defmodule Aludel.Web.SuiteLive.NewTest do
               "assertions" => %{
                 "assertion_type_0" => "contains",
                 "assertion_value_0" => "hello"
+              }
+            }
+          }
+        }
+      })
+
+      {_path, flash} = assert_redirect(view)
+      assert flash["info"] == "Suite created successfully"
+    end
+
+    test "creates suite with a deep compare assertion successfully", %{conn: conn} do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      view
+      |> form("#suite-form", suite: %{name: "Deep Compare Suite", prompt_id: prompt.id})
+      |> render_change()
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("add_assertion", %{"id" => test_case_id})
+
+      view
+      |> render_change("validate", %{
+        "suite" => %{
+          "name" => "Deep Compare Suite",
+          "prompt_id" => prompt.id,
+          "test_cases" => %{
+            test_case_id => %{
+              "variable_values" => %{
+                "name" => "Alice"
+              },
+              "assertions" => %{
+                "assertion_type_0" => "json_deep_compare"
+              }
+            }
+          }
+        }
+      })
+
+      view
+      |> form("#suite-form",
+        suite: %{
+          name: "Deep Compare Suite",
+          prompt_id: prompt.id,
+          test_cases: %{
+            test_case_id => %{
+              variable_values: %{
+                name: "Alice"
+              },
+              assertions: %{
+                assertion_type_0: "json_deep_compare",
+                assertion_expected_json_0: ~s({"status":"ok","count":2}),
+                assertion_threshold_0: "75.0"
+              }
+            }
+          }
+        }
+      )
+      |> render_submit(%{
+        "suite" => %{
+          "name" => "Deep Compare Suite",
+          "prompt_id" => prompt.id,
+          "test_cases" => %{
+            test_case_id => %{
+              "variable_values" => %{
+                "name" => "Alice"
+              },
+              "assertions" => %{
+                "assertion_type_0" => "json_deep_compare",
+                "assertion_expected_json_0" => ~s({"status":"ok","count":2}),
+                "assertion_threshold_0" => "75.0"
               }
             }
           }
