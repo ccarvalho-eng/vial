@@ -54,6 +54,16 @@ export const EvolutionChart = {
       })
     }
 
+    // Score Chart
+    const scoreCanvas = this.el.querySelector('#score-chart')
+    if (scoreCanvas) {
+      this.charts.score = new Chart(scoreCanvas, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: this.getChartOptions('Score (%)', 0, 100)
+      })
+    }
+
     // Cost Chart
     const costCanvas = this.el.querySelector('#cost-chart')
     if (costCanvas) {
@@ -88,6 +98,25 @@ export const EvolutionChart = {
       // Only show legend when there are multiple lines (per-provider mode)
       this.charts.passRate.options.plugins.legend.display = viewMode === 'by_provider'
       this.charts.passRate.update()
+    }
+
+    // Update Score Chart
+    if (this.charts.score) {
+      const hasScore = viewMode === 'overall'
+        ? this.hasData(chartData.overall.scores)
+        : this.hasProviderData(chartData.by_provider, 'scores')
+      const scoreContainer = this.el.querySelector('#score-chart-container')
+
+      if (hasScore) {
+        scoreContainer.style.display = 'block'
+        const scoreDatasets = this.buildScoreDatasets(chartData, viewMode)
+        this.charts.score.data.labels = labels
+        this.charts.score.data.datasets = scoreDatasets
+        this.charts.score.options.plugins.legend.display = viewMode === 'by_provider'
+        this.charts.score.update()
+      } else {
+        scoreContainer.style.display = 'none'
+      }
     }
 
     // Update Cost Chart
@@ -314,4 +343,31 @@ export const EvolutionChart = {
     })
     this.charts = {}
   }
+
+  buildScoreDatasets(chartData, viewMode) {
+    if (viewMode === 'overall') {
+      return [{
+        label: 'Average Score',
+        data: chartData.overall.scores,
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        tension: 0.3,
+        fill: true
+      }]
+    } else {
+      const colors = [
+        '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
+        '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+      ]
+
+      return Object.entries(chartData.by_provider || {}).map(([providerName, data], index) => ({
+        label: providerName,
+        data: data.scores,
+        borderColor: colors[index % colors.length],
+        backgroundColor: `${colors[index % colors.length]}33`,
+        tension: 0.3,
+        fill: false
+      }))
+    }
+  },
 }

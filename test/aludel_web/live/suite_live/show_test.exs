@@ -313,6 +313,38 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
   end
 
   describe "assertion editing" do
+    test "edits a test case with deep compare assertions without crashing", %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{
+                "status" => "ok",
+                "meta" => %{"priority" => "high"},
+                "items" => [%{"id" => 1}, %{"id" => 2}]
+              },
+              "threshold" => 80.0
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      assert Process.alive?(view.pid)
+      assert has_element?(view, "#test-case-form-#{test_case.id}")
+      assert has_element?(view, "#deep-compare-fields-#{test_case.id}-0")
+      assert has_element?(view, "#test_case_assertion_expected_json_0")
+      assert has_element?(view, "#test_case_assertion_threshold_0[value='80.0']")
+    end
+
     test "shows assertion controls in edit mode", %{conn: conn} do
       suite = suite_fixture()
       test_case = test_case_fixture(%{suite_id: suite.id})
@@ -707,6 +739,109 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
                view,
                "#export-suite-run-#{suite_run.id}[href='/suites/runs/#{suite_run.id}/export']",
                "Export JSON"
+             )
+    end
+
+    test "renders deep compare score details for suite results", %{conn: conn} do
+      prompt = prompt_fixture_with_version()
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      prompt = Aludel.Prompts.get_prompt_with_versions!(prompt.id)
+      version = hd(prompt.versions)
+      provider = provider_fixture(%{name: "OpenAI"})
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      suite_run =
+        suite_run_fixture(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider.id,
+          passed: 1,
+          failed: 0,
+          avg_score: Decimal.new("75.0"),
+          results: [
+            %{
+              "test_case_id" => test_case.id,
+              "passed" => true,
+              "score" => 75.0,
+              "output" => ~s({"status":"ok","count":1,"meta":{"city":"NYC","zip":"10001"}}),
+              "assertion_results" => [
+                %{
+                  "type" => "json_deep_compare",
+                  "passed" => true,
+                  "score" => 75.0,
+                  "value" => %{
+                    "expected" => %{
+                      "status" => "ok",
+                      "count" => 2,
+                      "meta" => %{"city" => "NYC", "zip" => "10001"}
+                    },
+                    "threshold" => 70.0
+                  },
+                  "score_details" => %{
+                    "matches" => 3,
+                    "total" => 4,
+                    "field_scores" => %{
+                      "status" => 1,
+                      "count" => 0,
+                      "meta.city" => 1,
+                      "meta.zip" => 1
+                    },
+                    "comparisons" => %{
+                      "status" => %{"passed" => true, "expected" => "ok", "actual" => "ok"},
+                      "count" => %{"passed" => false, "expected" => 2, "actual" => 1},
+                      "meta.city" => %{"passed" => true, "expected" => "NYC", "actual" => "NYC"},
+                      "meta.zip" => %{
+                        "passed" => true,
+                        "expected" => "10001",
+                        "actual" => "10001"
+                      }
+                    }
+                  }
+                }
+              ],
+              "cost_usd" => 0.001,
+              "latency_ms" => 250
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      assert has_element?(view, "#suite-run-score-#{suite_run.id}", "75.0% avg score")
+
+      assert has_element?(
+               view,
+               "#suite-result-score-#{suite_run.id}-#{test_case.id}",
+               "75.0% match"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "meta.city"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "count"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "Expected"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "Actual"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-table-#{suite_run.id}-#{test_case.id}"
              )
     end
   end

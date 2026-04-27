@@ -13,7 +13,89 @@
 alias Aludel.Providers
 alias Aludel.Prompts
 alias Aludel.Evals
+alias Aludel.Evals.DeepCompare
 alias Aludel.Projects
+
+build_deep_compare_assertion_result = fn expected, actual, threshold ->
+  score_details = DeepCompare.compare(actual, expected)
+  score = DeepCompare.score(score_details)
+
+  %{
+    "type" => "json_deep_compare",
+    "passed" => score >= threshold,
+    "score" => score,
+    "value" => %{"expected" => expected, "threshold" => threshold},
+    "score_details" => score_details
+  }
+end
+
+build_suite_result = fn test_case_id, actual, expected, threshold, cost_usd, latency_ms ->
+  assertion_result = build_deep_compare_assertion_result.(expected, actual, threshold)
+
+  %{
+    "test_case_id" => test_case_id,
+    "passed" => assertion_result["passed"],
+    "score" => assertion_result["score"],
+    "output" => Jason.encode!(actual, pretty: true),
+    "assertion_results" => [assertion_result],
+    "cost_usd" => cost_usd,
+    "latency_ms" => latency_ms
+  }
+end
+
+summarize_suite_run = fn results ->
+  passed = Enum.count(results, & &1["passed"])
+  failed = length(results) - passed
+
+  scores =
+    results
+    |> Enum.map(& &1["score"])
+    |> Enum.filter(&is_number/1)
+
+  costs =
+    results
+    |> Enum.map(& &1["cost_usd"])
+    |> Enum.filter(&is_number/1)
+
+  latencies =
+    results
+    |> Enum.map(& &1["latency_ms"])
+    |> Enum.filter(&is_number/1)
+
+  avg_score =
+    case scores do
+      [] -> nil
+      values -> values |> Enum.sum() |> Kernel./(length(values)) |> Float.round(1)
+    end
+
+  avg_cost_usd =
+    case costs do
+      [] ->
+        nil
+
+      values ->
+        values
+        |> Enum.sum()
+        |> Kernel./(length(values))
+        |> Decimal.from_float()
+        |> Decimal.round(4)
+    end
+
+  avg_latency_ms =
+    case latencies do
+      [] -> nil
+      values -> values |> Enum.sum() |> Kernel./(length(values)) |> round()
+    end
+
+  %{
+    results: results,
+    passed: passed,
+    failed: failed,
+    avg_score: avg_score,
+    avg_cost_usd: avg_cost_usd,
+    avg_latency_ms: avg_latency_ms
+  }
+end
 
 # Create default providers if they don't exist
 case Providers.list_providers() do
@@ -318,6 +400,7 @@ case Prompts.list_prompts() do
               provider_id: provider1.id,
               passed: 7,
               failed: 3,
+              avg_score: Decimal.new("72.0"),
               avg_cost_usd: Decimal.new("0.0045"),
               avg_latency_ms: 850
             })
@@ -330,6 +413,7 @@ case Prompts.list_prompts() do
               provider_id: provider1.id,
               passed: 8,
               failed: 3,
+              avg_score: Decimal.new("78.5"),
               avg_cost_usd: Decimal.new("0.0042"),
               avg_latency_ms: 820
             })
@@ -342,6 +426,7 @@ case Prompts.list_prompts() do
               provider_id: provider1.id,
               passed: 13,
               failed: 4,
+              avg_score: Decimal.new("84.0"),
               avg_cost_usd: Decimal.new("0.0040"),
               avg_latency_ms: 800
             })
@@ -354,6 +439,7 @@ case Prompts.list_prompts() do
               provider_id: provider1.id,
               passed: 15,
               failed: 4,
+              avg_score: Decimal.new("89.0"),
               avg_cost_usd: Decimal.new("0.0038"),
               avg_latency_ms: 780
             })
@@ -366,6 +452,7 @@ case Prompts.list_prompts() do
               provider_id: provider1.id,
               passed: 18,
               failed: 4,
+              avg_score: Decimal.new("93.0"),
               avg_cost_usd: Decimal.new("0.0036"),
               avg_latency_ms: 760
             })
@@ -380,6 +467,7 @@ case Prompts.list_prompts() do
               provider_id: provider2.id,
               passed: 13,
               failed: 6,
+              avg_score: Decimal.new("69.5"),
               avg_cost_usd: Decimal.new("0.0048"),
               avg_latency_ms: 920
             })
@@ -392,6 +480,7 @@ case Prompts.list_prompts() do
               provider_id: provider2.id,
               passed: 15,
               failed: 6,
+              avg_score: Decimal.new("75.0"),
               avg_cost_usd: Decimal.new("0.0046"),
               avg_latency_ms: 890
             })
@@ -404,6 +493,7 @@ case Prompts.list_prompts() do
               provider_id: provider2.id,
               passed: 15,
               failed: 5,
+              avg_score: Decimal.new("81.0"),
               avg_cost_usd: Decimal.new("0.0044"),
               avg_latency_ms: 860
             })
@@ -416,6 +506,7 @@ case Prompts.list_prompts() do
               provider_id: provider2.id,
               passed: 17,
               failed: 5,
+              avg_score: Decimal.new("85.5"),
               avg_cost_usd: Decimal.new("0.0041"),
               avg_latency_ms: 830
             })
@@ -428,6 +519,7 @@ case Prompts.list_prompts() do
               provider_id: provider2.id,
               passed: 16,
               failed: 4,
+              avg_score: Decimal.new("90.0"),
               avg_cost_usd: Decimal.new("0.0039"),
               avg_latency_ms: 810
             })
@@ -532,7 +624,399 @@ case Prompts.list_prompts() do
           ]
         })
 
-        # Suite 4: Document Evaluation Suite (Invoice Processing)
+        # Prompt 4: Structured Support Ticket Triage
+        {:ok, triage_prompt} =
+          Prompts.create_prompt(%{
+            name: "Support Ticket Triage",
+            description: "Returns structured JSON triage decisions for inbound support tickets",
+            tags: ["structured-output", "support", "triage"],
+            project_id: prompt_project.id
+          })
+
+        {:ok, triage_v1} =
+          Prompts.create_prompt_version(
+            triage_prompt,
+            """
+            Read the support ticket and decide how the team should respond.
+
+            Return JSON describing the issue, urgency, and next actions.
+
+            Ticket:
+            {{ticket}}
+            """
+          )
+
+        {:ok, triage_v2} =
+          Prompts.create_prompt_version(
+            triage_prompt,
+            """
+            Read the support ticket and return ONLY valid JSON.
+
+            Use this schema:
+            {
+              "category": "billing|shipping|account|bug",
+              "priority": "low|medium|high",
+              "escalate": true|false,
+              "customer_sentiment": "neutral|concerned|frustrated",
+              "reply": {
+                "tone": "helpful|empathetic|direct",
+                "sla_hours": number
+              },
+              "action_items": ["short action", "short action"]
+            }
+
+            Ticket:
+            {{ticket}}
+            """
+          )
+
+        {:ok, triage_v3} =
+          Prompts.create_prompt_version(
+            triage_prompt,
+            """
+            Read the support ticket and return ONLY valid JSON with no markdown and no explanation.
+
+            Required keys:
+            - category: one of billing, shipping, account, bug
+            - priority: one of low, medium, high
+            - escalate: boolean
+            - customer_sentiment: one of neutral, concerned, frustrated
+            - reply.tone: one of helpful, empathetic, direct
+            - reply.sla_hours: integer
+            - action_items: ordered list of concrete next steps
+
+            Match the ticket details precisely. Keep action_items ordered from most immediate to least immediate.
+
+            Ticket:
+            {{ticket}}
+            """
+          )
+
+        {:ok, triage_suite} =
+          Evals.create_suite(%{
+            name: "Support Ticket Triage Suite",
+            description:
+              "Scores structured JSON output with deep comparison and threshold-based passing",
+            prompt_id: triage_prompt.id,
+            project_id: suite_project.id
+          })
+
+        triage_threshold = 85.0
+
+        billing_expected = %{
+          "category" => "billing",
+          "priority" => "high",
+          "escalate" => true,
+          "customer_sentiment" => "frustrated",
+          "reply" => %{"tone" => "empathetic", "sla_hours" => 4},
+          "action_items" => ["review refund request", "contact customer today"]
+        }
+
+        shipping_expected = %{
+          "category" => "shipping",
+          "priority" => "low",
+          "escalate" => false,
+          "customer_sentiment" => "neutral",
+          "reply" => %{"tone" => "helpful", "sla_hours" => 24},
+          "action_items" => ["share tracking link", "confirm delivery window"]
+        }
+
+        {:ok, billing_test_case} =
+          Evals.create_test_case(%{
+            suite_id: triage_suite.id,
+            name: "Premium billing escalation",
+            variable_values: %{
+              "ticket" =>
+                "I was charged twice for my annual plan and nobody has replied for two days. I'm a premium customer and need this fixed today."
+            },
+            assertions: [
+              %{
+                "type" => "json_deep_compare",
+                "expected" => billing_expected,
+                "threshold" => triage_threshold
+              }
+            ]
+          })
+
+        {:ok, shipping_test_case} =
+          Evals.create_test_case(%{
+            suite_id: triage_suite.id,
+            name: "Low urgency shipping update",
+            variable_values: %{
+              "ticket" =>
+                "Can you send me the tracking link for order 2048 and confirm whether it should arrive before Friday?"
+            },
+            assertions: [
+              %{
+                "type" => "json_deep_compare",
+                "expected" => shipping_expected,
+                "threshold" => triage_threshold
+              }
+            ]
+          })
+
+        billing_v1_output = %{
+          "category" => "billing",
+          "priority" => "medium",
+          "escalate" => true,
+          "customer_sentiment" => "concerned",
+          "reply" => %{"tone" => "empathetic", "sla_hours" => 24},
+          "action_items" => ["review refund request", "contact customer today"]
+        }
+
+        shipping_v1_output = %{
+          "category" => "account",
+          "priority" => "medium",
+          "escalate" => false,
+          "customer_sentiment" => "neutral",
+          "reply" => %{"tone" => "helpful", "sla_hours" => 48},
+          "action_items" => ["share tracking link"]
+        }
+
+        billing_v2_output = %{
+          "category" => "billing",
+          "priority" => "high",
+          "escalate" => true,
+          "customer_sentiment" => "frustrated",
+          "reply" => %{"tone" => "empathetic", "sla_hours" => 8},
+          "action_items" => ["review refund request", "contact customer today"]
+        }
+
+        shipping_v2_output = %{
+          "category" => "shipping",
+          "priority" => "low",
+          "escalate" => false,
+          "customer_sentiment" => "neutral",
+          "reply" => %{"tone" => "helpful", "sla_hours" => 24},
+          "action_items" => ["share tracking link", "offer refund"]
+        }
+
+        billing_v2_provider2_output = %{
+          "category" => "billing",
+          "priority" => "high",
+          "escalate" => false,
+          "customer_sentiment" => "frustrated",
+          "reply" => %{"tone" => "empathetic", "sla_hours" => 8},
+          "action_items" => ["review refund request", "contact customer today"]
+        }
+
+        billing_v1_provider2_output = %{
+          "category" => "billing",
+          "priority" => "low",
+          "escalate" => false,
+          "customer_sentiment" => "frustrated",
+          "reply" => %{"tone" => "direct", "sla_hours" => 24},
+          "action_items" => ["contact customer today"]
+        }
+
+        triage_v3_perfect_output = fn expected -> expected end
+
+        shipping_v3_provider2_output = %{
+          "category" => "shipping",
+          "priority" => "low",
+          "escalate" => false,
+          "customer_sentiment" => "neutral",
+          "reply" => %{"tone" => "direct", "sla_hours" => 24},
+          "action_items" => ["share tracking link", "confirm delivery window"]
+        }
+
+        providers = Providers.list_providers()
+
+        if length(providers) >= 2 do
+          [provider1, provider2 | _rest] = providers
+
+          triage_v1_provider1_results = [
+            build_suite_result.(
+              billing_test_case.id,
+              billing_v1_output,
+              billing_expected,
+              triage_threshold,
+              0.0039,
+              940
+            ),
+            build_suite_result.(
+              shipping_test_case.id,
+              shipping_v1_output,
+              shipping_expected,
+              triage_threshold,
+              0.0032,
+              810
+            )
+          ]
+
+          triage_v2_provider1_results = [
+            build_suite_result.(
+              billing_test_case.id,
+              billing_v2_output,
+              billing_expected,
+              triage_threshold,
+              0.0036,
+              760
+            ),
+            build_suite_result.(
+              shipping_test_case.id,
+              shipping_v2_output,
+              shipping_expected,
+              triage_threshold,
+              0.0030,
+              640
+            )
+          ]
+
+          triage_v3_provider1_results = [
+            build_suite_result.(
+              billing_test_case.id,
+              triage_v3_perfect_output.(billing_expected),
+              billing_expected,
+              triage_threshold,
+              0.0033,
+              620
+            ),
+            build_suite_result.(
+              shipping_test_case.id,
+              triage_v3_perfect_output.(shipping_expected),
+              shipping_expected,
+              triage_threshold,
+              0.0029,
+              590
+            )
+          ]
+
+          triage_v1_provider2_results = [
+            build_suite_result.(
+              billing_test_case.id,
+              billing_v1_provider2_output,
+              billing_expected,
+              triage_threshold,
+              0.0041,
+              990
+            ),
+            build_suite_result.(
+              shipping_test_case.id,
+              shipping_v1_output,
+              shipping_expected,
+              triage_threshold,
+              0.0034,
+              860
+            )
+          ]
+
+          triage_v2_provider2_results = [
+            build_suite_result.(
+              billing_test_case.id,
+              billing_v2_provider2_output,
+              billing_expected,
+              triage_threshold,
+              0.0038,
+              800
+            ),
+            build_suite_result.(
+              shipping_test_case.id,
+              shipping_v2_output,
+              shipping_expected,
+              triage_threshold,
+              0.0031,
+              690
+            )
+          ]
+
+          triage_v3_provider2_results = [
+            build_suite_result.(
+              billing_test_case.id,
+              triage_v3_perfect_output.(billing_expected),
+              billing_expected,
+              triage_threshold,
+              0.0035,
+              650
+            ),
+            build_suite_result.(
+              shipping_test_case.id,
+              shipping_v3_provider2_output,
+              shipping_expected,
+              triage_threshold,
+              0.0030,
+              610
+            )
+          ]
+
+          {:ok, _triage_run_v1_provider1} =
+            Evals.create_suite_run(
+              Map.merge(
+                %{
+                  suite_id: triage_suite.id,
+                  prompt_version_id: triage_v1.id,
+                  provider_id: provider1.id
+                },
+                summarize_suite_run.(triage_v1_provider1_results)
+              )
+            )
+
+          {:ok, _triage_run_v2_provider1} =
+            Evals.create_suite_run(
+              Map.merge(
+                %{
+                  suite_id: triage_suite.id,
+                  prompt_version_id: triage_v2.id,
+                  provider_id: provider1.id
+                },
+                summarize_suite_run.(triage_v2_provider1_results)
+              )
+            )
+
+          {:ok, _triage_run_v3_provider1} =
+            Evals.create_suite_run(
+              Map.merge(
+                %{
+                  suite_id: triage_suite.id,
+                  prompt_version_id: triage_v3.id,
+                  provider_id: provider1.id
+                },
+                summarize_suite_run.(triage_v3_provider1_results)
+              )
+            )
+
+          {:ok, _triage_run_v1_provider2} =
+            Evals.create_suite_run(
+              Map.merge(
+                %{
+                  suite_id: triage_suite.id,
+                  prompt_version_id: triage_v1.id,
+                  provider_id: provider2.id
+                },
+                summarize_suite_run.(triage_v1_provider2_results)
+              )
+            )
+
+          {:ok, _triage_run_v2_provider2} =
+            Evals.create_suite_run(
+              Map.merge(
+                %{
+                  suite_id: triage_suite.id,
+                  prompt_version_id: triage_v2.id,
+                  provider_id: provider2.id
+                },
+                summarize_suite_run.(triage_v2_provider2_results)
+              )
+            )
+
+          {:ok, _triage_run_v3_provider2} =
+            Evals.create_suite_run(
+              Map.merge(
+                %{
+                  suite_id: triage_suite.id,
+                  prompt_version_id: triage_v3.id,
+                  provider_id: provider2.id
+                },
+                summarize_suite_run.(triage_v3_provider2_results)
+              )
+            )
+
+          IO.puts("✓ Created structured output scoring demo with deep compare suite runs")
+          IO.puts("  Provider 1 score trend: 56.3% → 87.5% → 100.0%")
+          IO.puts("  Provider 2 score trend: 43.8% → 81.3% → 93.8%")
+        end
+
+        # Suite 5: Document Evaluation Suite (Invoice Processing)
         {:ok, invoice_prompt} =
           Prompts.create_prompt(%{
             name: "Invoice Data Extraction",
@@ -618,8 +1102,9 @@ case Prompts.list_prompts() do
             ]
           })
 
-        IO.puts("✓ Created 4 sample evaluation suites with test cases")
+        IO.puts("✓ Created 5 sample evaluation suites with test cases")
         IO.puts("  → Added suite project: Regression Suites")
+        IO.puts("  → Support Ticket Triage Suite includes seeded deep comparison scores")
         IO.puts("  → Invoice Processing Suite requires document upload to run")
 
       _ ->

@@ -175,7 +175,8 @@ defmodule Aludel.Web.PromptLive.EvolutionTest do
           passed: 5,
           failed: 0,
           avg_cost_usd: Decimal.new("0.005"),
-          avg_latency_ms: 450
+          avg_latency_ms: 450,
+          avg_score: Decimal.new("82.5")
         })
 
       {:ok, view, _html} = live(conn, "/prompts/#{prompt.id}/evolution")
@@ -186,6 +187,8 @@ defmodule Aludel.Web.PromptLive.EvolutionTest do
       [metric] = socket.assigns.metrics
       assert Decimal.equal?(metric.avg_cost_usd, Decimal.new("0.005"))
       assert metric.avg_latency_ms == 450
+      assert Decimal.equal?(metric.avg_score, Decimal.new("82.5"))
+      assert socket.assigns.chart_data.overall.scores == [82.5]
     end
   end
 

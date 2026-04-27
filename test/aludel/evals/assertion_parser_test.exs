@@ -67,6 +67,41 @@ defmodule Aludel.Evals.AssertionParserTest do
               ]} = AssertionParser.parse(:visual, params)
     end
 
+    test "parses json_deep_compare assertions in JSON mode" do
+      params = %{
+        "assertions_json" =>
+          ~s([{"type":"json_deep_compare","expected":{"status":"ok","count":2},"threshold":75.0}])
+      }
+
+      assert {:ok,
+              [
+                %{
+                  "type" => "json_deep_compare",
+                  "expected" => %{"status" => "ok", "count" => 2},
+                  "threshold" => 75.0
+                }
+              ]} = AssertionParser.parse(:json, params)
+    end
+
+    test "parses json_deep_compare assertions in visual mode" do
+      params = %{
+        "assertions" => %{
+          "assertion_type_0" => "json_deep_compare",
+          "assertion_expected_json_0" => ~s({"status":"ok","count":2}),
+          "assertion_threshold_0" => "75.0"
+        }
+      }
+
+      assert {:ok,
+              [
+                %{
+                  "type" => "json_deep_compare",
+                  "expected" => %{"status" => "ok", "count" => 2},
+                  "threshold" => 75.0
+                }
+              ]} = AssertionParser.parse(:visual, params)
+    end
+
     test "rejects visual assertions with invalid indices" do
       params = %{
         "assertions" => %{
@@ -130,6 +165,26 @@ defmodule Aludel.Evals.AssertionParserTest do
       assert {:error, message} = AssertionParser.parse(:visual, params)
       assert message =~ "json_field type requires a non-blank 'expected' value"
     end
+
+    test "rejects json_deep_compare assertions with invalid expected JSON" do
+      params = %{
+        "assertions_json" =>
+          ~s([{"type":"json_deep_compare","expected":"not-json-object","threshold":75.0}])
+      }
+
+      assert {:error, message} = AssertionParser.parse(:json, params)
+      assert message =~ "json_deep_compare type requires an 'expected' map or list"
+    end
+
+    test "rejects json_deep_compare assertions with invalid thresholds" do
+      params = %{
+        "assertions_json" =>
+          ~s([{"type":"json_deep_compare","expected":{"status":"ok"},"threshold":120}])
+      }
+
+      assert {:error, message} = AssertionParser.parse(:json, params)
+      assert message =~ "json_deep_compare type requires a threshold between 0 and 100"
+    end
   end
 
   describe "build_form_params/1" do
@@ -145,6 +200,28 @@ defmodule Aludel.Evals.AssertionParserTest do
              } = AssertionParser.build_form_params(assertions)
 
       assert assertions_json =~ "\"type\": \"contains\""
+    end
+
+    test "builds visual params for json_deep_compare assertions" do
+      assertions = [
+        %{
+          "type" => "json_deep_compare",
+          "expected" => %{"status" => "ok", "count" => 2},
+          "threshold" => 75.0
+        }
+      ]
+
+      assert %{
+               "assertions_json" => assertions_json,
+               "assertions" => %{
+                 "assertion_type_0" => "json_deep_compare",
+                 "assertion_expected_json_0" => expected_json,
+                 "assertion_threshold_0" => "75.0"
+               }
+             } = AssertionParser.build_form_params(assertions)
+
+      assert assertions_json =~ "\"type\": \"json_deep_compare\""
+      assert expected_json =~ "\"status\": \"ok\""
     end
   end
 end

@@ -3,7 +3,14 @@ defmodule Aludel.Evals.AssertionParser do
   Parses and validates assertion payloads from suite editor forms.
   """
 
-  @valid_types ["contains", "not_contains", "regex", "exact_match", "json_field"]
+  @valid_types [
+    "contains",
+    "not_contains",
+    "regex",
+    "exact_match",
+    "json_field",
+    "json_deep_compare"
+  ]
 
   @type parse_mode :: :json | :visual
 
@@ -54,7 +61,12 @@ defmodule Aludel.Evals.AssertionParser do
 
   defp parse_visual_assertions(assertion_params) do
     with {:ok, assertion_indices} <- parse_assertion_indices(assertion_params) do
-      {:ok, Enum.map(assertion_indices, &build_visual_assertion(assertion_params, &1))}
+      assertion_indices
+      |> Enum.reduce_while({:ok, []}, &collect_visual_assertion(assertion_params, &1, &2))
+      |> case do
+        {:ok, assertions} -> {:ok, Enum.reverse(assertions)}
+        {:error, _message} = error -> error
+      end
     end
   end
 
@@ -74,6 +86,15 @@ defmodule Aludel.Evals.AssertionParser do
     |> Map.put("assertion_expected_#{idx}", assertion["expected"] || "")
   end
 
+  defp maybe_put_assertion_value(params, idx, %{"type" => "json_deep_compare"} = assertion) do
+    params
+    |> Map.put(
+      "assertion_expected_json_#{idx}",
+      Jason.encode!(Map.get(assertion, "expected", %{}), pretty: true)
+    )
+    |> Map.put("assertion_threshold_#{idx}", format_threshold(assertion["threshold"]))
+  end
+
   defp maybe_put_assertion_value(params, idx, assertion) do
     Map.put(params, "assertion_value_#{idx}", assertion["value"] || "")
   end
@@ -81,17 +102,34 @@ defmodule Aludel.Evals.AssertionParser do
   defp build_visual_assertion(assertion_params, idx) do
     type = Map.get(assertion_params, "assertion_type_#{idx}")
 
-    if type == "json_field" do
-      %{
-        "type" => type,
-        "field" => Map.get(assertion_params, "assertion_field_#{idx}", ""),
-        "expected" => Map.get(assertion_params, "assertion_expected_#{idx}", "")
-      }
-    else
-      %{
-        "type" => type,
-        "value" => Map.get(assertion_params, "assertion_value_#{idx}", "")
-      }
+    case type do
+      "json_field" ->
+        {:ok,
+         %{
+           "type" => type,
+           "field" => Map.get(assertion_params, "assertion_field_#{idx}", ""),
+           "expected" => Map.get(assertion_params, "assertion_expected_#{idx}", "")
+         }}
+
+      "json_deep_compare" ->
+        with {:ok, expected} <-
+               parse_expected_json(
+                 Map.get(assertion_params, "assertion_expected_json_#{idx}", ""),
+                 idx
+               ),
+             {:ok, threshold} <-
+               parse_threshold(Map.get(assertion_params, "assertion_threshold_#{idx}", ""), idx) do
+          {:ok,
+           %{"type" => type, "expected" => expected}
+           |> maybe_put_threshold(threshold)}
+        end
+
+      _other ->
+        {:ok,
+         %{
+           "type" => type,
+           "value" => Map.get(assertion_params, "assertion_value_#{idx}", "")
+         }}
     end
   end
 
@@ -129,6 +167,9 @@ defmodule Aludel.Evals.AssertionParser do
       type == "json_field" ->
         validate_json_field_assertion(assertion, idx)
 
+      type == "json_deep_compare" ->
+        validate_json_deep_compare_assertion(assertion, idx)
+
       true ->
         validate_string_assertion(assertion, idx, type)
     end
@@ -164,6 +205,83 @@ defmodule Aludel.Evals.AssertionParser do
         :ok
     end
   end
+
+  defp validate_json_deep_compare_assertion(assertion, idx) do
+    expected = Map.get(assertion, "expected")
+    threshold = Map.get(assertion, "threshold")
+
+    cond do
+      not Map.has_key?(assertion, "expected") ->
+        {:error, "Assertion at index #{idx}: json_deep_compare type requires an 'expected' field"}
+
+      not (is_map(expected) or is_list(expected)) ->
+        {:error,
+         "Assertion at index #{idx}: json_deep_compare type requires an 'expected' map or list"}
+
+      not valid_threshold?(threshold) ->
+        {:error,
+         "Assertion at index #{idx}: json_deep_compare type requires a threshold between 0 and 100"}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp parse_expected_json(value, idx) when is_binary(value) do
+    case Jason.decode(value) do
+      {:ok, decoded} when is_map(decoded) or is_list(decoded) ->
+        {:ok, decoded}
+
+      {:ok, _decoded} ->
+        {:error,
+         "Assertion at index #{idx}: json_deep_compare type requires an 'expected' map or list"}
+
+      {:error, %Jason.DecodeError{}} ->
+        {:error,
+         "Assertion at index #{idx}: json_deep_compare type requires valid JSON in the expected payload"}
+    end
+  end
+
+  defp parse_expected_json(_value, idx) do
+    {:error,
+     "Assertion at index #{idx}: json_deep_compare type requires valid JSON in the expected payload"}
+  end
+
+  defp parse_threshold("", _idx), do: {:ok, nil}
+
+  defp parse_threshold(value, idx) when is_binary(value) do
+    case Float.parse(String.trim(value)) do
+      {threshold, ""} ->
+        {:ok, threshold}
+
+      _other ->
+        {:error,
+         "Assertion at index #{idx}: json_deep_compare type requires a threshold between 0 and 100"}
+    end
+  end
+
+  defp parse_threshold(_value, idx) do
+    {:error,
+     "Assertion at index #{idx}: json_deep_compare type requires a threshold between 0 and 100"}
+  end
+
+  defp collect_visual_assertion(assertion_params, idx, {:ok, assertions}) do
+    case build_visual_assertion(assertion_params, idx) do
+      {:ok, assertion} -> {:cont, {:ok, [assertion | assertions]}}
+      {:error, _message} = error -> {:halt, error}
+    end
+  end
+
+  defp maybe_put_threshold(assertion, nil), do: assertion
+  defp maybe_put_threshold(assertion, threshold), do: Map.put(assertion, "threshold", threshold)
+
+  defp valid_threshold?(nil), do: true
+  defp valid_threshold?(value) when is_integer(value), do: value >= 0 and value <= 100
+  defp valid_threshold?(value) when is_float(value), do: value >= 0.0 and value <= 100.0
+  defp valid_threshold?(_value), do: false
+
+  defp format_threshold(nil), do: ""
+  defp format_threshold(value), do: to_string(value)
 
   defp blank_string?(value) when is_binary(value), do: String.trim(value) == ""
   defp blank_string?(_value), do: false

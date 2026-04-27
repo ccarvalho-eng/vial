@@ -5,7 +5,15 @@ defmodule Aludel.Evals do
 
   import Ecto.Query
 
-  alias Aludel.Evals.{Suite, SuiteRun, SuiteRunner, TestCase, TestCaseDocument}
+  alias Aludel.Evals.{
+    AssertionEvaluator,
+    Suite,
+    SuiteRun,
+    SuiteRunner,
+    TestCase,
+    TestCaseDocument
+  }
+
   alias Aludel.LLM
   alias Aludel.Prompts.PromptVersion
   alias Aludel.Providers.Provider
@@ -491,36 +499,14 @@ defmodule Aludel.Evals do
   end
 
   defp build_assertion_results(assertions, output) do
-    Enum.map(assertions, fn assertion ->
-      {passed, actual_value} = evaluate_assertion(output, assertion)
-      format_assertion_result(assertion, passed, actual_value)
-    end)
-  end
-
-  defp format_assertion_result(%{"type" => "json_field"} = assertion, passed, actual_value) do
-    %{
-      "type" => assertion["type"],
-      "passed" => passed,
-      "value" => %{
-        "field" => assertion["field"],
-        "expected" => assertion["expected"]
-      },
-      "actual_value" => actual_value
-    }
-  end
-
-  defp format_assertion_result(assertion, passed, _actual_value) do
-    %{
-      "type" => assertion["type"],
-      "passed" => passed,
-      "value" => assertion["value"]
-    }
+    Enum.map(assertions, &AssertionEvaluator.evaluate(output, &1))
   end
 
   defp successful_test_case_result(test_case_id, result, passed, assertion_results) do
     %{
       "test_case_id" => test_case_id,
       "passed" => passed,
+      "score" => AssertionEvaluator.score_for_results(assertion_results),
       "output" => result.output,
       "assertion_results" => assertion_results,
       "cost_usd" => result.cost_usd,
@@ -532,6 +518,7 @@ defmodule Aludel.Evals do
     %{
       "test_case_id" => test_case_id,
       "passed" => false,
+      "score" => nil,
       "output" => error_message(reason),
       "assertion_results" => [],
       "cost_usd" => nil,
@@ -613,17 +600,10 @@ defmodule Aludel.Evals do
 
   defp summarize_suite_results(results) do
     metrics =
-      Enum.reduce(results, %{total_cost: Decimal.new("0"), total_latency: 0, successful: 0}, fn
-        %{"cost_usd" => cost, "latency_ms" => latency}, acc
-        when is_number(cost) and is_number(latency) ->
-          %{
-            total_cost: Decimal.add(acc.total_cost, decimal_from_number(cost)),
-            total_latency: acc.total_latency + round(latency),
-            successful: acc.successful + 1
-          }
-
-        _, acc ->
-          acc
+      Enum.reduce(results, empty_summary_metrics(), fn result, acc ->
+        acc
+        |> accumulate_cost_and_latency(result)
+        |> accumulate_score(result)
       end)
 
     passed = Enum.count(results, &(&1["passed"] == true))
@@ -633,7 +613,8 @@ defmodule Aludel.Evals do
       passed: passed,
       failed: failed,
       avg_cost_usd: average_cost(metrics),
-      avg_latency_ms: average_latency(metrics)
+      avg_latency_ms: average_latency(metrics),
+      avg_score: average_score(metrics)
     }
   end
 
@@ -652,6 +633,49 @@ defmodule Aludel.Evals do
     round(total_latency / successful)
   end
 
+  defp average_score(%{scored: scored}) when scored < 1, do: nil
+
+  defp average_score(%{total_score: total_score, scored: scored}) do
+    total_score
+    |> Decimal.div(scored)
+    |> Decimal.round(1)
+  end
+
+  defp empty_summary_metrics do
+    %{
+      total_cost: Decimal.new("0"),
+      total_latency: 0,
+      successful: 0,
+      total_score: Decimal.new("0"),
+      scored: 0
+    }
+  end
+
+  defp accumulate_cost_and_latency(
+         acc,
+         %{"cost_usd" => cost, "latency_ms" => latency}
+       )
+       when is_number(cost) and is_number(latency) do
+    %{
+      acc
+      | total_cost: Decimal.add(acc.total_cost, decimal_from_number(cost)),
+        total_latency: acc.total_latency + round(latency),
+        successful: acc.successful + 1
+    }
+  end
+
+  defp accumulate_cost_and_latency(acc, _result), do: acc
+
+  defp accumulate_score(acc, %{"score" => score}) when is_number(score) do
+    %{
+      acc
+      | total_score: Decimal.add(acc.total_score, decimal_from_number(score)),
+        scored: acc.scored + 1
+    }
+  end
+
+  defp accumulate_score(acc, _result), do: acc
+
   defp ensure_documents_loaded(%TestCase{documents: %NotLoaded{}} = test_case) do
     repo().preload(test_case, :documents)
   end
@@ -662,69 +686,6 @@ defmodule Aludel.Evals do
     Enum.reduce(variables, template, fn {key, value}, acc ->
       String.replace(acc, "{{#{key}}}", to_string(value))
     end)
-  end
-
-  defp evaluate_assertion(output, %{"type" => "contains", "value" => value}) do
-    {String.contains?(output, value), nil}
-  end
-
-  defp evaluate_assertion(output, %{"type" => "not_contains", "value" => value}) do
-    {!String.contains?(output, value), nil}
-  end
-
-  defp evaluate_assertion(output, %{"type" => "regex", "value" => pattern}) do
-    case Regex.compile(pattern) do
-      {:ok, regex} ->
-        {Regex.match?(regex, output), nil}
-
-      {:error, _} ->
-        {false, nil}
-    end
-  end
-
-  defp evaluate_assertion(output, %{"type" => "exact_match", "value" => value}) do
-    {output == value, nil}
-  end
-
-  defp evaluate_assertion(output, %{
-         "type" => "json_field",
-         "field" => field,
-         "expected" => expected
-       }) do
-    # Strip markdown code blocks if present (e.g., ```json ... ```)
-    cleaned_output =
-      output
-      |> String.trim()
-      |> String.replace(~r/^```json\s*/i, "")
-      |> String.replace(~r/^```\s*/, "")
-      |> String.replace(~r/```\s*$/, "")
-      |> String.trim()
-
-    case Jason.decode(cleaned_output) do
-      {:ok, json} ->
-        actual_value = get_in(json, String.split(field, "."))
-        passed = compare_json_values(actual_value, expected)
-        {passed, actual_value}
-
-      {:error, _} ->
-        {false, nil}
-    end
-  end
-
-  # Fallback for unknown assertion types
-  defp evaluate_assertion(_output, _assertion) do
-    {false, nil}
-  end
-
-  # Safely compare JSON values without crashing on maps/lists
-  defp compare_json_values(actual, expected) when is_map(actual) or is_list(actual) do
-    # For complex types, compare as JSON strings
-    Jason.encode!(actual) == Jason.encode!(expected)
-  end
-
-  defp compare_json_values(actual, expected) do
-    # Scalars should preserve JSON semantics instead of coercing types.
-    actual == expected
   end
 
   defp document_load_timeout_ms do

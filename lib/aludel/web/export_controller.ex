@@ -94,6 +94,7 @@ defmodule Aludel.Web.ExportController do
           passed: suite_run.passed,
           failed: suite_run.failed,
           total: suite_run.passed + suite_run.failed,
+          avg_score: decimal_to_float(suite_run.avg_score),
           avg_cost_usd: decimal_to_float(suite_run.avg_cost_usd),
           avg_latency_ms: suite_run.avg_latency_ms
         },
@@ -109,6 +110,7 @@ defmodule Aludel.Web.ExportController do
       test_case_id: result["test_case_id"],
       status: if(result["passed"], do: "passed", else: "failed"),
       passed: result["passed"],
+      score: result["score"],
       output: result["output"],
       error: suite_result_error(result),
       input_tokens: result["input_tokens"],

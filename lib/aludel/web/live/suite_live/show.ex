@@ -15,6 +15,7 @@ defmodule Aludel.Web.SuiteLive.Show do
   alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Providers
+  alias Decimal
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -507,6 +508,74 @@ defmodule Aludel.Web.SuiteLive.Show do
       to_string(version.id) == to_string(version_id)
     end)
   end
+
+  defp assertion_result_rows(assertion_results) when is_list(assertion_results) do
+    Enum.flat_map(assertion_results, &assertion_result_rows_for_assertion/1)
+  end
+
+  defp assertion_result_rows(_assertion_results), do: []
+
+  defp assertion_result_rows_for_assertion(%{"type" => "json_deep_compare"} = assertion) do
+    assertion
+    |> get_in(["score_details", "comparisons"])
+    |> deep_compare_rows()
+  end
+
+  defp assertion_result_rows_for_assertion(%{"type" => "json_field"} = assertion) do
+    [
+      %{
+        detail: get_in(assertion, ["value", "field"]),
+        expected: get_in(assertion, ["value", "expected"]),
+        actual: Map.get(assertion, "actual_value"),
+        passed: assertion["passed"]
+      }
+    ]
+  end
+
+  defp assertion_result_rows_for_assertion(assertion) do
+    [
+      %{
+        detail: assertion["type"],
+        expected: assertion["value"],
+        actual: nil,
+        passed: assertion["passed"]
+      }
+    ]
+  end
+
+  defp deep_compare_rows(comparisons) when is_map(comparisons) do
+    comparisons
+    |> Enum.sort_by(fn {path, _details} -> path end)
+    |> Enum.map(fn {path, details} ->
+      %{
+        detail: path,
+        expected: details["expected"],
+        actual: details["actual"],
+        passed: details["passed"]
+      }
+    end)
+  end
+
+  defp deep_compare_rows(_comparisons), do: []
+
+  defp format_score(%Decimal{} = score) do
+    score
+    |> Decimal.to_float()
+    |> format_score()
+  end
+
+  defp format_score(score) when is_integer(score), do: format_score(score / 1)
+  defp format_score(score) when is_float(score), do: :erlang.float_to_binary(score, decimals: 1)
+  defp format_score(_score), do: nil
+
+  defp display_value(nil), do: "null"
+  defp display_value(value) when is_binary(value), do: value
+
+  defp display_value(value) when is_integer(value) or is_float(value) or is_boolean(value),
+    do: inspect(value)
+
+  defp display_value(value) when is_map(value) or is_list(value), do: Jason.encode!(value)
+  defp display_value(value), do: to_string(value)
 
   defp retry_count(%{"retry_count" => count}) when is_integer(count), do: count
 

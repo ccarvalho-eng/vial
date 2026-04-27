@@ -285,13 +285,15 @@
                                   id={"assertion-type-#{idx}"}
                                   phx-hook="AssertionTypeToggle"
                                   data-index={idx}
+                                  data-test-case-id={test_case.id}
                                   value={assertion["type"]}
                                   options={[
                                     {"contains", "contains"},
                                     {"not contains", "not_contains"},
                                     {"regex", "regex"},
                                     {"exact", "exact_match"},
-                                    {"json field", "json_field"}
+                                    {"json field", "json_field"},
+                                    {"json deep compare", "json_deep_compare"}
                                   ]}
                                   class="w-full select text-[13px]"
                                 />
@@ -311,7 +313,7 @@
                             </div>
                             <%!-- JSON field inputs --%>
                             <div
-                              id={"json-fields-#{idx}"}
+                              id={"json-fields-#{test_case.id}-#{idx}"}
                               style={"display: #{if assertion["type"] == "json_field", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
                             >
                               <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -335,16 +337,61 @@
                                   type="text"
                                   name={"#{@test_case_form.name}[assertions][assertion_expected_#{idx}]"}
                                   id={"#{@test_case_form.id}_assertion_expected_#{idx}"}
-                                  value={assertion["expected"] || ""}
+                                  value={
+                                    if is_binary(assertion["expected"]),
+                                      do: assertion["expected"],
+                                      else: ""
+                                  }
                                   placeholder="INV-001"
+                                  class="input text-[13px]"
+                                />
+                              </div>
+                            </div>
+                            <div
+                              id={"deep-compare-fields-#{test_case.id}-#{idx}"}
+                              style={"display: #{if assertion["type"] == "json_deep_compare", do: "flex", else: "none"}; flex-direction: column; gap: 6px;"}
+                            >
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Expected JSON:
+                                </label>
+                                <.input
+                                  type="textarea"
+                                  name={"#{@test_case_form.name}[assertions][assertion_expected_json_#{idx}]"}
+                                  id={"#{@test_case_form.id}_assertion_expected_json_#{idx}"}
+                                  value={
+                                    if is_map(assertion["expected"]) or
+                                         is_list(assertion["expected"]),
+                                       do: Jason.encode!(assertion["expected"], pretty: true),
+                                       else: ""
+                                  }
+                                  rows="6"
+                                  placeholder={~s({"status":"ok","count":2})}
+                                  class="json-editor w-full textarea"
+                                />
+                              </div>
+                              <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">
+                                  Pass threshold (optional, defaults to 100):
+                                </label>
+                                <.input
+                                  type="text"
+                                  name={"#{@test_case_form.name}[assertions][assertion_threshold_#{idx}]"}
+                                  id={"#{@test_case_form.id}_assertion_threshold_#{idx}"}
+                                  value={
+                                    if is_number(assertion["threshold"]),
+                                      do: to_string(assertion["threshold"]),
+                                      else: ""
+                                  }
+                                  placeholder="80.0"
                                   class="input text-[13px]"
                                 />
                               </div>
                             </div>
                             <%!-- Regular assertion value input --%>
                             <div
-                              id={"value-field-#{idx}"}
-                              style={"display: #{if assertion["type"] == "json_field", do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
+                              id={"value-field-#{test_case.id}-#{idx}"}
+                              style={"display: #{if assertion["type"] in ["json_field", "json_deep_compare"], do: "none", else: "flex"}; flex-direction: column; gap: 4px;"}
                             >
                               <label style="font-size: 11px; color: var(--text-muted);">
                                 Value to match:
@@ -371,7 +418,7 @@
                           class="json-editor w-full textarea"
                         />
                         <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                          Types: contains, not_contains, regex, exact_match, json_field
+                          Types: contains, not_contains, regex, exact_match, json_field, json_deep_compare
                         </div>
                       <% end %>
                       <%= if @test_case_form[:assertions_json].errors != [] do %>
@@ -486,31 +533,50 @@
                     <% else %>
                       <%= for assertion <- test_case.assertions do %>
                         <div style="font-size: 13px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg-secondary); border-radius: 4px;">
-                          <%= if assertion["type"] == "json_field" do %>
-                            <div style="margin-bottom: 2px;">
+                          <%= cond do %>
+                            <% assertion["type"] == "json_field" -> %>
+                              <div style="margin-bottom: 2px;">
+                                <span style="font-weight: 600; color: var(--accent);">
+                                  json field:
+                                </span>
+                              </div>
+                              <div style="font-size: 12px; padding-left: 8px;">
+                                <span style="color: var(--text-secondary);">field:</span>
+                                <span style="font-family: monospace; color: var(--text-primary);">
+                                  {assertion["field"]}
+                                </span>
+                              </div>
+                              <div style="font-size: 12px; padding-left: 8px;">
+                                <span style="color: var(--text-secondary);">expected:</span>
+                                <span style="font-family: monospace; color: var(--text-primary);">
+                                  {assertion["expected"]}
+                                </span>
+                              </div>
+                            <% assertion["type"] == "json_deep_compare" -> %>
+                              <div style="margin-bottom: 2px;">
+                                <span style="font-weight: 600; color: var(--accent);">
+                                  json deep compare:
+                                </span>
+                              </div>
+                              <div style="font-size: 12px; padding-left: 8px;">
+                                <span style="color: var(--text-secondary);">expected:</span>
+                                <pre style="margin: 4px 0 0; font-family: monospace; font-size: 12px; color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;">{Jason.encode!(assertion["expected"], pretty: true)}</pre>
+                              </div>
+                              <%= if assertion["threshold"] do %>
+                                <div style="font-size: 12px; padding-left: 8px;">
+                                  <span style="color: var(--text-secondary);">threshold:</span>
+                                  <span style="font-family: monospace; color: var(--text-primary);">
+                                    {assertion["threshold"]}%
+                                  </span>
+                                </div>
+                              <% end %>
+                            <% true -> %>
                               <span style="font-weight: 600; color: var(--accent);">
-                                json field:
+                                {assertion["type"]}:
                               </span>
-                            </div>
-                            <div style="font-size: 12px; padding-left: 8px;">
-                              <span style="color: var(--text-secondary);">field:</span>
                               <span style="font-family: monospace; color: var(--text-primary);">
-                                {assertion["field"]}
+                                {assertion["value"]}
                               </span>
-                            </div>
-                            <div style="font-size: 12px; padding-left: 8px;">
-                              <span style="color: var(--text-secondary);">expected:</span>
-                              <span style="font-family: monospace; color: var(--text-primary);">
-                                {assertion["expected"]}
-                              </span>
-                            </div>
-                          <% else %>
-                            <span style="font-weight: 600; color: var(--accent);">
-                              {assertion["type"]}:
-                            </span>
-                            <span style="font-family: monospace; color: var(--text-primary);">
-                              {assertion["value"]}
-                            </span>
                           <% end %>
                         </div>
                       <% end %>
@@ -558,6 +624,14 @@
                   <div style="font-size: 12px; color: var(--text-muted);">
                     {suite_run.passed + suite_run.failed} test cases
                   </div>
+                  <%= if format_score(suite_run.avg_score) do %>
+                    <div
+                      id={"suite-run-score-#{suite_run.id}"}
+                      style="font-size: 12px; color: #8b5cf6; font-weight: 600; margin-top: 4px;"
+                    >
+                      {format_score(suite_run.avg_score)}% avg score
+                    </div>
+                  <% end %>
                   <div style="margin-top: 8px;">
                     <a
                       id={"export-suite-run-#{suite_run.id}"}
@@ -574,19 +648,25 @@
                 <%= for result <- suite_run.results do %>
                   <div style="margin-bottom: 12px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); overflow: hidden;">
                     <%= if result["assertion_results"] && result["assertion_results"] != [] do %>
-                      <div style="padding: 12px; border-bottom: 1px solid var(--border);">
+                      <div
+                        id={"suite-result-assertions-#{suite_run.id}-#{result["test_case_id"]}"}
+                        style="padding: 12px; border-bottom: 1px solid var(--border);"
+                      >
                         <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
                           Assertions
                         </div>
-                        <table style="width: 100%; border-collapse: collapse;">
-                          <thead>
-                            <tr style="border-bottom: 1px solid var(--border);">
-                              <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; width: 60px;">
-                                Match
-                              </th>
-                              <%= if Enum.any?(result["assertion_results"], & &1["type"] == "json_field") do %>
+                        <div
+                          id={"suite-result-assertions-table-#{suite_run.id}-#{result["test_case_id"]}"}
+                          style="overflow-x: auto; max-width: 100%;"
+                        >
+                          <table style="width: 100%; min-width: 640px; border-collapse: collapse;">
+                            <thead>
+                              <tr style="border-bottom: 1px solid var(--border);">
+                                <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; width: 60px;">
+                                  Match
+                                </th>
                                 <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
-                                  Field
+                                  Detail
                                 </th>
                                 <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
                                   Expected
@@ -594,49 +674,30 @@
                                 <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
                                   Actual
                                 </th>
-                              <% else %>
-                                <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
-                                  Type
-                                </th>
-                                <th style="text-align: left; padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
-                                  Value
-                                </th>
-                              <% end %>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <%= for assertion <- result["assertion_results"] do %>
-                              <tr style="border-bottom: 1px solid var(--border-muted);">
-                                <td style="padding: 8px;">
-                                  <span style={"display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-weight: 600; font-size: 12px; background: #{if assertion["passed"], do: "rgba(16, 185, 129, 0.1)", else: "rgba(248, 81, 73, 0.1)"}; color: #{if assertion["passed"], do: "#10b981", else: "#f85149"}"}>
-                                    {if assertion["passed"], do: "✓", else: "✗"}
-                                  </span>
-                                </td>
-                                <%= if assertion["type"] == "json_field" do %>
-                                  <td style="padding: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 500; font-family: monospace;">
-                                    {assertion["value"]["field"]}
-                                  </td>
-                                  <td style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary);">
-                                    {assertion["value"]["expected"]}
-                                  </td>
-                                  <td style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary);">
-                                    {assertion["actual_value"] || "N/A"}
-                                  </td>
-                                <% else %>
-                                  <td style="padding: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 500;">
-                                    {assertion["type"]}
-                                  </td>
-                                  <td
-                                    style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary);"
-                                    colspan="2"
-                                  >
-                                    {assertion["value"]}
-                                  </td>
-                                <% end %>
                               </tr>
-                            <% end %>
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              <%= for row <- assertion_result_rows(result["assertion_results"]) do %>
+                                <tr style="border-bottom: 1px solid var(--border-muted);">
+                                  <td style="padding: 8px;">
+                                    <span style={"display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-weight: 600; font-size: 12px; background: #{if row.passed, do: "rgba(16, 185, 129, 0.1)", else: "rgba(248, 81, 73, 0.1)"}; color: #{if row.passed, do: "#10b981", else: "#f85149"}"}>
+                                      {if row.passed, do: "✓", else: "✗"}
+                                    </span>
+                                  </td>
+                                  <td style="padding: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 500; font-family: monospace;">
+                                    {row.detail}
+                                  </td>
+                                  <td style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; vertical-align: top;">
+                                    {display_value(row.expected)}
+                                  </td>
+                                  <td style="padding: 8px; font-size: 12px; font-family: monospace; color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; vertical-align: top;">
+                                    {display_value(row.actual)}
+                                  </td>
+                                </tr>
+                              <% end %>
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     <% end %>
                     <div style={"padding: 14px; background: #{if result["passed"], do: "rgba(16, 185, 129, 0.05)", else: "rgba(248, 81, 73, 0.05)"}"}>
@@ -646,6 +707,14 @@
                             <span style={"font-weight: 600; font-size: 13px; color: #{if result["passed"], do: "#10b981", else: "#f85149"}"}>
                               {if result["passed"], do: "✓ Output", else: "✗ Output"}
                             </span>
+                            <%= if score = format_score(result["score"]) do %>
+                              <span
+                                id={"suite-result-score-#{suite_run.id}-#{result["test_case_id"]}"}
+                                style="font-size: 12px; font-weight: 600; color: #8b5cf6;"
+                              >
+                                {score}% match
+                              </span>
+                            <% end %>
                           </div>
                           <%= if retry_count(result) > 0 do %>
                             <div

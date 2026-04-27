@@ -68,13 +68,37 @@ defmodule Aludel.Web.ExportControllerTest do
           failed: 0,
           avg_cost_usd: Decimal.new("0.0010"),
           avg_latency_ms: 250,
+          avg_score: Decimal.new("75.0"),
           results: [
             %{
               "test_case_id" => test_case.id,
               "passed" => true,
+              "score" => 75.0,
               "output" => "Structured output",
               "assertion_results" => [
-                %{"type" => "contains", "passed" => true, "value" => "Structured"}
+                %{
+                  "type" => "json_deep_compare",
+                  "passed" => true,
+                  "score" => 75.0,
+                  "value" => %{
+                    "expected" => %{
+                      "status" => "ok",
+                      "count" => 2,
+                      "meta" => %{"city" => "NYC", "zip" => "10001"}
+                    },
+                    "threshold" => 70.0
+                  },
+                  "score_details" => %{
+                    "matches" => 3,
+                    "total" => 4,
+                    "field_scores" => %{
+                      "status" => 1,
+                      "count" => 0,
+                      "meta.city" => 1,
+                      "meta.zip" => 1
+                    }
+                  }
+                }
               ],
               "cost_usd" => 0.001,
               "latency_ms" => 250,
@@ -107,11 +131,34 @@ defmodule Aludel.Web.ExportControllerTest do
       assert payload["suite_run"]["summary"]["passed"] == 1
       assert payload["suite_run"]["summary"]["failed"] == 0
       assert payload["suite_run"]["summary"]["avg_cost_usd"] == 0.001
+      assert payload["suite_run"]["summary"]["avg_score"] == 75.0
 
       assert payload["suite_run"]["results"] == [
                %{
                  "assertion_results" => [
-                   %{"passed" => true, "type" => "contains", "value" => "Structured"}
+                   %{
+                     "passed" => true,
+                     "score" => 75.0,
+                     "score_details" => %{
+                       "field_scores" => %{
+                         "count" => 0,
+                         "meta.city" => 1,
+                         "meta.zip" => 1,
+                         "status" => 1
+                       },
+                       "matches" => 3,
+                       "total" => 4
+                     },
+                     "type" => "json_deep_compare",
+                     "value" => %{
+                       "expected" => %{
+                         "count" => 2,
+                         "meta" => %{"city" => "NYC", "zip" => "10001"},
+                         "status" => "ok"
+                       },
+                       "threshold" => 70.0
+                     }
+                   }
                  ],
                  "cost_usd" => 0.001,
                  "error" => nil,
@@ -120,6 +167,7 @@ defmodule Aludel.Web.ExportControllerTest do
                  "output" => "Structured output",
                  "output_tokens" => nil,
                  "passed" => true,
+                 "score" => 75.0,
                  "retry_count" => 1,
                  "retried_at" => "2026-04-26T13:00:00Z",
                  "status" => "passed",
