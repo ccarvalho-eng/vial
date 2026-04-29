@@ -2,7 +2,6 @@
 
   <h1>Aludel</h1>
   
-  <p><strong>Evaluate prompts with real visibility.</strong></p>
   <p><em>A Phoenix-native workbench for comparing providers, tracking prompt history, and running regression suites.</em></p>
   <p>
     <a href="https://hex.pm/packages/aludel"><img src="https://img.shields.io/hexpm/v/aludel.svg" alt="Hex.pm"/></a>
