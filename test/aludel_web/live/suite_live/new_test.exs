@@ -4,6 +4,7 @@ defmodule Aludel.Web.SuiteLive.NewTest do
   import Phoenix.LiveViewTest
   import Aludel.PromptsFixtures
 
+  alias Aludel.Evals
   alias Aludel.Projects
 
   describe "new suite page" do
@@ -338,6 +339,94 @@ defmodule Aludel.Web.SuiteLive.NewTest do
 
       {_path, flash} = assert_redirect(view)
       assert flash["info"] == "Suite created successfully"
+    end
+
+    test "creates a suite with typed json_field assertions after toggling from JSON to visual",
+         %{conn: conn} do
+      prompt = prompt_fixture_with_version(%{template: "Hello {{name}}"})
+
+      {:ok, view, _html} = live(conn, "/suites/new")
+
+      view
+      |> form("#suite-form", suite: %{name: "Typed JSON Field Suite", prompt_id: prompt.id})
+      |> render_change()
+
+      view
+      |> element("[phx-click='add_test_case']")
+      |> render_click()
+
+      test_case_id = List.first(:sys.get_state(view.pid).socket.assigns.test_cases).id
+
+      view
+      |> render_click("toggle_assertion_mode", %{"id" => test_case_id})
+
+      view
+      |> render_change("validate", %{
+        "suite" => %{
+          "name" => "Typed JSON Field Suite",
+          "prompt_id" => prompt.id,
+          "test_cases" => %{
+            test_case_id => %{
+              "variable_values" => %{"name" => "Alice"},
+              "assertions_json" => ~s([{"type":"json_field","field":"count","expected":1}])
+            }
+          }
+        }
+      })
+
+      view
+      |> render_click("toggle_assertion_mode", %{"id" => test_case_id})
+
+      assert has_element?(view, "#test_case_#{test_case_id}_assertion_expected_0[value='1']")
+
+      view
+      |> form("#suite-form",
+        suite: %{
+          name: "Typed JSON Field Suite",
+          prompt_id: prompt.id,
+          test_cases: %{
+            test_case_id => %{
+              variable_values: %{
+                name: "Alice"
+              },
+              assertions: %{
+                assertion_type_0: "json_field",
+                assertion_field_0: "count",
+                assertion_expected_0: "1",
+                assertion_expected_json_value_0: "1"
+              }
+            }
+          }
+        }
+      )
+      |> render_submit(%{
+        "suite" => %{
+          "name" => "Typed JSON Field Suite",
+          "prompt_id" => prompt.id,
+          "test_cases" => %{
+            test_case_id => %{
+              "variable_values" => %{"name" => "Alice"},
+              "assertions" => %{
+                "assertion_type_0" => "json_field",
+                "assertion_field_0" => "count",
+                "assertion_expected_0" => "1",
+                "assertion_expected_json_value_0" => "1"
+              }
+            }
+          }
+        }
+      })
+
+      {path, flash} = assert_redirect(view)
+      assert flash["info"] == "Suite created successfully"
+
+      [_, suite_id] = Regex.run(~r{/suites/([^/]+)$}, path)
+      suite = Evals.get_suite_with_test_cases!(suite_id)
+      [created_test_case] = suite.test_cases
+
+      assert created_test_case.assertions == [
+               %{"type" => "json_field", "field" => "count", "expected" => 1}
+             ]
     end
 
     test "shows validation errors on invalid suite", %{conn: conn} do
