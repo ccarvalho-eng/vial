@@ -313,6 +313,287 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
   end
 
   describe "assertion editing" do
+    test "edits a test case with deep compare assertions without crashing", %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{
+                "status" => "ok",
+                "meta" => %{"priority" => "high"},
+                "items" => [%{"id" => 1}, %{"id" => 2}]
+              },
+              "threshold" => 80.0
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      assert Process.alive?(view.pid)
+      assert has_element?(view, "#test-case-form-#{test_case.id}")
+      assert has_element?(view, "#deep-compare-fields-#{test_case.id}-0")
+      assert has_element?(view, "#test_case_assertion_expected_json_0")
+      assert has_element?(view, "#test_case_assertion_threshold_0[value='80.0']")
+    end
+
+    test "switches a deep compare assertion to a contains assertion", %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{"status" => "ok"},
+              "threshold" => 80.0
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      html =
+        render_change(view, "validate_test_case", %{
+          "test_case" => %{
+            "id" => test_case.id,
+            "variable_values" => %{},
+            "assertions" => %{
+              "assertion_type_0" => "contains",
+              "assertion_value_0" => "hello"
+            }
+          }
+        })
+
+      refute html =~ "json_field type requires a non-blank 'field' value"
+
+      html =
+        view
+        |> form("#test-case-form-#{test_case.id}",
+          test_case: %{
+            id: test_case.id,
+            variable_values: %{},
+            assertions: %{
+              "assertion_type_0" => "contains",
+              "assertion_value_0" => "hello"
+            }
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "Test case updated successfully"
+    end
+
+    test "toggles deep compare assertions to JSON mode without losing expected payload or threshold",
+         %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{"status" => "ok"},
+              "threshold" => 80.0
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      render_change(view, "validate_test_case", %{
+        "test_case" => %{
+          "id" => test_case.id,
+          "variable_values" => %{},
+          "assertions" => %{
+            "assertion_type_0" => "json_deep_compare",
+            "assertion_expected_json_0" =>
+              ~s({"status":"ok","meta":{"priority":"high"},"items":[{"id":1},{"id":2}]}),
+            "assertion_threshold_0" => "82.5"
+          }
+        }
+      })
+
+      render_click(view, "toggle_assertion_mode", %{"id" => test_case.id})
+
+      assertions_json =
+        :sys.get_state(view.pid).socket.assigns.editing_test_case_params["assertions_json"]
+
+      assert assertions_json =~ "\"type\": \"json_deep_compare\""
+      assert assertions_json =~ "\"threshold\": 82.5"
+      assert assertions_json =~ "\"priority\": \"high\""
+    end
+
+    test "switches a deep compare assertion to json_field without keeping threshold controls", %{
+      conn: conn
+    } do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{"status" => "ok"},
+              "threshold" => 80.0
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      render_change(view, "validate_test_case", %{
+        "test_case" => %{
+          "id" => test_case.id,
+          "variable_values" => %{},
+          "assertions" => %{
+            "assertion_type_0" => "json_field",
+            "assertion_field_0" => "status",
+            "assertion_expected_0" => "ok",
+            "assertion_expected_json_0" => ~s({"status":"ok"}),
+            "assertion_threshold_0" => "80.0"
+          }
+        }
+      })
+
+      assert has_element?(view, "#json-fields-#{test_case.id}-0[style*='display: flex']")
+      assert has_element?(view, "#test_case_assertion_field_0[value='status']")
+      assert has_element?(view, "#test_case_assertion_expected_0[value='ok']")
+      refute has_element?(view, "#deep-compare-fields-#{test_case.id}-0")
+      refute has_element?(view, "#test-case-assertions-error-#{test_case.id}")
+    end
+
+    test "removes a deep compare assertion and adds a new contains assertion", %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{"status" => "ok"},
+              "threshold" => 80.0
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      render_click(view, "remove_assertion", %{"index" => "0", "id" => test_case.id})
+      render_click(view, "add_assertion", %{"id" => test_case.id})
+
+      html =
+        view
+        |> form("#test-case-form-#{test_case.id}",
+          test_case: %{
+            id: test_case.id,
+            variable_values: %{},
+            assertions: %{
+              "assertion_type_0" => "contains",
+              "assertion_value_0" => "hello"
+            }
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "Test case updated successfully"
+    end
+
+    test "shows both json_field inputs for a new assertion row", %{conn: conn} do
+      suite = suite_fixture()
+      test_case = test_case_fixture(%{suite_id: suite.id, assertions: []})
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      render_click(view, "add_assertion", %{"id" => test_case.id})
+
+      render_change(view, "validate_test_case", %{
+        "test_case" => %{
+          "id" => test_case.id,
+          "variable_values" => %{},
+          "assertions" => %{
+            "assertion_type_0" => "json_field",
+            "assertion_field_0" => "",
+            "assertion_expected_0" => ""
+          }
+        }
+      })
+
+      assert has_element?(view, "#json-fields-#{test_case.id}-0[style*='display: flex']")
+      assert has_element?(view, "#test_case_assertion_field_0")
+      assert has_element?(view, "#test_case_assertion_expected_0")
+      refute has_element?(view, "#value-field-#{test_case.id}-0")
+      refute has_element?(view, "#test-case-assertions-error-#{test_case.id}")
+    end
+
+    test "keeps typed json_field expectations visible and saveable in visual mode", %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [%{"type" => "json_field", "field" => "count", "expected" => 1}]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      assert has_element?(view, "#test_case_assertion_expected_0[value='1']")
+
+      html =
+        view
+        |> form("#test-case-form-#{test_case.id}",
+          test_case: %{
+            id: test_case.id,
+            variable_values: %{},
+            assertions: %{
+              "assertion_type_0" => "json_field",
+              "assertion_field_0" => "count",
+              "assertion_expected_0" => "1",
+              "assertion_expected_json_value_0" => "1"
+            }
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "Test case updated successfully"
+    end
+
     test "shows assertion controls in edit mode", %{conn: conn} do
       suite = suite_fixture()
       test_case = test_case_fixture(%{suite_id: suite.id})
@@ -707,6 +988,109 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
                view,
                "#export-suite-run-#{suite_run.id}[href='/suites/runs/#{suite_run.id}/export']",
                "Export JSON"
+             )
+    end
+
+    test "renders deep compare score details for suite results", %{conn: conn} do
+      prompt = prompt_fixture_with_version()
+      suite = suite_fixture(%{prompt_id: prompt.id})
+      prompt = Aludel.Prompts.get_prompt_with_versions!(prompt.id)
+      version = hd(prompt.versions)
+      provider = provider_fixture(%{name: "OpenAI"})
+      test_case = test_case_fixture(%{suite_id: suite.id})
+
+      suite_run =
+        suite_run_fixture(%{
+          suite_id: suite.id,
+          prompt_version_id: version.id,
+          provider_id: provider.id,
+          passed: 1,
+          failed: 0,
+          avg_score: Decimal.new("75.0"),
+          results: [
+            %{
+              "test_case_id" => test_case.id,
+              "passed" => true,
+              "score" => 75.0,
+              "output" => ~s({"status":"ok","count":1,"meta":{"city":"NYC","zip":"10001"}}),
+              "assertion_results" => [
+                %{
+                  "type" => "json_deep_compare",
+                  "passed" => true,
+                  "score" => 75.0,
+                  "value" => %{
+                    "expected" => %{
+                      "status" => "ok",
+                      "count" => 2,
+                      "meta" => %{"city" => "NYC", "zip" => "10001"}
+                    },
+                    "threshold" => 70.0
+                  },
+                  "score_details" => %{
+                    "matches" => 3,
+                    "total" => 4,
+                    "field_scores" => %{
+                      "status" => 1,
+                      "count" => 0,
+                      "meta.city" => 1,
+                      "meta.zip" => 1
+                    },
+                    "comparisons" => %{
+                      "status" => %{"passed" => true, "expected" => "ok", "actual" => "ok"},
+                      "count" => %{"passed" => false, "expected" => 2, "actual" => 1},
+                      "meta.city" => %{"passed" => true, "expected" => "NYC", "actual" => "NYC"},
+                      "meta.zip" => %{
+                        "passed" => true,
+                        "expected" => "10001",
+                        "actual" => "10001"
+                      }
+                    }
+                  }
+                }
+              ],
+              "cost_usd" => 0.001,
+              "latency_ms" => 250
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      assert has_element?(view, "#suite-run-score-#{suite_run.id}", "75.0% avg score")
+
+      assert has_element?(
+               view,
+               "#suite-result-score-#{suite_run.id}-#{test_case.id}",
+               "75.0% match"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "meta.city"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "count"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "Expected"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-#{suite_run.id}-#{test_case.id}",
+               "Actual"
+             )
+
+      assert has_element?(
+               view,
+               "#suite-result-assertions-table-#{suite_run.id}-#{test_case.id}"
              )
     end
   end

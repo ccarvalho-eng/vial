@@ -28,6 +28,30 @@ Most teams evaluating LLM behavior end up with some combination of scripts, spre
 - **Regression coverage**: turn important scenarios into repeatable suites with assertions.
 - **Phoenix-native deployment**: mount it in your app or run it as a standalone dashboard.
 
+## Structured Output Scoring
+
+Suites support strict string assertions and structured JSON checks.
+
+For structured outputs, use `json_deep_compare` to score partial matches instead of forcing all-or-nothing pass/fail outcomes.
+
+```json
+[
+  {
+    "type": "json_deep_compare",
+    "expected": {
+      "status": "ok",
+      "customer": {
+        "name": "Jane",
+        "tier": "gold"
+      }
+    },
+    "threshold": 75.0
+  }
+]
+```
+
+Aludel stores field-level comparison details, per-test match scores, and suite-run average scores so prompt evolution and exports can track structured output quality over time.
+
 ## Quick Start
 
 ### Embed in an existing Phoenix app

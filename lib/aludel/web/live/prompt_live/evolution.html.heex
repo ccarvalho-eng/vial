@@ -80,6 +80,15 @@
                 <canvas id="pass-rate-chart"></canvas>
               </div>
             </div>
+
+            <div id="score-chart-container" style="display: none;">
+              <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+                Average Score
+              </h3>
+              <div style="height: 200px;">
+                <canvas id="score-chart"></canvas>
+              </div>
+            </div>
             
 <!-- Cost Chart (only if data exists) -->
             <div id="cost-chart-container" style="display: none;">
@@ -122,6 +131,9 @@
                   Pass Rate
                 </th>
                 <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Avg Score
+                </th>
+                <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
                   Avg Cost
                 </th>
                 <th style="padding: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
@@ -160,6 +172,15 @@
                             <.icon name="hero-x-circle" class="size-3" />
                         <% end %>
                         {pass_rate}%
+                      </span>
+                    <% else %>
+                      <span style="color: var(--text-muted);">—</span>
+                    <% end %>
+                  </td>
+                  <td style="padding: 16px; font-size: 14px; color: var(--text-secondary);">
+                    <%= if metric.avg_score do %>
+                      <span style="font-weight: 600; color: #8b5cf6;">
+                        {Decimal.to_float(metric.avg_score)}%
                       </span>
                     <% else %>
                       <span style="color: var(--text-muted);">—</span>
@@ -282,6 +303,21 @@
 
                 <div style="padding: 12px; background-color: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
                   <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                    Avg Score
+                  </div>
+                  <%= if metric.avg_score do %>
+                    <div style="font-size: 18px; font-weight: 600; color: #8b5cf6;">
+                      {Decimal.to_float(metric.avg_score)}%
+                    </div>
+                  <% else %>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text-muted);">
+                      —
+                    </div>
+                  <% end %>
+                </div>
+
+                <div style="padding: 12px; background-color: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+                  <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
                     Avg Cost
                   </div>
                   <%= if metric.avg_cost_usd do %>
@@ -353,6 +389,12 @@
                             {pass_rate}%
                           </span>
                         <% end %>
+                        <div
+                          :if={breakdown.avg_score}
+                          style="margin-top: 8px; font-size: 12px; color: #8b5cf6; font-weight: 600;"
+                        >
+                          {Decimal.to_float(breakdown.avg_score)}% avg score
+                        </div>
                       </div>
                     <% end %>
                   </div>

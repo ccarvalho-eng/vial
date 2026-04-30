@@ -23,12 +23,26 @@ export const AssertionTypeToggle = {
   },
 
   toggleFields(idx, testCaseId, type) {
-    // Include test case ID if available to prevent collisions
     const suffix = testCaseId ? testCaseId + '-' + idx : idx
     const jsonFields = document.getElementById('json-fields-' + suffix)
+    const deepCompareFields = document.getElementById('deep-compare-fields-' + suffix)
     const valueField = document.getElementById('value-field-' + suffix)
 
-    if (jsonFields && valueField) {
+    if (jsonFields && deepCompareFields && valueField) {
+      if (type === 'json_field') {
+        jsonFields.style.display = 'flex'
+        deepCompareFields.style.display = 'none'
+        valueField.style.display = 'none'
+      } else if (type === 'json_deep_compare') {
+        jsonFields.style.display = 'none'
+        deepCompareFields.style.display = 'flex'
+        valueField.style.display = 'none'
+      } else {
+        jsonFields.style.display = 'none'
+        deepCompareFields.style.display = 'none'
+        valueField.style.display = 'flex'
+      }
+    } else if (jsonFields && valueField) {
       if (type === 'json_field') {
         jsonFields.style.display = 'flex'
         valueField.style.display = 'none'

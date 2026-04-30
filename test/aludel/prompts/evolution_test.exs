@@ -29,6 +29,7 @@ defmodule Aludel.Prompts.EvolutionTest do
       assert metric.avg_pass_rate == nil
       assert metric.avg_cost_usd == nil
       assert metric.avg_latency_ms == nil
+      assert metric.avg_score == nil
       assert metric.provider_breakdown == []
     end
 
@@ -45,7 +46,8 @@ defmodule Aludel.Prompts.EvolutionTest do
           prompt_version_id: version.id,
           provider_id: provider.id,
           passed: 8,
-          failed: 2
+          failed: 2,
+          avg_score: Decimal.new("72.5")
         })
 
       {:ok, _sr2} =
@@ -54,7 +56,8 @@ defmodule Aludel.Prompts.EvolutionTest do
           prompt_version_id: version.id,
           provider_id: provider.id,
           passed: 9,
-          failed: 1
+          failed: 1,
+          avg_score: Decimal.new("87.5")
         })
 
       metrics = Evolution.get_metrics(prompt.id)
@@ -65,12 +68,14 @@ defmodule Aludel.Prompts.EvolutionTest do
       assert metric.total_runs == 2
       # (8+9) / (10+10) * 100 = 85.0
       assert metric.avg_pass_rate == 85.0
+      assert Decimal.equal?(metric.avg_score, Decimal.new("80.0"))
       assert length(metric.provider_breakdown) == 1
 
       [breakdown] = metric.provider_breakdown
       assert breakdown.provider_id == provider.id
       assert breakdown.runs == 2
       assert breakdown.avg_pass_rate == 85.0
+      assert Decimal.equal?(breakdown.avg_score, Decimal.new("80.0"))
     end
 
     test "tracks metrics across multiple versions" do
@@ -189,7 +194,8 @@ defmodule Aludel.Prompts.EvolutionTest do
           passed: 5,
           failed: 0,
           avg_cost_usd: Decimal.new("0.004"),
-          avg_latency_ms: 350
+          avg_latency_ms: 350,
+          avg_score: Decimal.new("82.5")
         })
 
       {:ok, _sr2} =
@@ -200,7 +206,8 @@ defmodule Aludel.Prompts.EvolutionTest do
           passed: 5,
           failed: 0,
           avg_cost_usd: Decimal.new("0.006"),
-          avg_latency_ms: 420
+          avg_latency_ms: 420,
+          avg_score: Decimal.new("95.0")
         })
 
       [metrics] = Evolution.get_metrics(prompt.id)
@@ -210,10 +217,12 @@ defmodule Aludel.Prompts.EvolutionTest do
       openai = Enum.find(metrics.provider_breakdown, &(&1.provider_name == "OpenAI"))
       assert Decimal.equal?(openai.avg_cost_usd, Decimal.new("0.004"))
       assert openai.avg_latency_ms == 350
+      assert Decimal.equal?(openai.avg_score, Decimal.new("82.5"))
 
       anthropic = Enum.find(metrics.provider_breakdown, &(&1.provider_name == "Anthropic"))
       assert Decimal.equal?(anthropic.avg_cost_usd, Decimal.new("0.006"))
       assert anthropic.avg_latency_ms == 420
+      assert Decimal.equal?(anthropic.avg_score, Decimal.new("95.0"))
     end
   end
 
@@ -298,18 +307,21 @@ defmodule Aludel.Prompts.EvolutionTest do
           avg_pass_rate: 78.5,
           avg_cost_usd: 0.021,
           avg_latency_ms: 480,
+          avg_score: 74.0,
           provider_breakdown: [
             %{
               provider_name: "OpenAI",
               avg_pass_rate: 80.0,
               avg_cost_usd: 0.020,
-              avg_latency_ms: 450
+              avg_latency_ms: 450,
+              avg_score: 76.0
             },
             %{
               provider_name: "Anthropic",
               avg_pass_rate: 77.0,
               avg_cost_usd: 0.022,
-              avg_latency_ms: 510
+              avg_latency_ms: 510,
+              avg_score: 72.0
             }
           ]
         },
@@ -318,18 +330,21 @@ defmodule Aludel.Prompts.EvolutionTest do
           avg_pass_rate: 85.2,
           avg_cost_usd: 0.019,
           avg_latency_ms: 420,
+          avg_score: 88.5,
           provider_breakdown: [
             %{
               provider_name: "OpenAI",
               avg_pass_rate: 87.0,
               avg_cost_usd: 0.018,
-              avg_latency_ms: 400
+              avg_latency_ms: 400,
+              avg_score: 90.0
             },
             %{
               provider_name: "Anthropic",
               avg_pass_rate: 83.5,
               avg_cost_usd: 0.020,
-              avg_latency_ms: 440
+              avg_latency_ms: 440,
+              avg_score: 87.0
             }
           ]
         }
@@ -341,12 +356,15 @@ defmodule Aludel.Prompts.EvolutionTest do
       assert result.overall.pass_rates == [78.5, 85.2]
       assert result.overall.costs == [0.021, 0.019]
       assert result.overall.latencies == [480, 420]
+      assert result.overall.scores == [74.0, 88.5]
       assert result.by_provider["OpenAI"].pass_rates == [80.0, 87.0]
       assert result.by_provider["OpenAI"].costs == [0.020, 0.018]
       assert result.by_provider["OpenAI"].latencies == [450, 400]
+      assert result.by_provider["OpenAI"].scores == [76.0, 90.0]
       assert result.by_provider["Anthropic"].pass_rates == [77.0, 83.5]
       assert result.by_provider["Anthropic"].costs == [0.022, 0.020]
       assert result.by_provider["Anthropic"].latencies == [510, 440]
+      assert result.by_provider["Anthropic"].scores == [72.0, 87.0]
     end
 
     test "handles nil values gracefully" do
@@ -356,6 +374,7 @@ defmodule Aludel.Prompts.EvolutionTest do
           avg_pass_rate: nil,
           avg_cost_usd: nil,
           avg_latency_ms: nil,
+          avg_score: nil,
           provider_breakdown: []
         },
         %{
@@ -363,6 +382,7 @@ defmodule Aludel.Prompts.EvolutionTest do
           avg_pass_rate: 85.2,
           avg_cost_usd: 0.019,
           avg_latency_ms: 420,
+          avg_score: 88.5,
           provider_breakdown: []
         }
       ]
@@ -373,6 +393,7 @@ defmodule Aludel.Prompts.EvolutionTest do
       assert result.overall.pass_rates == [nil, 85.2]
       assert result.overall.costs == [nil, 0.019]
       assert result.overall.latencies == [nil, 420]
+      assert result.overall.scores == [nil, 88.5]
       assert result.by_provider == %{}
     end
 
@@ -383,6 +404,7 @@ defmodule Aludel.Prompts.EvolutionTest do
       assert result.overall.pass_rates == []
       assert result.overall.costs == []
       assert result.overall.latencies == []
+      assert result.overall.scores == []
       assert result.by_provider == %{}
     end
   end

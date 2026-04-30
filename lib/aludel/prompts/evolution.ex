@@ -19,6 +19,7 @@ defmodule Aludel.Prompts.Evolution do
   - created_at: datetime
   - total_runs: integer (suite runs only)
   - avg_pass_rate: float | nil
+  - avg_score: Decimal.t() | nil
   - avg_cost_usd: Decimal.t() | nil
   - avg_latency_ms: integer | nil
   - provider_breakdown: list of provider-specific metrics
@@ -66,6 +67,25 @@ defmodule Aludel.Prompts.Evolution do
     end
   end
 
+  @doc false
+  def calculate_avg_score([]), do: nil
+
+  @doc false
+  def calculate_avg_score(suite_runs) do
+    scores =
+      suite_runs
+      |> Enum.map(& &1.avg_score)
+      |> Enum.reject(&is_nil/1)
+
+    if Enum.empty?(scores) do
+      nil
+    else
+      avg = Enum.reduce(scores, Decimal.new("0"), &Decimal.add/2)
+      avg = Decimal.div(avg, Decimal.new(length(scores)))
+      Decimal.round(avg, 1)
+    end
+  end
+
   @doc """
   Prepares metrics data for Chart.js visualization.
 
@@ -101,6 +121,7 @@ defmodule Aludel.Prompts.Evolution do
       created_at: version.inserted_at,
       total_runs: length(suite_runs),
       avg_pass_rate: calculate_avg_pass_rate(suite_runs),
+      avg_score: calculate_avg_score(suite_runs),
       avg_cost_usd: calculate_avg_cost(suite_runs),
       avg_latency_ms: calculate_avg_latency(suite_runs),
       provider_breakdown: build_provider_breakdown(suite_runs)
@@ -163,6 +184,7 @@ defmodule Aludel.Prompts.Evolution do
         provider_name: provider.name,
         runs: length(runs),
         avg_pass_rate: avg_pass_rate,
+        avg_score: calculate_avg_score(runs),
         avg_cost_usd: calculate_avg_cost(runs),
         avg_latency_ms: calculate_avg_latency(runs)
       }
@@ -177,7 +199,8 @@ defmodule Aludel.Prompts.Evolution do
   defp extract_overall_metrics(metrics) do
     %{
       pass_rates: Enum.map(metrics, & &1.avg_pass_rate),
-      costs: Enum.map(metrics, & &1.avg_cost_usd),
+      scores: Enum.map(metrics, &decimal_to_float(&1.avg_score)),
+      costs: Enum.map(metrics, &decimal_to_float(&1.avg_cost_usd)),
       latencies: Enum.map(metrics, & &1.avg_latency_ms)
     }
   end
@@ -203,9 +226,14 @@ defmodule Aludel.Prompts.Evolution do
           breakdown.avg_pass_rate
         end)
 
+      scores =
+        Enum.map(sorted_entries, fn {_name, _version, breakdown} ->
+          decimal_to_float(breakdown.avg_score)
+        end)
+
       costs =
         Enum.map(sorted_entries, fn {_name, _version, breakdown} ->
-          breakdown.avg_cost_usd
+          decimal_to_float(breakdown.avg_cost_usd)
         end)
 
       latencies =
@@ -216,12 +244,17 @@ defmodule Aludel.Prompts.Evolution do
       {provider_name,
        %{
          pass_rates: pass_rates,
+         scores: scores,
          costs: costs,
          latencies: latencies
        }}
     end)
     |> Map.new()
   end
+
+  defp decimal_to_float(nil), do: nil
+  defp decimal_to_float(%Decimal{} = value), do: Decimal.to_float(value)
+  defp decimal_to_float(value), do: value
 
   defp repo, do: Aludel.Repo.get()
 end

@@ -23,6 +23,25 @@ defmodule Aludel.Evals.TestCaseTest do
       assert changeset.valid?
     end
 
+    test "valid changeset accepts json_deep_compare assertions" do
+      suite = suite_fixture()
+
+      changeset =
+        TestCase.changeset(%TestCase{}, %{
+          suite_id: suite.id,
+          variable_values: %{"name" => "John"},
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{"name" => "John", "age" => 30},
+              "threshold" => 50.0
+            }
+          ]
+        })
+
+      assert changeset.valid?
+    end
+
     test "requires suite_id" do
       changeset =
         TestCase.changeset(%TestCase{}, %{
@@ -72,7 +91,7 @@ defmodule Aludel.Evals.TestCaseTest do
 
       refute changeset.valid?
 
-      assert {"Invalid assertion type at index 1: \"invalid_type\". Must be one of: contains, not_contains, regex, exact_match, json_field",
+      assert {"Invalid assertion type at index 1: \"invalid_type\". Must be one of: contains, not_contains, regex, exact_match, json_field, json_deep_compare",
               []} =
                changeset.errors[:assertions]
     end

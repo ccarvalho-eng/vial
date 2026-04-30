@@ -298,7 +298,7 @@ defmodule Aludel.EvalsTest do
       assert_raise Ecto.NoResultsError, fn -> Evals.get_suite_run!(suite_run.id) end
     end
 
-    test "changeset accepts avg_cost_usd and avg_latency_ms" do
+    test "changeset accepts avg_cost_usd, avg_latency_ms, and avg_score" do
       suite = suite_fixture()
       prompt = prompt_fixture()
       {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Template {{var}}")
@@ -309,7 +309,8 @@ defmodule Aludel.EvalsTest do
         prompt_version_id: version.id,
         provider_id: provider.id,
         avg_cost_usd: Decimal.new("0.0042"),
-        avg_latency_ms: 350
+        avg_latency_ms: 350,
+        avg_score: Decimal.new("83.3")
       }
 
       changeset = SuiteRun.changeset(%SuiteRun{}, attrs)
@@ -317,6 +318,7 @@ defmodule Aludel.EvalsTest do
       assert changeset.valid?
       assert Ecto.Changeset.get_change(changeset, :avg_cost_usd) == Decimal.new("0.0042")
       assert Ecto.Changeset.get_change(changeset, :avg_latency_ms) == 350
+      assert Ecto.Changeset.get_change(changeset, :avg_score) == Decimal.new("83.3")
     end
 
     test "list_suite_runs_for_suite/1 returns runs for specific suite" do
@@ -789,6 +791,66 @@ defmodule Aludel.EvalsTest do
 
       assert [%{"assertion_results" => [%{"actual_value" => nil, "passed" => false}]}] =
                suite_run.results
+    end
+
+    test "json_deep_compare records partial scores and passes when threshold is met" do
+      expected = %{"name" => "John", "age" => 30, "city" => "NYC", "job" => "Engineer"}
+
+      assert {:ok, suite_run} =
+               execute_json_deep_compare_suite(
+                 ~s({"name":"John","age":25,"city":"NYC","job":"Engineer"}),
+                 expected,
+                 75.0
+               )
+
+      assert suite_run.passed == 1
+      assert suite_run.failed == 0
+      assert Decimal.equal?(suite_run.avg_score, Decimal.new("75.0"))
+
+      assert [
+               %{
+                 "score" => 75.0,
+                 "assertion_results" => [
+                   %{
+                     "type" => "json_deep_compare",
+                     "passed" => true,
+                     "score" => 75.0,
+                     "score_details" => %{
+                       "matches" => 3,
+                       "total" => 4,
+                       "field_scores" => %{
+                         "name" => 1,
+                         "age" => 0,
+                         "city" => 1,
+                         "job" => 1
+                       }
+                     }
+                   }
+                 ]
+               }
+             ] = suite_run.results
+    end
+
+    test "json_deep_compare defaults to strict matching without a threshold" do
+      expected = %{"name" => "John", "age" => 30}
+
+      assert {:ok, suite_run} =
+               execute_json_deep_compare_suite(
+                 ~s({"name":"John","age":25}),
+                 expected
+               )
+
+      assert suite_run.passed == 0
+      assert suite_run.failed == 1
+      assert Decimal.equal?(suite_run.avg_score, Decimal.new("50.0"))
+
+      assert [
+               %{
+                 "passed" => false,
+                 "score" => 50.0,
+                 "assertion_results" => [%{"passed" => false, "score" => 50.0}]
+               }
+             ] = suite_run.results
     end
   end
 
@@ -1285,6 +1347,37 @@ defmodule Aludel.EvalsTest do
         suite_id: suite.id,
         variable_values: %{},
         assertions: [%{"type" => "json_field", "field" => field, "expected" => expected}]
+      })
+
+    Evals.execute_suite(suite, version, provider)
+  end
+
+  defp execute_json_deep_compare_suite(output, expected, threshold \\ nil) do
+    mock_response = build_mock_response(output, 5, 10)
+
+    expect(HttpClientMock, :request, fn _model, _prompt, _opts ->
+      {:ok, mock_response}
+    end)
+
+    suite = suite_fixture()
+    prompt = prompt_fixture()
+    {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Return JSON")
+    provider = provider_fixture()
+
+    assertion =
+      %{
+        "type" => "json_deep_compare",
+        "expected" => expected
+      }
+      |> then(fn assertion ->
+        if is_nil(threshold), do: assertion, else: Map.put(assertion, "threshold", threshold)
+      end)
+
+    _test_case =
+      test_case_fixture(%{
+        suite_id: suite.id,
+        variable_values: %{},
+        assertions: [assertion]
       })
 
     Evals.execute_suite(suite, version, provider)
