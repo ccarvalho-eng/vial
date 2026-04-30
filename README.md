@@ -1,7 +1,7 @@
 <div align="center">
 
-  <h1>Aludel</h1>
-  
+  <img width="200" alt="aludel" src="https://github.com/user-attachments/assets/a5f90783-752a-4071-8c4f-78ff04d2f9bc" />
+  <br />
   <p><em>A Phoenix-native workbench for comparing providers, tracking prompt history, and running regression suites.</em></p>
   <p>
     <a href="https://hex.pm/packages/aludel"><img src="https://img.shields.io/hexpm/v/aludel.svg" alt="Hex.pm"/></a>
