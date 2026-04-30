@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img width="185" alt="aludel" src="https://github.com/user-attachments/assets/a5f90783-752a-4071-8c4f-78ff04d2f9bc" />
+  <img width="180" alt="aludel" src="https://github.com/user-attachments/assets/a5f90783-752a-4071-8c4f-78ff04d2f9bc" />
   <br /><br />
   <p><em>A Phoenix-native workbench for comparing providers, tracking prompt history, and running regression suites.</em></p>
   <p>
