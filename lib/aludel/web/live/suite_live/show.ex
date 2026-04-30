@@ -164,6 +164,7 @@ defmodule Aludel.Web.SuiteLive.Show do
   @impl Phoenix.LiveView
   def handle_event("toggle_assertion_mode", %{"id" => id}, socket) do
     current_mode = Map.get(socket.assigns.assertion_edit_mode, id, :visual)
+    socket = maybe_sync_editing_assertions_json(socket, id, current_mode)
     new_mode = if current_mode == :visual, do: :json, else: :visual
     new_modes = Map.put(socket.assigns.assertion_edit_mode, id, new_mode)
     {:noreply, assign(socket, :assertion_edit_mode, new_modes)}
@@ -236,25 +237,23 @@ defmodule Aludel.Web.SuiteLive.Show do
     test_case_params = sanitize_test_case_params(test_case_params, edit_mode, socket)
 
     socket =
-      socket
-      |> assign(:editing_test_case_params, test_case_params)
-
-    socket =
       if edit_mode == :visual do
         case AssertionParser.preview_visual(test_case_params) do
           {:ok, assertions} ->
+            form_params = merge_visual_assertion_form_params(test_case_params, assertions)
+
             socket
+            |> assign(:editing_test_case_params, form_params)
             |> assign(:editing_assertions, assertions)
             |> assign(
               :test_case_form,
-              to_form(TestCaseEditor.change_form(test_case_params, action: :validate),
-                as: :test_case
-              )
+              to_form(TestCaseEditor.change_form(form_params, action: :validate), as: :test_case)
             )
 
           {:error, message} ->
-            assign(
-              socket,
+            socket
+            |> assign(:editing_test_case_params, test_case_params)
+            |> assign(
               :test_case_form,
               to_form(
                 TestCaseEditor.change_form(
@@ -267,8 +266,9 @@ defmodule Aludel.Web.SuiteLive.Show do
             )
         end
       else
-        assign(
-          socket,
+        socket
+        |> assign(:editing_test_case_params, test_case_params)
+        |> assign(
           :test_case_form,
           to_form(TestCaseEditor.change_form(test_case_params, action: :validate), as: :test_case)
         )
@@ -600,6 +600,40 @@ defmodule Aludel.Web.SuiteLive.Show do
   end
 
   defp sync_preview_assertions(socket, _edit_mode, _test_case_params), do: socket
+
+  defp maybe_sync_editing_assertions_json(socket, id, :visual) do
+    case socket.assigns do
+      %{editing_test_case_id: ^id, editing_test_case_params: %{} = test_case_params} ->
+        case AssertionParser.preview_visual(test_case_params) do
+          {:ok, assertions} ->
+            assign(
+              socket,
+              :editing_test_case_params,
+              merge_visual_assertion_form_params(test_case_params, assertions)
+            )
+
+          {:error, _preview_error} ->
+            socket
+        end
+
+      _other ->
+        socket
+    end
+  end
+
+  defp maybe_sync_editing_assertions_json(socket, _id, _mode), do: socket
+
+  defp merge_visual_assertion_form_params(test_case_params, assertions) do
+    assertion_params =
+      test_case_params
+      |> Map.get("assertions", %{})
+      |> normalize_assertion_params()
+
+    test_case_params
+    |> Map.take(["id", "variable_values"])
+    |> Map.merge(AssertionParser.build_form_params(assertions))
+    |> Map.put("assertions", assertion_params)
+  end
 
   defp sanitize_test_case_params(test_case_params, :visual, socket) do
     allowed_indices =

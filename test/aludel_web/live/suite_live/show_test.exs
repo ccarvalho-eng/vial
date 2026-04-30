@@ -397,6 +397,51 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       assert html =~ "Test case updated successfully"
     end
 
+    test "toggles deep compare assertions to JSON mode without losing expected payload or threshold",
+         %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [
+            %{
+              "type" => "json_deep_compare",
+              "expected" => %{"status" => "ok"},
+              "threshold" => 80.0
+            }
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      render_change(view, "validate_test_case", %{
+        "test_case" => %{
+          "id" => test_case.id,
+          "variable_values" => %{},
+          "assertions" => %{
+            "assertion_type_0" => "json_deep_compare",
+            "assertion_expected_json_0" =>
+              ~s({"status":"ok","meta":{"priority":"high"},"items":[{"id":1},{"id":2}]}),
+            "assertion_threshold_0" => "82.5"
+          }
+        }
+      })
+
+      render_click(view, "toggle_assertion_mode", %{"id" => test_case.id})
+
+      assertions_json =
+        :sys.get_state(view.pid).socket.assigns.editing_test_case_params["assertions_json"]
+
+      assert assertions_json =~ "\"type\": \"json_deep_compare\""
+      assert assertions_json =~ "\"threshold\": 82.5"
+      assert assertions_json =~ "\"priority\": \"high\""
+    end
+
     test "switches a deep compare assertion to json_field without keeping threshold controls", %{
       conn: conn
     } do
