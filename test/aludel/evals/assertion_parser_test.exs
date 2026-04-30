@@ -202,6 +202,21 @@ defmodule Aludel.Evals.AssertionParserTest do
       assert assertions_json =~ "\"type\": \"contains\""
     end
 
+    test "builds visual params for typed json_field assertions" do
+      assertions = [%{"type" => "json_field", "field" => "count", "expected" => 1}]
+
+      assert %{
+               "assertions" => %{
+                 "assertion_type_0" => "json_field",
+                 "assertion_field_0" => "count",
+                 "assertion_expected_0" => "1",
+                 "assertion_expected_json_value_0" => expected_json
+               }
+             } = AssertionParser.build_form_params(assertions)
+
+      assert expected_json == "1"
+    end
+
     test "builds visual params for json_deep_compare assertions" do
       assertions = [
         %{
@@ -264,6 +279,20 @@ defmodule Aludel.Evals.AssertionParserTest do
                   "expected" => "ok"
                 }
               ]} = AssertionParser.preview_visual(params)
+    end
+
+    test "preserves typed json_field expected values when the visual field is unchanged" do
+      params = %{
+        "assertions" => %{
+          "assertion_type_0" => "json_field",
+          "assertion_field_0" => "count",
+          "assertion_expected_0" => "1",
+          "assertion_expected_json_value_0" => "1"
+        }
+      }
+
+      assert {:ok, [%{"type" => "json_field", "field" => "count", "expected" => 1}]} =
+               AssertionParser.parse(:visual, params)
     end
   end
 end

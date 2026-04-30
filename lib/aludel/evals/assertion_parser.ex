@@ -91,7 +91,14 @@ defmodule Aludel.Evals.AssertionParser do
   defp maybe_put_assertion_value(params, idx, %{"type" => "json_field"} = assertion) do
     params
     |> Map.put("assertion_field_#{idx}", assertion["field"] || "")
-    |> Map.put("assertion_expected_#{idx}", assertion["expected"] || "")
+    |> Map.put(
+      "assertion_expected_#{idx}",
+      format_json_field_expected(Map.get(assertion, "expected", ""))
+    )
+    |> Map.put(
+      "assertion_expected_json_value_#{idx}",
+      Jason.encode!(Map.get(assertion, "expected", ""))
+    )
   end
 
   defp maybe_put_assertion_value(params, idx, %{"type" => "json_deep_compare"} = assertion) do
@@ -116,7 +123,11 @@ defmodule Aludel.Evals.AssertionParser do
          %{
            "type" => type,
            "field" => Map.get(assertion_params, "assertion_field_#{idx}", ""),
-           "expected" => Map.get(assertion_params, "assertion_expected_#{idx}", "")
+           "expected" =>
+             parse_json_field_expected(
+               Map.get(assertion_params, "assertion_expected_#{idx}", ""),
+               Map.get(assertion_params, "assertion_expected_json_value_#{idx}", "")
+             )
          }}
 
       "json_deep_compare" ->
@@ -150,7 +161,11 @@ defmodule Aludel.Evals.AssertionParser do
          %{
            "type" => type,
            "field" => Map.get(assertion_params, "assertion_field_#{idx}", ""),
-           "expected" => Map.get(assertion_params, "assertion_expected_#{idx}", "")
+           "expected" =>
+             parse_json_field_expected(
+               Map.get(assertion_params, "assertion_expected_#{idx}", ""),
+               Map.get(assertion_params, "assertion_expected_json_value_#{idx}", "")
+             )
          }}
 
       "json_deep_compare" ->
@@ -339,6 +354,30 @@ defmodule Aludel.Evals.AssertionParser do
   defp valid_threshold?(value) when is_integer(value), do: value >= 0 and value <= 100
   defp valid_threshold?(value) when is_float(value), do: value >= 0.0 and value <= 100.0
   defp valid_threshold?(_value), do: false
+
+  defp parse_json_field_expected(expected_text, expected_json) when is_binary(expected_text) do
+    case Jason.decode(expected_json) do
+      {:ok, decoded} ->
+        if expected_text == format_json_field_expected(decoded), do: decoded, else: expected_text
+
+      _other ->
+        expected_text
+    end
+  end
+
+  defp parse_json_field_expected(expected, _expected_json), do: expected
+
+  defp format_json_field_expected(nil), do: "null"
+  defp format_json_field_expected(value) when is_binary(value), do: value
+
+  defp format_json_field_expected(value)
+       when is_integer(value) or is_float(value) or is_boolean(value),
+       do: inspect(value)
+
+  defp format_json_field_expected(value) when is_map(value) or is_list(value),
+    do: Jason.encode!(value)
+
+  defp format_json_field_expected(value), do: to_string(value)
 
   defp format_threshold(nil), do: ""
   defp format_threshold(value), do: to_string(value)

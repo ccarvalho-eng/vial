@@ -558,6 +558,42 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
       refute has_element?(view, "#test-case-assertions-error-#{test_case.id}")
     end
 
+    test "keeps typed json_field expectations visible and saveable in visual mode", %{conn: conn} do
+      suite = suite_fixture()
+
+      test_case =
+        test_case_fixture(%{
+          suite_id: suite.id,
+          assertions: [%{"type" => "json_field", "field" => "count", "expected" => 1}]
+        })
+
+      {:ok, view, _html} = live(conn, "/suites/#{suite.id}")
+
+      view
+      |> element("[phx-click='edit_test_case'][phx-value-id='#{test_case.id}']")
+      |> render_click()
+
+      assert has_element?(view, "#test_case_assertion_expected_0[value='1']")
+
+      html =
+        view
+        |> form("#test-case-form-#{test_case.id}",
+          test_case: %{
+            id: test_case.id,
+            variable_values: %{},
+            assertions: %{
+              "assertion_type_0" => "json_field",
+              "assertion_field_0" => "count",
+              "assertion_expected_0" => "1",
+              "assertion_expected_json_value_0" => "1"
+            }
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "Test case updated successfully"
+    end
+
     test "shows assertion controls in edit mode", %{conn: conn} do
       suite = suite_fixture()
       test_case = test_case_fixture(%{suite_id: suite.id})

@@ -677,8 +677,18 @@ defmodule Aludel.Web.SuiteLive.Show do
 
   defp assertion_text_value(assertion, test_case_params, idx, field_name, assertion_key) do
     case assertion_form_value(test_case_params, idx, field_name) || assertion[assertion_key] do
-      value when is_binary(value) -> value
-      _other -> ""
+      nil -> ""
+      value -> display_value(value)
+    end
+  end
+
+  defp assertion_expected_json_value_for_json_field(assertion, test_case_params, idx) do
+    case assertion_form_value(test_case_params, idx, "expected_json_value") do
+      nil ->
+        Jason.encode!(Map.get(assertion, "expected", ""))
+
+      value ->
+        value
     end
   end
 

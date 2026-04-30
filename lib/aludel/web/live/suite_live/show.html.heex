@@ -360,6 +360,20 @@
                                       placeholder="INV-001"
                                       class="input text-[13px]"
                                     />
+                                    <input
+                                      type="hidden"
+                                      name={
+                                        "#{@test_case_form.name}[assertions][assertion_expected_json_value_#{idx}]"
+                                      }
+                                      id={"#{@test_case_form.id}_assertion_expected_json_value_#{idx}"}
+                                      value={
+                                        assertion_expected_json_value_for_json_field(
+                                          assertion,
+                                          @editing_test_case_params,
+                                          idx
+                                        )
+                                      }
+                                    />
                                   </div>
                                 </div>
                               <% current_type == "json_deep_compare" -> %>

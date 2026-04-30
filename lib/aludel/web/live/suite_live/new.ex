@@ -496,8 +496,18 @@ defmodule Aludel.Web.SuiteLive.New do
   defp assertion_text_value(test_case_id, idx, field_name, assertion_key, form_params, assertion) do
     case assertion_form_value(test_case_id, idx, field_name, form_params) ||
            assertion[assertion_key] do
-      value when is_binary(value) -> value
-      _other -> ""
+      nil -> ""
+      value -> display_value(value)
+    end
+  end
+
+  defp assertion_expected_json_value_for_json_field(test_case_id, idx, form_params, assertion) do
+    case assertion_form_value(test_case_id, idx, "expected_json_value", form_params) do
+      nil ->
+        Jason.encode!(Map.get(assertion, "expected", ""))
+
+      value ->
+        value
     end
   end
 
@@ -542,6 +552,15 @@ defmodule Aludel.Web.SuiteLive.New do
         if test_case[:assertions], do: Jason.encode!(test_case.assertions, pretty: true), else: ""
     end
   end
+
+  defp display_value(nil), do: "null"
+  defp display_value(value) when is_binary(value), do: value
+
+  defp display_value(value) when is_integer(value) or is_float(value) or is_boolean(value),
+    do: inspect(value)
+
+  defp display_value(value) when is_map(value) or is_list(value), do: Jason.encode!(value)
+  defp display_value(value), do: to_string(value)
 
   defp prompt_variables(%{versions: [%{template: template} | _]}), do: extract_variables(template)
   defp prompt_variables(_selected_prompt), do: []

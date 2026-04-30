@@ -226,6 +226,21 @@
                                   id={"test_case_#{test_case.id}_assertion_expected_#{idx}"}
                                   class="input text-[13px]"
                                 />
+                                <input
+                                  type="hidden"
+                                  name={
+                                    "suite[test_cases][#{test_case.id}][assertions][assertion_expected_json_value_#{idx}]"
+                                  }
+                                  value={
+                                    assertion_expected_json_value_for_json_field(
+                                      test_case.id,
+                                      idx,
+                                      @test_case_form_params,
+                                      assertion
+                                    )
+                                  }
+                                  id={"test_case_#{test_case.id}_assertion_expected_json_value_#{idx}"}
+                                />
                               </div>
                             </div>
                           <% current_type == "json_deep_compare" -> %>
