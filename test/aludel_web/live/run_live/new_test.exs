@@ -42,6 +42,24 @@ defmodule Aludel.Web.RunLive.NewTest do
       assert html =~ "v#{version.version}"
     end
 
+    test "shows the app callback execution mode label when configured", %{
+      conn: conn,
+      version: version
+    } do
+      original_mode = Application.get_env(:aludel, :execution_mode)
+
+      Application.put_env(:aludel, :execution_mode, :callback)
+
+      on_exit(fn ->
+        Application.put_env(:aludel, :execution_mode, original_mode)
+      end)
+
+      {:ok, _view, html} = live(conn, "/runs/new?version=#{version.id}")
+
+      assert html =~ "Execution Mode"
+      assert html =~ "App Callback"
+    end
+
     test "displays form inputs for each variable", %{
       conn: conn,
       version: version

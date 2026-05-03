@@ -185,6 +185,23 @@ defmodule Aludel.Web.SuiteLive.ShowTest do
   end
 
   describe "version and provider selection" do
+    test "shows the app callback execution mode label when configured", %{conn: conn} do
+      original_mode = Application.get_env(:aludel, :execution_mode)
+
+      Application.put_env(:aludel, :execution_mode, :callback)
+
+      on_exit(fn ->
+        Application.put_env(:aludel, :execution_mode, original_mode)
+      end)
+
+      suite = suite_fixture()
+
+      {:ok, _view, html} = live(conn, "/suites/#{suite.id}")
+
+      assert html =~ "Execution Mode"
+      assert html =~ "App Callback"
+    end
+
     test "shows version and provider selectors", %{conn: conn} do
       prompt = prompt_fixture_with_version()
       suite = suite_fixture(%{prompt_id: prompt.id})

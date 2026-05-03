@@ -14,14 +14,12 @@ defmodule Aludel.Evals do
     TestCaseDocument
   }
 
-  alias Aludel.LLM
+  alias Aludel.Execution
   alias Aludel.Prompts.PromptVersion
   alias Aludel.Providers.Provider
   alias Aludel.Storage
   alias Ecto.Association.NotLoaded
   alias Ecto.Changeset
-
-  @default_document_load_timeout_ms 120_000
 
   # Suite functions
 
@@ -435,67 +433,29 @@ defmodule Aludel.Evals do
 
   defp execute_test_case(test_case, version, provider) do
     test_case = ensure_documents_loaded(test_case)
-    rendered_prompt = render_template(version.template, test_case.variable_values)
 
-    case load_document_inputs(test_case.documents) do
-      {:ok, documents} ->
-        case LLM.call(provider, rendered_prompt, llm_call_opts(documents)) do
-          {:ok, result} ->
-            assertion_results = build_assertion_results(test_case.assertions, result.output)
-            passed = Enum.all?(assertion_results, & &1["passed"])
-            successful_test_case_result(test_case.id, result, passed, assertion_results)
+    request = %{
+      kind: :suite,
+      prompt_version: version,
+      variables: test_case.variable_values,
+      provider: provider,
+      documents: test_case.documents,
+      metadata: %{
+        suite_id: test_case.suite_id,
+        suite_run_id: nil,
+        test_case_id: test_case.id
+      }
+    }
 
-          {:error, reason} ->
-            failed_test_case_result(test_case.id, reason)
-        end
+    case Execution.execute(request) do
+      {:ok, result} ->
+        assertion_results = build_assertion_results(test_case.assertions, result.output)
+        passed = Enum.all?(assertion_results, & &1["passed"])
+        successful_test_case_result(test_case.id, result, passed, assertion_results)
 
       {:error, reason} ->
         failed_test_case_result(test_case.id, reason)
     end
-  end
-
-  defp llm_call_opts(documents) do
-    if documents != [], do: [documents: documents], else: []
-  end
-
-  defp load_document_inputs(documents) do
-    documents
-    |> Task.async_stream(&load_document_input/1,
-      timeout: document_load_timeout_ms(),
-      on_timeout: :kill_task
-    )
-    |> Enum.reduce_while({:ok, []}, fn
-      {:ok, {:ok, input}}, {:ok, loaded_documents} ->
-        {:cont, {:ok, [input | loaded_documents]}}
-
-      {:ok, {:error, reason}}, _acc ->
-        {:halt, {:error, reason}}
-
-      {:exit, reason}, _acc ->
-        {:halt, {:error, {:document_storage_error, :unknown_document, reason}}}
-    end)
-    |> case do
-      {:ok, loaded_documents} -> {:ok, Enum.reverse(loaded_documents)}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp load_document_input(document) do
-    case safe_storage_read(document) do
-      {:ok, data} ->
-        {:ok, %{data: data, content_type: document.content_type}}
-
-      {:error, reason} ->
-        {:error, {:document_storage_error, document.filename, reason}}
-    end
-  end
-
-  defp safe_storage_read(document) do
-    Storage.read(document)
-  rescue
-    error -> {:error, Exception.message(error)}
-  catch
-    :exit, reason -> {:error, reason}
   end
 
   defp build_assertion_results(assertions, output) do
@@ -509,8 +469,11 @@ defmodule Aludel.Evals do
       "score" => AssertionEvaluator.score_for_results(assertion_results),
       "output" => result.output,
       "assertion_results" => assertion_results,
+      "input_tokens" => result.input_tokens,
+      "output_tokens" => result.output_tokens,
       "cost_usd" => result.cost_usd,
-      "latency_ms" => result.latency_ms
+      "latency_ms" => result.latency_ms,
+      "metadata" => result.metadata
     }
   end
 
@@ -521,12 +484,16 @@ defmodule Aludel.Evals do
       "score" => nil,
       "output" => error_message(reason),
       "assertion_results" => [],
+      "input_tokens" => nil,
+      "output_tokens" => nil,
       "cost_usd" => nil,
-      "latency_ms" => nil
+      "latency_ms" => nil,
+      "metadata" => nil
     }
   end
 
   defp error_message(:missing_api_key), do: "Missing API key"
+  defp error_message(:executor_not_configured), do: "Callback executor not configured"
   defp error_message({:auth_error, msg}), do: "Authentication error: #{msg}"
 
   defp error_message({:rate_limit, retry_after}) do
@@ -539,6 +506,14 @@ defmodule Aludel.Evals do
 
   defp error_message({:document_storage_error, filename, reason}),
     do: "Failed to load document #{filename}: #{format_storage_reason(reason)}"
+
+  defp error_message({:invalid_executor, module}),
+    do: "Invalid callback executor: #{inspect(module)}"
+
+  defp error_message({:invalid_executor_response, detail}),
+    do: "Invalid callback response: #{inspect(detail)}"
+
+  defp error_message(reason), do: inspect(reason)
 
   defp fetch_suite_run_result(%SuiteRun{results: results}, test_case_id) do
     case Enum.find(results, &(&1["test_case_id"] == test_case_id)) do
@@ -621,16 +596,16 @@ defmodule Aludel.Evals do
   defp decimal_from_number(number) when is_float(number), do: Decimal.from_float(number)
   defp decimal_from_number(number) when is_integer(number), do: Decimal.new(number)
 
-  defp average_cost(%{successful: successful}) when successful < 1, do: nil
+  defp average_cost(%{cost_samples: cost_samples}) when cost_samples < 1, do: nil
 
-  defp average_cost(%{total_cost: total_cost, successful: successful}) do
-    Decimal.div(total_cost, successful)
+  defp average_cost(%{total_cost: total_cost, cost_samples: cost_samples}) do
+    Decimal.div(total_cost, cost_samples)
   end
 
-  defp average_latency(%{successful: successful}) when successful < 1, do: nil
+  defp average_latency(%{latency_samples: latency_samples}) when latency_samples < 1, do: nil
 
-  defp average_latency(%{total_latency: total_latency, successful: successful}) do
-    round(total_latency / successful)
+  defp average_latency(%{total_latency: total_latency, latency_samples: latency_samples}) do
+    round(total_latency / latency_samples)
   end
 
   defp average_score(%{scored: scored}) when scored < 1, do: nil
@@ -644,27 +619,41 @@ defmodule Aludel.Evals do
   defp empty_summary_metrics do
     %{
       total_cost: Decimal.new("0"),
+      cost_samples: 0,
       total_latency: 0,
-      successful: 0,
+      latency_samples: 0,
       total_score: Decimal.new("0"),
       scored: 0
     }
   end
 
-  defp accumulate_cost_and_latency(
-         acc,
-         %{"cost_usd" => cost, "latency_ms" => latency}
-       )
-       when is_number(cost) and is_number(latency) do
-    %{
-      acc
-      | total_cost: Decimal.add(acc.total_cost, decimal_from_number(cost)),
-        total_latency: acc.total_latency + round(latency),
-        successful: acc.successful + 1
-    }
+  defp accumulate_cost_and_latency(acc, %{"cost_usd" => cost, "latency_ms" => latency}) do
+    acc
+    |> maybe_accumulate_cost(cost)
+    |> maybe_accumulate_latency(latency)
   end
 
   defp accumulate_cost_and_latency(acc, _result), do: acc
+
+  defp maybe_accumulate_cost(acc, cost) when is_number(cost) do
+    %{
+      acc
+      | total_cost: Decimal.add(acc.total_cost, decimal_from_number(cost)),
+        cost_samples: acc.cost_samples + 1
+    }
+  end
+
+  defp maybe_accumulate_cost(acc, _cost), do: acc
+
+  defp maybe_accumulate_latency(acc, latency) when is_number(latency) do
+    %{
+      acc
+      | total_latency: acc.total_latency + round(latency),
+        latency_samples: acc.latency_samples + 1
+    }
+  end
+
+  defp maybe_accumulate_latency(acc, _latency), do: acc
 
   defp accumulate_score(acc, %{"score" => score}) when is_number(score) do
     %{
@@ -681,18 +670,6 @@ defmodule Aludel.Evals do
   end
 
   defp ensure_documents_loaded(%TestCase{} = test_case), do: test_case
-
-  defp render_template(template, variables) do
-    Enum.reduce(variables, template, fn {key, value}, acc ->
-      String.replace(acc, "{{#{key}}}", to_string(value))
-    end)
-  end
-
-  defp document_load_timeout_ms do
-    :aludel
-    |> Application.get_env(:evals, [])
-    |> Keyword.get(:document_load_timeout_ms, @default_document_load_timeout_ms)
-  end
 
   defp repo, do: Aludel.Repo.get()
 

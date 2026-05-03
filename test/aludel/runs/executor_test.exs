@@ -166,6 +166,80 @@ defmodule Aludel.Runs.ExecutorTest do
       assert result.error =~ "task_exit"
       assert result.error =~ "boom"
     end
+
+    test "persists callback results with optional metrics and metadata", %{run: run} do
+      original_mode = Application.get_env(:aludel, :execution_mode)
+      original_executor = Application.get_env(:aludel, :executor)
+      provider = provider_fixture(%{name: "Callback Provider", model: "callback-model"})
+
+      Application.put_env(:aludel, :execution_mode, :callback)
+      Application.put_env(:aludel, :executor, Aludel.ExecutorMock)
+
+      on_exit(fn ->
+        Application.put_env(:aludel, :execution_mode, original_mode)
+        Application.put_env(:aludel, :executor, original_executor)
+      end)
+
+      expect(Aludel.ExecutorMock, :run, fn input ->
+        assert input.kind == :run
+        assert input.variables == %{"user" => "Alice"}
+        assert input.documents == []
+        assert input.provider.id == provider.id
+        assert input.provider.model == "callback-model"
+        assert input.metadata.run_id == run.id
+
+        {:ok,
+         %{
+           output: "Hello Alice from callback",
+           latency_ms: 321,
+           metadata: %{"trace_id" => "run-trace-1"}
+         }}
+      end)
+
+      assert {:ok, %Execution{} = execution} = Executor.execute(run, [provider])
+
+      assert execution.status == :ok
+      assert execution.run.status == :completed
+
+      assert [result] = execution.provider_results
+      assert result.status == :completed
+      assert result.output == "Hello Alice from callback"
+      assert result.input_tokens == nil
+      assert result.output_tokens == nil
+      assert result.latency_ms == 321
+      assert result.cost_usd == nil
+      assert result.metadata == %{"trace_id" => "run-trace-1"}
+    end
+
+    test "persists callback crashes as provider errors", %{run: run} do
+      original_mode = Application.get_env(:aludel, :execution_mode)
+      original_executor = Application.get_env(:aludel, :executor)
+      provider = provider_fixture(%{name: "Crashy Callback Provider"})
+
+      Application.put_env(:aludel, :execution_mode, :callback)
+      Application.put_env(:aludel, :executor, Aludel.ExecutorMock)
+
+      on_exit(fn ->
+        Application.put_env(:aludel, :execution_mode, original_mode)
+        Application.put_env(:aludel, :executor, original_executor)
+      end)
+
+      expect(Aludel.ExecutorMock, :run, fn _input ->
+        raise "boom"
+      end)
+
+      assert {:ok, %Execution{} = execution} = Executor.execute(run, [provider])
+      assert execution.status == :error
+      assert execution.run.status == :failed
+
+      assert [%{reason: {:executor_crash, {:raise, %RuntimeError{message: "boom"}}}}] =
+               execution.failures
+
+      assert [result] = execution.provider_results
+      assert result.status == :error
+      assert result.error =~ "executor_crash"
+      assert result.error =~ "boom"
+    end
   end
 
   describe "launch/2" do

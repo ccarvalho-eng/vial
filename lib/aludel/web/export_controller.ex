@@ -117,6 +117,7 @@ defmodule Aludel.Web.ExportController do
       output_tokens: result["output_tokens"],
       latency_ms: result["latency_ms"],
       cost_usd: result["cost_usd"],
+      metadata: result["metadata"],
       assertion_results: Map.get(result, "assertion_results", []),
       retry_count: result["retry_count"],
       retried_at: result["retried_at"]

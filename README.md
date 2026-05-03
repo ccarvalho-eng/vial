@@ -17,6 +17,7 @@ Aludel gives teams a clean way to evaluate prompt and model behavior without inv
 - Inspect output, latency, token usage, and cost side by side.
 - Version prompts and see how changes affect results over time.
 - Run evaluation suites with assertions and document attachments.
+- Route runs and suites through your app's real LLM workflow with callback execution.
 - Use it inside an existing Phoenix app or run it standalone.
 
 ## Why Aludel
@@ -26,6 +27,7 @@ Most teams evaluating LLM behavior end up with some combination of scripts, spre
 - **Provider comparison**: run the same input across models and vendors in one view.
 - **Prompt history**: keep prompt changes traceable instead of losing them in copy-pasted variants.
 - **Regression coverage**: turn important scenarios into repeatable suites with assertions.
+- **Embedded app callbacks**: evaluate your production-facing workflow without rebuilding it in the dashboard.
 - **Phoenix-native deployment**: mount it in your app or run it as a standalone dashboard.
 
 ## Structured Output Scoring
@@ -107,6 +109,71 @@ end
 
 Visit your configured path, for example `http://localhost:4000/dev/aludel`.
 
+### Execution modes
+
+Aludel supports two execution modes:
+
+- **Native** (default): Aludel renders the prompt template and calls the configured provider directly.
+- **App Callback**: your host app executes the real workflow and returns a normalized result back to Aludel.
+
+Use callback mode when your production behavior includes orchestration beyond a single prompt, such as retrieval, tool usage, routing, retries, or post-processing.
+
+Configure it in your embedded app:
+
+```elixir
+config :aludel,
+  execution_mode: :callback,
+  executor: MyApp.AludelExecutor
+```
+
+Example executor:
+
+```elixir
+defmodule MyApp.AludelExecutor do
+  @behaviour Aludel.Executor
+
+  @impl true
+  def run(%{
+        kind: kind,
+        variables: variables,
+        documents: documents,
+        provider: provider,
+        metadata: metadata
+      }) do
+    case MyApp.AI.reply(%{
+           question: variables["question"],
+           documents: documents,
+           provider: provider && provider.provider,
+           model: provider && provider.model,
+           context: %{source: :aludel, kind: kind, metadata: metadata}
+         }) do
+      {:ok, reply} ->
+        {:ok,
+         %{
+           output: reply.text,
+           input_tokens: Map.get(reply, :input_tokens),
+           output_tokens: Map.get(reply, :output_tokens),
+           latency_ms: Map.get(reply, :latency_ms),
+           cost_usd: Map.get(reply, :cost_usd),
+           metadata: %{trace_id: Map.get(reply, :trace_id)}
+         }}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+end
+```
+
+Success responses only require `output`. `input_tokens`, `output_tokens`, `latency_ms`, `cost_usd`, and `metadata` are optional.
+
+In callback mode, the existing run and suite UI stays the same:
+
+- provider selection still stays available
+- the run and suite screens show `Execution Mode`
+- missing token or cost metrics render as `N/A`
+- exports include callback metadata when present
+
 ### Standalone mode
 
 If you want to run Aludel by itself:
@@ -127,6 +194,21 @@ mix aludel.seed
 ```
 
 Visit `http://localhost:4000`.
+
+To smoke-test callback mode in the standalone app, configure a local executor module in `standalone/lib/aludel_dash.ex` or another module loaded by the standalone app, then add:
+
+```elixir
+config :aludel,
+  execution_mode: :callback,
+  executor: AludelDash.Executor
+```
+
+After restarting `mix phx.server`, create a prompt version and provider in the UI, then:
+
+1. Launch a run from `/runs/new?version=<prompt_version_id>`
+2. Run a suite from `/suites/<suite_id>`
+3. Confirm both screens show `Execution Mode`
+4. Confirm the outputs come from your executor and optional metrics render cleanly when omitted
 
 ## Provider support
 
@@ -150,6 +232,8 @@ config :aludel, :llm,
 ```
 
 Ollama runs locally and does not require an API key.
+
+Callback mode does not require Aludel to use those API keys directly, but provider selection still remains part of the current run and suite flows and is passed into the executor for host-app routing when needed.
 
 ## Document Storage
 
