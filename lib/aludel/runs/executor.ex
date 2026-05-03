@@ -7,7 +7,7 @@ defmodule Aludel.Runs.Executor do
 
   require Logger
 
-  alias Aludel.LLM
+  alias Aludel.Execution, as: AppExecution
   alias Aludel.Providers.Provider
   alias Aludel.PubSub
   alias Aludel.Runs.{Execution, Run, RunResult}
@@ -65,14 +65,11 @@ defmodule Aludel.Runs.Executor do
                  running_run.prompt_version.variables,
                  running_run.variable_values
                ),
-             rendered_prompt <-
-               render_template(running_run.prompt_version.template, running_run.variable_values),
              {:ok, pending_results} <- create_pending_results(running_run, providers),
              provider_outcomes <-
                execute_providers(
                  running_run,
-                 Enum.zip(providers, pending_results),
-                 rendered_prompt
+                 Enum.zip(providers, pending_results)
                ),
              failures = collect_failures(provider_outcomes),
              {:ok, updated_run} <- complete_run(running_run, length(providers), failures) do
@@ -99,26 +96,26 @@ defmodule Aludel.Runs.Executor do
 
   defp preload_prompt_version(%Run{} = run), do: run
 
-  defp execute_providers(run, provider_results, rendered_prompt) do
+  defp execute_providers(run, provider_results) do
     case execution_mode() do
       :sequential ->
         Enum.map(provider_results, fn {provider, run_result} ->
-          {provider, execute_provider(run.id, run_result, provider, rendered_prompt)}
+          {provider, execute_provider(run, run_result, provider)}
         end)
 
       _mode ->
-        stream_provider_executions(run, provider_results, rendered_prompt)
+        stream_provider_executions(run, provider_results)
     end
   end
 
-  defp stream_provider_executions(run, provider_results, rendered_prompt) do
+  defp stream_provider_executions(run, provider_results) do
     provider_results
     |> Enum.zip(
       Task.Supervisor.async_stream_nolink(
         @execution_supervisor,
         provider_results,
         fn {provider, run_result} ->
-          execute_provider(run.id, run_result, provider, rendered_prompt)
+          execute_provider(run, run_result, provider)
         end,
         max_concurrency: execution_max_concurrency(),
         timeout: execution_timeout_ms()
@@ -133,19 +130,32 @@ defmodule Aludel.Runs.Executor do
     end)
   end
 
-  defp execute_provider(run_id, run_result, provider, rendered_prompt) do
+  defp execute_provider(run, run_result, provider) do
+    request = %{
+      kind: :run,
+      prompt_version: run.prompt_version,
+      variables: run.variable_values,
+      provider: provider,
+      documents: [],
+      metadata: %{
+        run_id: run.id,
+        prompt_id: run.prompt_version.prompt_id,
+        prompt_version_id: run.prompt_version.id
+      }
+    }
+
     with {:ok, run_result} <- mark_run_result_running(run_result),
-         result <- LLM.call(provider, rendered_prompt) do
+         result <- AppExecution.execute(request) do
       case result do
         {:ok, llm_result} ->
-          complete_run_result(run_id, run_result, provider, llm_result)
+          complete_run_result(run.id, run_result, provider, llm_result)
 
         {:error, reason} ->
-          create_error_result(run_id, run_result, provider, reason)
+          create_error_result(run.id, run_result, provider, reason)
       end
     else
       {:error, changeset} ->
-        log_run_result_failure(run_id, provider.id, changeset)
+        log_run_result_failure(run.id, provider.id, changeset)
         {:error, provider_failure(provider, {:result_transition_failed, changeset.errors})}
     end
   end
@@ -157,6 +167,7 @@ defmodule Aludel.Runs.Executor do
            output_tokens: result.output_tokens,
            latency_ms: result.latency_ms,
            cost_usd: result.cost_usd,
+           metadata: result.metadata,
            status: :completed,
            completed_at: now(),
            error: nil
@@ -247,12 +258,6 @@ defmodule Aludel.Runs.Executor do
       _missing_variables ->
         {:error, {:missing_variables, missing_variables}}
     end
-  end
-
-  defp render_template(template, variable_values) do
-    Enum.reduce(variable_values, template, fn {key, value}, acc ->
-      String.replace(acc, "{{#{key}}}", to_string(value))
-    end)
   end
 
   defp create_run_result(attrs) do

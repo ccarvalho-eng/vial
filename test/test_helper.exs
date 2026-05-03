@@ -82,4 +82,6 @@ Mox.defmock(Aludel.Interfaces.StorageMock,
   for: Aludel.Interfaces.Storage.Behaviour
 )
 
+Mox.defmock(Aludel.ExecutorMock, for: Aludel.Executor)
+
 ExUnit.start()

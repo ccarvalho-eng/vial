@@ -8,6 +8,7 @@ defmodule Aludel.Web.RunLive.New do
 
   use Aludel.Web, :live_view
 
+  alias Aludel.Executor
   alias Aludel.Prompts
   alias Aludel.Providers
   alias Aludel.Runs
@@ -54,6 +55,7 @@ defmodule Aludel.Web.RunLive.New do
      |> assign(:prompt, prompt_version.prompt)
      |> assign(:variables, prompt_version.variables)
      |> assign(:providers, providers)
+     |> assign(:execution_mode_label, Executor.execution_mode_label())
      |> assign(:form, to_form(changeset))
      |> assign(:variable_values, variable_values)}
   end

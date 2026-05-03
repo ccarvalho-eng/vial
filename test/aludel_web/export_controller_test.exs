@@ -75,6 +75,8 @@ defmodule Aludel.Web.ExportControllerTest do
               "passed" => true,
               "score" => 75.0,
               "output" => "Structured output",
+              "input_tokens" => 14,
+              "output_tokens" => 7,
               "assertion_results" => [
                 %{
                   "type" => "json_deep_compare",
@@ -102,6 +104,7 @@ defmodule Aludel.Web.ExportControllerTest do
               ],
               "cost_usd" => 0.001,
               "latency_ms" => 250,
+              "metadata" => %{"trace_id" => "suite-export-trace"},
               "retry_count" => 1,
               "retried_at" => "2026-04-26T13:00:00Z"
             }
@@ -162,10 +165,11 @@ defmodule Aludel.Web.ExportControllerTest do
                  ],
                  "cost_usd" => 0.001,
                  "error" => nil,
-                 "input_tokens" => nil,
+                 "input_tokens" => 14,
                  "latency_ms" => 250,
+                 "metadata" => %{"trace_id" => "suite-export-trace"},
                  "output" => "Structured output",
-                 "output_tokens" => nil,
+                 "output_tokens" => 7,
                  "passed" => true,
                  "score" => 75.0,
                  "retry_count" => 1,

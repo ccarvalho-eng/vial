@@ -12,6 +12,7 @@ defmodule Aludel.Web.SuiteLive.Show do
   alias Aludel.Evals.AssertionParser
   alias Aludel.Evals.DocumentIngestion
   alias Aludel.Evals.TestCaseEditor
+  alias Aludel.Executor
   alias Aludel.Projects
   alias Aludel.Prompts
   alias Aludel.Providers
@@ -46,6 +47,7 @@ defmodule Aludel.Web.SuiteLive.Show do
       |> assign(:all_prompts, all_prompts)
       |> assign(:projects, projects)
       |> assign(:providers, providers)
+      |> assign(:execution_mode_label, Executor.execution_mode_label())
       |> assign(:suite_runs, suite_runs)
       |> assign(:running, false)
       |> assign(:run_task_monitor_ref, nil)
