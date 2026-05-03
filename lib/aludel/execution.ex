@@ -104,7 +104,7 @@ defmodule Aludel.Execution do
       not is_binary(output) ->
         {:error, {:invalid_executor_response, :missing_output}}
 
-      not is_nil(metadata) and not is_map(metadata) ->
+      invalid_metadata?(metadata) ->
         {:error, {:invalid_executor_response, :invalid_metadata}}
 
       true ->
@@ -156,6 +156,13 @@ defmodule Aludel.Execution do
       value when is_integer(value) -> value / 1
       _ -> nil
     end
+  end
+
+  defp invalid_metadata?(nil), do: false
+  defp invalid_metadata?(metadata) when not is_map(metadata), do: true
+
+  defp invalid_metadata?(metadata) do
+    match?({:error, _reason}, Jason.encode(metadata))
   end
 
   defp load_documents([]), do: {:ok, []}

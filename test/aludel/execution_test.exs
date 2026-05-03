@@ -134,6 +134,33 @@ defmodule Aludel.ExecutionTest do
              })
   end
 
+  test "rejects callback metadata that is not JSON-encodable" do
+    Application.put_env(:aludel, :execution_mode, :callback)
+    Application.put_env(:aludel, :executor, Aludel.ExecutorMock)
+
+    prompt = prompt_fixture()
+    {:ok, version} = Aludel.Prompts.create_prompt_version(prompt, "Hello {{name}}")
+    provider = provider_fixture()
+
+    expect(Aludel.ExecutorMock, :run, fn _input ->
+      {:ok,
+       %{
+         output: "Hello Alice",
+         metadata: %{pid: self()}
+       }}
+    end)
+
+    assert {:error, {:invalid_executor_response, :invalid_metadata}} =
+             Execution.execute(%{
+               kind: :run,
+               prompt_version: version,
+               variables: %{"name" => "Alice"},
+               provider: provider,
+               documents: [],
+               metadata: %{run_id: Ecto.UUID.generate()}
+             })
+  end
+
   test "loads suite documents and normalizes callback responses" do
     Application.put_env(:aludel, :execution_mode, :callback)
     Application.put_env(:aludel, :executor, Aludel.ExecutorMock)
